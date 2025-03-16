@@ -67,7 +67,7 @@ export function initStarfieldThruster() {
   // Set up state
   elements.canvas = document.getElementById('starfield');
   elements.ctx = elements.canvas.getContext('2d', { alpha: false });
-  elements.wrapper = document.getElementById('wrapper');
+  elements.wrapper = document.getElementById('rumble-wrapper');
   elements.thruster = document.getElementById('thruster');
   
   // Initialize state values
