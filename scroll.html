@@ -8,7 +8,39 @@
       margin: 0;
       height: 10000vh; /* Very tall page for scrolling */
       overflow-x: hidden;
+      /* Apply base scrollbar style to body element for better Safari support */
+      scrollbar-width: thin;
+      scrollbar-color: #00ff00 black;
     }
+    
+    /* Cross-browser scrollbar styling */
+    /* Webkit browsers (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar {
+      width: 12px;
+      background-color: black;
+      -webkit-appearance: none; /* Safari compatibility */
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background-color: #00ff00; /* Green thumb/dragger */
+      border-radius: 6px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: #00cc00; /* Slightly darker green on hover */
+    }
+    
+    /* Specific Safari scrollbar parts */
+    ::-webkit-scrollbar-track {
+      background-color: black;
+    }
+    
+    /* Firefox */
+    html {
+      scrollbar-color: #00ff00 black; /* thumb and track color */
+      scrollbar-width: thin;
+    }
+    
     /* Fullscreen starfield canvas in the background */
     #starfield {
       position: fixed;
@@ -97,6 +129,20 @@
     const perspective = 500;
     const maxDepth = 1000;
     const starSpeed = 2;
+
+    // Position the user in the middle of the scroll area on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const scrollHeight = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      );
+      const middlePosition = Math.floor(scrollHeight / 2);
+      window.scrollTo({
+        top: middlePosition,
+        behavior: 'auto'
+      });
+      lastScrollY = middlePosition; // Update the tracked scroll position
+    });
 
     // Performance optimization - pre-allocate star array
     const stars = new Array(numStars);
@@ -204,14 +250,23 @@
         
         // If star is too close, reset it far away (recycling)
         if (star.z <= 0) {
-          // Instead of creating new objects, reuse existing ones
-          star.z = maxDepth;
-          star.x = (Math.random() * 2000) - 1000;
-          star.y = (Math.random() * 2000) - 1000;
+          // Return the current star to the pool
+          returnStarToPool(star);
+          
+          // Get a fresh star from the pool
+          const newStar = getStarFromPool();
+          
+          // Initialize the new star's properties
+          newStar.z = maxDepth;
+          newStar.x = (Math.random() * 2000) - 1000;
+          newStar.y = (Math.random() * 2000) - 1000;
           
           // Precompute color for better performance
           const brightness = 200 + Math.random() * 55;
-          star.color = `rgb(${brightness}, ${brightness}, ${brightness})`;
+          newStar.color = `rgb(${brightness}, ${brightness}, ${brightness})`;
+          
+          // Replace in the stars array
+          stars[i] = newStar;
         }
       }
       
