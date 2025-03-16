@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Rounded Box Example</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      /* 15em is roughly 240px if 1em = 16px */
+      --border-radius: 15em;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      /* background: url('https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/1015f/MainBefore.jpg') center/cover no-repeat; */
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      height: 100vh;
+      background-attachment: fixed;
+      /* Keep background fixed while scrolling */
+    }
+
+    #scene-container {
+      width: 80vw;
+      height: 80vh;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      position: relative;
+      background: none;
+      /* Remove any background from the container */
+    }
+
+    /* Inherit container border-radius for the canvas */
+    #scene-container canvas {
+      border-radius: inherit;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="scene-container"></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+    // Global parameters
+    const params = {
+      segments: 24,
+      tintColor: '#ffffff',
+      tintOpacity: 1,
+      transmission: .2,
+      roughness: 0.0,
+      metalness: 0,
+      ior: 1.45,
+      envMapIntensity: 3.0,
+      reflectivity: 1,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0,
+      useNormalMap: true,
+      normalMapScale: 0.75,
+      normalMapUrl: 'https://threejs.org/examples/textures/water/Water_1_M_Normal.jpg',
+      gridSquareSize: 50,
+      gridGranularity: 90,
+      gridColor: '#fff',
+      gridOpacity: 0.8,
+      lightIntensity: 10,
+      lightPosition: new THREE.Vector3(0, -400, -400),
+      cameraFOV: 100,
+      cameraNear: 0.1,
+      cameraFar: 120,
+      cameraZoom: 1.4,  // Lower than 1 brings camera closer
+      padding: {
+        percent: 0.05, // Reduced padding percentage
+        min: 20,
+        max: 100
+      },
+      thickness: .5,
+      attenuationDistance: 1,
+      attenuationColor: '#ffffff',
+      zOffset: -1000, // Add this new parameter to control Z position
+      gridZOffset: 0.7, // Separation between base and grid meshes
+      lightMoveSpeed: 1, // Controls how quickly light follows mouse
+      lightXRange: 100, // Maximum distance light can move left/right
+      lightAnimationDuration: 10, // Duration of one complete movement in seconds
+    };
+
+    // Create a video element and append it to the body
+    const video = document.createElement('video');
+    // video.src = 'assets/Glass-reflection.mp4';
+    video.src = 'https://threejs.org/examples/textures/pano.mp4';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous'; // Add this for CORS
+    video.style.position = 'fixed';
+    video.style.left = '0';
+    video.style.opacity = '0';
+    video.style.pointerEvents = 'none';
+    video.style.width = '1px';
+    video.style.height = '1px';
+    document.body.appendChild(video);
+
+    // Scene variables
+    let scene, camera, renderer;
+    let baseMesh, gridMesh;
+    let baseMaterial, gridMaterial;
+    let normalMap = null, envMap = null;
+    let animationFrameId;
+    let backgroundTexture;
+    const container = document.getElementById('scene-container');
+    let dirLight;
+    let animationStartTime = Date.now();
+
+    /* =======================
+       Utility Functions
+    ========================== */
+
+    // Convert a hex colour to an rgba string
+    const hexToRGBA = (hex, alpha) => {
+      const bigint = parseInt(hex.slice(1), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    // Get CSS border-radius in pixels (assuming 1em = font size)
+    function getBorderRadiusInWorldUnits() {
+      const styles = getComputedStyle(document.documentElement);
+      const value = styles.getPropertyValue('--border-radius').trim();
+      if (value.endsWith("em")) {
+        const numEm = parseFloat(value);
+        const fontSize = parseFloat(styles.fontSize) || 16;
+        return numEm * fontSize;
+      }
+      return parseFloat(value);
+    }
+
+    // Calculate mesh dimensions based on container size and padding
+    function calculateDimensions() {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const rawPadding = Math.min(containerWidth, containerHeight) * params.padding.percent;
+      const padding = Math.min(Math.max(rawPadding, params.padding.min), params.padding.max);
+
+      return {
+        meshWidth: containerWidth - (padding * 2),
+        meshHeight: containerHeight - (padding * 2),
+        depth: Math.min(containerWidth - (padding * 2), containerHeight - (padding * 2)) * 0.5,
+        edgeRadius: getBorderRadiusInWorldUnits(),
+        padding,
+        containerWidth,
+        containerHeight
+      };
+    }
+
+    // Simple debounce helper to limit function calls
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    /* =======================
+       Initialization Functions
+    ========================== */
+    // Initialize renderer and scene
+    function initRendererAndScene() {
+      scene = new THREE.Scene();
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true // Enable alpha
+      });
+      renderer.setClearColor(0x000000, 0);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.75;
+      renderer.useLegacyLights = true;
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+    }
+
+    // Initialize camera with proper aspect ratio
+    function initCamera() {
+      const aspect = container.clientWidth / container.clientHeight;
+      camera = new THREE.PerspectiveCamera(params.cameraFOV, aspect, params.cameraNear, params.cameraFar);
+      updateCameraPosition();
+    }
+
+    // Compute camera distance based on mesh dimensions and update its properties
+    function updateCameraPosition() {
+      const dims = calculateDimensions();
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const aspect = dims.containerWidth / dims.containerHeight;
+
+      // Calculate required distances for height and width
+      const distanceForHeight = (dims.meshHeight * 0.5) / Math.tan(fovRad * 0.5);
+      const horizontalFov = 2 * Math.atan(Math.tan(fovRad * 0.5) * aspect);
+      const distanceForWidth = (dims.meshWidth * 0.5) / Math.tan(horizontalFov * 0.5);
+
+      // Choose the larger distance to fit both dimensions
+      const baseDistance = Math.max(distanceForWidth, distanceForHeight);
+      const finalDistance = baseDistance * 0.8;
+
+      // Position camera considering the z-offset
+      camera.position.z = finalDistance;
+      camera.near = Math.abs(params.zOffset) * 0.2;
+      camera.far = Math.abs(params.zOffset) * 1;
+      camera.lookAt(0, 0, params.zOffset);
+      camera.updateProjectionMatrix();
+
+      // Adjust meshes’ Z positions for proper depth perception
+      const zOffset = -dims.depth * 0.5;
+      if (baseMesh && gridMesh) {
+        baseMesh.position.z = zOffset;
+        gridMesh.position.z = zOffset + 0.2; // Offset to avoid z-fighting
+      }
+    }
+
+    // Create the rounded box geometry based on current dimensions
+    function createGeometry() {
+      const { meshWidth, meshHeight, depth, edgeRadius } = calculateDimensions();
+      const geometry = new RoundedBoxGeometry(meshWidth, meshHeight, depth, params.segments, edgeRadius);
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    // Create physical material for the base mesh
+    function createBaseMaterial() {
+      const material = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(params.tintColor),
+        metalness: params.metalness,
+        roughness: params.roughness,
+        transmission: params.transmission,
+        thickness: params.thickness,
+        attenuationDistance: params.attenuationDistance,
+        attenuationColor: new THREE.Color(params.attenuationColor),
+        ior: params.ior,
+        envMapIntensity: params.envMapIntensity,
+        reflectivity: params.reflectivity,
+        transparent: true,
+        opacity: params.tintOpacity,
+        clearcoat: params.clearcoat,
+        clearcoatRoughness: params.clearcoatRoughness,
+        side: THREE.DoubleSide,
+        normalMap: normalMap,
+        specularIntensity: 1,
+        premultipliedAlpha: true,
+        depthWrite: false,
+      });
+
+      // if (backgroundTexture) {
+      //   material.transmissionMap = backgroundTexture;
+      // }
+
+      return material;
+    }
+
+    // Generate a grid texture using a canvas
+    function createGridTexture() {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+      ctx.strokeStyle = hexToRGBA(params.gridColor, params.gridOpacity);
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= size; i += params.gridGranularity) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      return texture;
+    }
+
+    // Create material for the grid overlay
+    function createGridMaterial() {
+      const { meshWidth, meshHeight } = calculateDimensions();
+      const gridTex = createGridTexture();
+      gridTex.repeat.set(meshWidth / params.gridSquareSize, meshHeight / params.gridSquareSize);
+      return new THREE.MeshPhysicalMaterial({
+        map: gridTex,
+        transparent: true,
+        envMapIntensity: params.envMapIntensity,
+        roughness: 0.3,
+        side: THREE.FrontSide,
+        transmission: 1
+      });
+    }
+
+    // Create and add the meshes to the scene
+    function createMeshes() {
+      const geometry = createGeometry();
+      baseMesh = new THREE.Mesh(geometry, baseMaterial);
+      gridMesh = new THREE.Mesh(geometry, gridMaterial);
+
+      // Position meshes with new z-offset
+      baseMesh.position.z = params.zOffset;
+      gridMesh.position.z = params.zOffset + params.gridZOffset;
+
+      scene.add(baseMesh, gridMesh);
+    }
+
+    // Load normal map texture
+    function loadNormalMap() {
+      new THREE.TextureLoader().load(params.normalMapUrl, (texture) => {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        normalMap = texture;
+        if (baseMaterial) {
+          baseMaterial.normalMap = normalMap;
+          baseMaterial.normalScale.set(params.normalMapScale, params.normalMapScale);
+          baseMaterial.needsUpdate = true;
+        }
+      });
+    }
+
+
+    function loadVideoEnvironmentMap() {
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      const handleError = (err) => {
+        console.error('Video error:', err);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(() => video.load(), 1000 * retryCount);
+        }
+      };
+
+      video.addEventListener('playing', () => {
+        console.log('Video playback started - creating texture');
+        videoTexture = new THREE.VideoTexture(video);
+        videoTexture.mapping = THREE.EquirectangularReflectionMapping;
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+        // Verify texture creation
+        console.log('Video texture created:', videoTexture);
+
+        // Update materials and environment
+        scene.environment = videoTexture;
+        scene.background = videoTexture;
+        baseMaterial.envMap = videoTexture;
+        gridMaterial.envMap = videoTexture;
+
+
+        // Add continuous check
+        setInterval(() => {
+          console.log('Video currentTime:', video.currentTime);
+        }, 1000);
+      });
+
+      // Add error logging
+      video.addEventListener('error', (e) => {
+        console.error('Video error:', e.target.error);
+      });
+
+      // Start playback with click fallback
+      const startPlayback = () => {
+        video.play().catch(err => {
+          console.log('Auto-play blocked, adding click handler');
+          document.body.style.cursor = 'pointer';
+          const clickHandler = () => {
+            video.play();
+            document.body.removeEventListener('click', clickHandler);
+            document.body.style.cursor = '';
+          };
+          document.body.addEventListener('click', clickHandler);
+        });
+      };
+
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+        startPlayback();
+      } else {
+        video.addEventListener('loadedmetadata', startPlayback);
+      }
+    }
+
+
+    // Load background texture and apply to materials
+    function loadBackgroundTexture() {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load('https://letsenhance.io/static/73136da51c245e80edc6ccfe44888a99/1015f/MainBefore.jpg', (texture) => {
+        backgroundTexture = texture;
+        if (baseMaterial) {
+          baseMaterial.transmission = params.transmission;
+          baseMaterial.thickness = params.thickness;
+          baseMaterial.attenuationDistance = params.attenuationDistance;
+          baseMaterial.attenuationColor = new THREE.Color(params.attenuationColor);
+          // IMPORTANT: keep this next line commented out
+          // baseMaterial.transmissionMap = backgroundTexture;
+          baseMaterial.needsUpdate = true;
+        }
+      });
+    }
+
+    // Add a directional light to the scene
+    function addLights() {
+      dirLight = new THREE.DirectionalLight(0xffffff, params.lightIntensity);
+      const ambientLight = new THREE.AmbientLight(0xffffff, .1);
+
+      // Store initial position
+      dirLight.position.copy(params.lightPosition);
+
+      scene.add(dirLight);
+      scene.add(ambientLight);
+    }
+
+    // Add easing function for smooth movement
+    function easeInOut(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    /* =======================
+       Event & Animation Handlers
+    ========================== */
+
+    // Update dimensions and geometry on window resize
+    function updateSceneDimensions() {
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth / container.clientHeight;
+      updateCameraPosition();
+      camera.updateProjectionMatrix();
+
+      const newGeometry = createGeometry();
+      baseMesh.geometry.dispose();
+      baseMesh.geometry = newGeometry.clone();
+      gridMesh.geometry.dispose();
+      gridMesh.geometry = newGeometry.clone();
+
+      // Update grid texture repeat if applicable
+      if (gridMaterial.map) {
+        const { meshWidth, meshHeight } = calculateDimensions();
+        gridMaterial.map.repeat.set(meshWidth / params.gridSquareSize, meshHeight / params.gridSquareSize);
+        gridMaterial.map.needsUpdate = true;
+      }
+    }
+
+    // Render loop
+    // Add at the top with other scene variables
+    let videoTexture = null;
+
+    // Modify animate function
+    function animate() {
+      // Smoothly interpolate light position
+      if (dirLight) {
+        const elapsed = (Date.now() - animationStartTime) / 1000; // Convert to seconds
+        const normalizedTime = (elapsed % params.lightAnimationDuration) / params.lightAnimationDuration;
+
+        // Add frame counter for debugging
+        if (!window.frameCount) window.frameCount = 0;
+        window.frameCount++;
+
+        // Create back-and-forth movement
+        let position = normalizedTime * 2; // Scale to 0-2 range
+        if (position > 1) position = 2 - position; // Reverse direction after 1
+
+
+
+        // Apply easing and scale to range
+        const easedPosition = easeInOut(position);
+        const x = (easedPosition * 2 - 1) * params.lightXRange; // Convert 0-1 to -range to +range
+
+        dirLight.position.x = x;
+      }
+
+      if (videoTexture) {
+        // Verify texture updates
+        if (window.frameCount % 60 === 0) {
+          console.log('Texture updated - needsUpdate:', videoTexture.needsUpdate);
+        }
+        videoTexture.needsUpdate = true;
+      }
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    }
+    function stopAnimation() {
+      cancelAnimationFrame(animationFrameId);
+    }
+
+    // Setup event listeners for resize, visibility change, and WebGL context events
+    function setupEventListeners() {
+      window.addEventListener('resize', debounce(updateSceneDimensions, 300));
+
+      document.addEventListener('visibilitychange', () => {
+        document.visibilityState === 'visible' ? animate() : stopAnimation();
+      });
+
+
+
+      renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        stopAnimation();
+      }, false);
+
+      renderer.domElement.addEventListener('webglcontextrestored', () => {
+        scene.clear();
+        init();
+      }, false);
+    }
+
+    /* =======================
+       Main Initialization
+    ========================== */
+
+    function init() {
+      initRendererAndScene();
+      initCamera();
+      loadBackgroundTexture(); // Add this line
+      baseMaterial = createBaseMaterial();
+      gridMaterial = createGridMaterial();
+      createMeshes();
+      addLights();
+      loadNormalMap();
+      loadVideoEnvironmentMap();
+      updateCameraPosition();
+      animate();
+      setupEventListeners();
+    }
+
+    init();
+
+
+    setTimeout(() => {
+      console.log('Current environment map:', scene.environment);
+      console.log('Base material envMap:', baseMaterial.envMap);
+      console.log('Grid material envMap:', gridMaterial.envMap);
+    }, 3000);
+  </script>
+</body>
+
+</html>
