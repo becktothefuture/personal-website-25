@@ -787,36 +787,6 @@ body::before {
 	}
 }
 
-/* Overlay styling */
-.intro-wrapper {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	z-index: 999998; /* Lower than dust overlay */
-	display: flex;
-	align-items: flex-start;
-	justify-content: flex-start;
-	overflow: hidden;
-	background: linear-gradient(180deg, 
-		#000 0%,
-		#143d1d 50%,
-		#000 100%
-	);
-	box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
-	z-index: 10000;
-	padding: 20px;
-	box-sizing: border-box;
-}
-
-/* Add dust overlay styling */
-#dust-overlay {
-	position: absolute ;
-	z-index: 9999999; /* Higher than intro */
-	inset: 0;
-}
-
 /* Boot text styling */
 .intro-wrapper__text {
 	white-space: pre !important;
