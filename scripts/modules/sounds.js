@@ -27,7 +27,7 @@ const CONFIG = {
   fadeDuration: 1.2,         
   idleTimeout: 2000,       
   ambient: {
-    url: "../assets/ambient-sound.mp3",
+    url: "/assets/ambient-sound.mp3", // Fixed path - removed extra dot
     targetVolume: 0.8
   },
   noise: {
@@ -91,9 +91,11 @@ async function setupAmbient() {
   if (!audioContext) return null;
   
   try {
+    console.log("Fetching ambient sound from:", CONFIG.ambient.url);
     const response = await fetch(CONFIG.ambient.url);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
+    console.log("Audio file fetched successfully, decoding...");
     const arrayBuffer = await response.arrayBuffer();
     const buffer = await audioContext.decodeAudioData(arrayBuffer);
     
@@ -108,10 +110,22 @@ async function setupAmbient() {
     // Start silent
     gainNode.gain.value = 0;
     source.start(0);
+    console.log("Ambient audio source created and started");
     
     return { source, gainNode };
   } catch (error) {
     console.error("Ambient setup failed:", error);
+    // Display error to help debugging
+    const errorMsg = document.createElement('div');
+    errorMsg.style.position = 'fixed';
+    errorMsg.style.bottom = '10px';
+    errorMsg.style.left = '10px';
+    errorMsg.style.background = 'rgba(255,0,0,0.7)';
+    errorMsg.style.color = 'white';
+    errorMsg.style.padding = '10px';
+    errorMsg.style.zIndex = '9999';
+    errorMsg.textContent = `Audio error: ${error.message}`;
+    document.body.appendChild(errorMsg);
     return null;
   }
 }
@@ -159,18 +173,34 @@ function setupNoise() {
 // Whenever user interacts with the page, fade volumes up.
 // After idleTimeout, volumes fade down. 
 function handleActivity() {
-  if (!isSoundEnabled || !audioContext || !ambientSource || !noiseSource) return;
+  if (!isSoundEnabled || !audioContext) {
+    console.log("handleActivity: Sound not enabled or context missing");
+    return;
+  }
+  
+  if (!ambientSource || !noiseSource) {
+    console.log("handleActivity: Sources not ready yet");
+    return;
+  }
+
+  console.log("handleActivity called, current state:", isUserActive);
 
   if (!isUserActive) {
+    console.log("User became active, fading in sounds");
     isUserActive = true;
     createFadeNode(ambientSource.gainNode, CONFIG.ambient.targetVolume);
     createFadeNode(noiseSource.gainNode, CONFIG.noise.targetVolume);
+    
+    // Debug info
+    console.log("Ambient target volume:", CONFIG.ambient.targetVolume);
+    console.log("Noise target volume:", CONFIG.noise.targetVolume);
   }
   
   clearTimeout(idleTimeout);
   idleTimeout = setTimeout(() => {
     isUserActive = false;
     if (ambientSource && noiseSource) {
+      console.log("User inactive, fading out sounds");
       createFadeNode(ambientSource.gainNode, 0);
       createFadeNode(noiseSource.gainNode, 0);
     }
@@ -259,19 +289,25 @@ function updateToggleUI(isOn) {
 // Enable Sound System if user chooses "Sound ON"
 async function enableSoundSystem() {
   try {
+    console.log("Starting enableSoundSystem()");
     const context = await createAudioContext();
     if (!context) throw new Error("Could not create audio context");
+    console.log("Audio context created and ready");
 
     // Clean up existing resources first to avoid duplication
     cleanupAudioResources();
+    console.log("Cleaned up existing audio resources");
 
     // Create ambient and noise sources
+    console.log("Setting up ambient source...");
     ambientSource = await setupAmbient();
+    console.log("Setting up noise source...");
     noiseSource = setupNoise();
     
     if (!ambientSource || !noiseSource) {
       throw new Error("Source creation failed");
     }
+    console.log("Both audio sources created successfully");
 
     // Continuously update noise based on mouse positions (throttled)
     animationFrameId = requestAnimationFrame(updateNoiseParameters);
@@ -283,6 +319,11 @@ async function enableSoundSystem() {
       document.addEventListener(evt, boundHandler);
       activityEventListeners.push({ event: evt, handler: boundHandler });
     });
+
+    // Force initial activity to trigger sound
+    console.log("Forcing initial activity");
+    isUserActive = false; // Reset to ensure the handleActivity logic runs
+    handleActivity();
 
     console.log("Sound system successfully enabled.");
     return true;
@@ -296,20 +337,35 @@ async function enableSoundSystem() {
 async function handleSoundChoice(enableSound) {
   if (enableSound) {
     try {
+      console.log("User clicked Sound ON");
+      
       if (!audioContext) {
+        console.log("Creating new audio context");
         audioContext = await createAudioContext();
         if (!audioContext) throw new Error("Failed to create audio context");
       }
       
+      console.log("Audio context state before resume:", audioContext.state);
       if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+        console.log("Attempting to resume audio context...");
+        // Force user interaction to be registered
+        await audioContext.resume().catch(err => {
+          console.error("Resume error:", err);
+          throw err;
+        });
+        console.log("Audio context resumed successfully, new state:", audioContext.state);
       }
       
       isSoundEnabled = true;
       updateToggleUI(true);
 
+      console.log("Enabling sound system...");
       const success = await enableSoundSystem();
-      if (success) handleActivity();
+      console.log("Sound system enable result:", success);
+      if (success) {
+        console.log("Handling initial activity");
+        handleActivity();
+      }
     } catch (error) {
       console.error("Failed to enable sound:", error);
       isSoundEnabled = false;
@@ -389,6 +445,8 @@ function toggleSound() {
 
 // Public interface: initSoundSystem()
 export async function initSoundSystem() {
+  console.log("Starting sound system initialization");
+  
   // Initialize UI elements
   initUiElements();
   
@@ -398,8 +456,12 @@ export async function initSoundSystem() {
 
   if (btnOn) {
     btnOn.addEventListener('click', async () => {
+      console.log("Sound ON button clicked");
       try {
+        // Use a user gesture to create and resume the audio context
+        audioContext = await createAudioContext();
         if (audioContext && audioContext.state === 'suspended') {
+          console.log("Resuming audio context on click");
           await audioContext.resume();
         }
         handleSoundChoice(true);
@@ -407,6 +469,8 @@ export async function initSoundSystem() {
         console.error("Error enabling sound:", err);
       }
     });
+  } else {
+    console.warn("Sound ON button not found");
   }
 
   if (btnOff) {
