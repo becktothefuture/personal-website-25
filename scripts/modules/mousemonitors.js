@@ -28,12 +28,6 @@ const SCROLL_CONFIG = {
 	RPM_TO_SPEED: 0.026, // Conversion factor from RPM to speed
 };
 
-const ROTATION_CONFIG = {
-	maxSpeed: 100, // Maximum speed for normalization
-	dampingFactor: 0.98, // How quickly rotation slows down
-	baseSpeed: 0.5, // Constant rotation speed
-	rpmMultiplier: 2, // How much RPM affects rotation
-};
 
 /****************************
  * // **DYNAMIC VARIABLES** *

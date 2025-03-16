@@ -67,12 +67,16 @@ export function initStarfieldThruster() {
   // Set up state
   elements.canvas = document.getElementById('starfield');
   elements.ctx = elements.canvas.getContext('2d', { alpha: false });
-  elements.wrapper = document.getElementById('starfield-wrapper');
-  elements.thruster = document.getElementById('starfield-thruster');
+  elements.wrapper = document.getElementById('wrapper');
+  elements.thruster = document.getElementById('thruster');
   
+  // Initialize state values
   state.lastScrollY = window.scrollY;
   state.lastTime = performance.now();
   state.lastFrameTime = performance.now();
+  
+  // If the user is not already in the middle of the scroll area, position them there
+  positionUserInMiddle();
   
   // Initialize star system
   initStarSystem();
@@ -91,22 +95,97 @@ export function initStarfieldThruster() {
 }
 
 /**
- * Create and inject required HTML elements
+ * Create and inject required HTML elements and styles
  */
 function injectElements() {
-  const container = document.createElement('div');
-  container.className = 'starfield-container';
-  container.innerHTML = `
-    <canvas id="starfield"></canvas>
-    <div id="starfield-wrapper">
-      <div class="center">
-        <h1>Spaceship Thrusters</h1>
-        <p>Scroll to accelerate through space.</p>
-      </div>
-    </div>
-    <div id="starfield-thruster"></div>
+  // First, add required styles
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    /* Fullscreen starfield canvas in the background */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      z-index: -1;
+      pointer-events: none;
+    }
+    /* Wrapper that holds all website content and will rumble */
+    #wrapper {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+    /* Thruster indicator in bottom left */
+    #thruster {
+      position: fixed;
+      bottom: 3vh;
+      left: 3vh;
+      width: 6vh;
+      height: 2vh;
+      background-color: rgba(3, 255, 255, 0.5);
+      border-radius: 0.5vh;
+      box-shadow: 0 0 0 0 transparent;
+      z-index: 100;
+      transform-origin: center left;
+      will-change: transform, box-shadow, background-color;
+    }
   `;
-  document.body.appendChild(container);
+  document.head.appendChild(styleElement);
+
+  // Check if elements already exist before creating them
+  if (!document.getElementById('starfield')) {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'starfield';
+    document.body.appendChild(canvas);
+  }
+
+  // Only create wrapper if it doesn't exist
+  if (!document.getElementById('wrapper')) {
+    const wrapper = document.createElement('div');
+    wrapper.id = 'wrapper';
+    
+    // Move all existing body children into wrapper (except the canvas)
+    const bodyChildren = Array.from(document.body.children);
+    bodyChildren.forEach(child => {
+      if (child.id !== 'starfield' && child.tagName !== 'SCRIPT') {
+        wrapper.appendChild(child);
+      }
+    });
+    
+    document.body.appendChild(wrapper);
+  }
+
+  // Add thruster element if it doesn't exist
+  if (!document.getElementById('thruster')) {
+    const thruster = document.createElement('div');
+    thruster.id = 'thruster';
+    document.body.appendChild(thruster);
+  }
+}
+
+/**
+ * Position the user in the middle of the scroll area
+ */
+function positionUserInMiddle() {
+  const scrollHeight = Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight
+  );
+  
+  // Only do this if the page has significant scrollable area
+  if (scrollHeight > window.innerHeight * 2) {
+    const middlePosition = Math.floor(scrollHeight / 2);
+    window.scrollTo({
+      top: middlePosition,
+      behavior: 'auto'
+    });
+    state.lastScrollY = middlePosition;
+  }
 }
 
 /**
@@ -234,6 +313,29 @@ function processScroll() {
   
   // Safety check for time delta
   if (deltaTime < 10) deltaTime = 10;
+  
+  // Check for scroll reset (reaching the top of the page)
+  const scrollHeight = Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight
+  );
+  const viewportHeight = window.innerHeight;
+  const buffer = 10;
+  
+  // Reset when reaching the top of the page
+  if (window.scrollY <= buffer) {
+    window.scrollTo({
+      top: scrollHeight - viewportHeight,
+      behavior: 'auto'
+    });
+    state.lastScrollY = scrollHeight - viewportHeight;
+    state.lastTime = currentTime;
+    state.shakeIntensity = 0;
+    state.scrollVelocity = 0;
+    state.scrollAcceleration = 0;
+    state.prevScrollVelocity = 0;
+    return;
+  }
   
   // Physics-based momentum calculations
   const deltaY = currentScrollY - state.lastScrollY;

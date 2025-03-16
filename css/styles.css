@@ -1423,7 +1423,7 @@ video {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 5000; /* Adjust as needed to fit your z-index hierarchy */
+  z-index: 0;
   overflow: hidden;
 }
 
