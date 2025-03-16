@@ -27,7 +27,7 @@ const CONFIG = {
   fadeDuration: 1.2,         
   idleTimeout: 2000,       
   ambient: {
-    url: "/assets/ambient-sound.mp3", // Fixed path - removed extra dot
+    url: "./../assets/ambient-sound.mp3",
     targetVolume: 0.8
   },
   noise: {
