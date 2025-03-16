@@ -1057,14 +1057,7 @@ video {
 }
 
 
-.crt-container {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9000;
-    overflow: hidden;
 
-}
 
 .flicker {
     position: fixed;
@@ -1088,7 +1081,7 @@ video {
 }
 
 .glow {
-    position: fixed;
+    position: absolute;
     inset: -4px;
     background: transparent;
     box-shadow: 
@@ -1111,11 +1104,9 @@ video {
     inset: 0;
     pointer-events: none;
 	contain: strict; /* Limits reflows to this element */
-
 }
 
-
-.scanline-layer::after{
+.scanline-layer-2 {
 	content: "";
     position: absolute;
     top: -100%; /* Corrected unit */
@@ -1134,7 +1125,7 @@ video {
 
 }
 
-.scanline-layer::before {
+.scanline-layer-3 {
     content: "";
     position: absolute;
     top: -100%; /* Corrected unit */
