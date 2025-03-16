@@ -1103,7 +1103,6 @@ video {
     position: absolute;
     inset: 0;
     pointer-events: none;
-	contain: strict; /* Limits reflows to this element */
 }
 
 .scanline-layer-2 {
@@ -1123,23 +1122,6 @@ video {
 	opacity: 0.24;
 	animation: scanlinesMove 4s linear infinite;
 
-}
-
-.scanline-layer-3 {
-    content: "";
-    position: absolute;
-    top: -100%; /* Corrected unit */
-    left: 0;
-    width: 100%;
-    height: 200%;
-    background: repeating-linear-gradient(
-        to bottom,
-		transparent 0%,
-		transparent 20%,
-        var(--color-1) 50% );
-	opacity: 0.1;
-    will-change: transform;
-    animation: scanlinesMove 6.5s linear infinite;
 }
 
 @keyframes scanlinesMove {
