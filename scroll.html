@@ -8,38 +8,31 @@
       margin: 0;
       height: 10000vh; /* Very tall page for scrolling */
       overflow-x: hidden;
-      /* Apply base scrollbar style to body element for better Safari support */
-      scrollbar-width: thin;
-      scrollbar-color: #00ff00 black;
     }
     
-    /* Cross-browser scrollbar styling */
-    /* Webkit browsers (Chrome, Safari, Edge) */
-    ::-webkit-scrollbar {
-      width: 12px;
-      background-color: black;
-      -webkit-appearance: none; /* Safari compatibility */
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background-color: #00ff00; /* Green thumb/dragger */
-      border-radius: 6px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background-color: #00cc00; /* Slightly darker green on hover */
-    }
-    
-    /* Specific Safari scrollbar parts */
-    ::-webkit-scrollbar-track {
-      background-color: black;
-    }
-    
-    /* Firefox */
     html {
-      scrollbar-color: #00ff00 black; /* thumb and track color */
-      scrollbar-width: thin;
-    }
+  scrollbar-width: default;
+  scrollbar-color: #00ff00 black; /* Firefox thumb and track colors */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 12px;
+  background-color: black;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #00ff00;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #00cc00;
+}
+
+::-webkit-scrollbar-track {
+  background-color: black;
+}
     
     /* Fullscreen starfield canvas in the background */
     #starfield {
@@ -360,11 +353,11 @@
         return;
       }
 
-      // Physics-based dampening calculations
+      // Physics-based momentum calculations
       const deltaY = currentScrollY - lastScrollY;
       
-      // Calculate instantaneous velocity
-      const instantVelocity = deltaY / deltaTime * 1000;
+      // Calculate instantaneous velocity (absolute value to ignore direction)
+      const instantVelocity = Math.abs(deltaY / deltaTime * 1000);
       
       // Calculate acceleration (rate of velocity change)
       prevScrollVelocity = scrollVelocity;
@@ -375,26 +368,19 @@
       // Calculate acceleration from velocity change
       scrollAcceleration = (scrollVelocity - prevScrollVelocity) / deltaTime * 1000;
       
-      // Check for upward scrolling (negative deltaY)
-      if (deltaY < 0) {
-        // Convert negative velocity to positive intensity
-        const absVelocity = Math.abs(scrollVelocity);
-        const velocityFactor = Math.min(maxIntensity, absVelocity * intensityMultiplier);
-        
-        // Add acceleration component for more responsive feel
-        const accelBoost = Math.min(5, Math.abs(scrollAcceleration) * 0.01);
-        const newIntensity = velocityFactor + accelBoost;
-        
-        // Update shake intensity with smoother transitions
-        shakeIntensity = Math.max(shakeIntensity, newIntensity);
-        
-        // Add flicker based on both velocity and acceleration for more dynamic effect
-        flickerIntensity = Math.min(1, absVelocity / 300 + Math.abs(scrollAcceleration) / 1000);
-      } else {
-        // For downward scrolling, apply aggressive dampening
-        shakeIntensity *= 0.4;
-        flickerIntensity *= 0.2;
-      }
+      // Handle scrolling momentum - build speed regardless of direction
+      const velocityFactor = Math.min(maxIntensity, scrollVelocity * intensityMultiplier);
+      
+      // Add acceleration component for more responsive feel
+      const accelBoost = Math.min(5, Math.abs(scrollAcceleration) * 0.01);
+      const newIntensity = velocityFactor + accelBoost;
+      
+      // Update shake intensity with smoother transitions
+      // Only increase intensity or maintain it, don't decrease based on direction
+      shakeIntensity = Math.max(shakeIntensity, newIntensity);
+      
+      // Add flicker based on both velocity and acceleration for more dynamic effect
+      flickerIntensity = Math.min(1, scrollVelocity / 300 + Math.abs(scrollAcceleration) / 1000);
 
       lastScrollY = currentScrollY;
       lastTime = currentTime;
