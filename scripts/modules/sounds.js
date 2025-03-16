@@ -27,7 +27,7 @@ const CONFIG = {
   fadeDuration: 1.2,         
   idleTimeout: 2000,       
   ambient: {
-    url: "https://github.com/becktothefuture/personal-website-25/assets/ambient-sound.mp3",
+    url: "https://becktothefuture.github.io/personal-website-25/assets/ambient-sound.mp3",
     targetVolume: 0.8
   },
   noise: {
