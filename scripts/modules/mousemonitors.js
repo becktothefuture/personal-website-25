@@ -74,7 +74,6 @@ let turnstyleElements;
 // **DPI Calculation**
 let dpi_x = window.devicePixelRatio ? 96 * window.devicePixelRatio : 96;
 dpi_x *= 5 / 6.5; // Adjusted based on your measurement
-const rulerLength = (5 / 2.54) * dpi_x; // 5 cm in px
 
 // **DOM Elements for Speed**
 let speedValueM,
@@ -90,8 +89,7 @@ let speedValueM,
 	distanceValueMiles,
 	cursorValue,
 	miniMap,
-	cursorDot,
-	ruler;
+	cursorDot;
 
 // Initialize DOM elements
 function initializeElements() {
@@ -110,7 +108,6 @@ function initializeElements() {
 		"cursor-value": (el) => (cursorValue = el),
 		"mini-map": (el) => (miniMap = el),
 		"cursor-dot": (el) => (cursorDot = el),
-		ruler: (el) => (ruler = el),
 	};
 
 	let missingElements = [];
@@ -130,19 +127,6 @@ function initializeElements() {
 	}
 
 	return true;
-}
-
-// **Ruler Setup**
-function setupRuler() {
-	if (!ruler) return;
-	ruler.style.width = `${rulerLength}px`;
-	for (let i = 0; i <= 50; i++) {
-		const tick = document.createElement("div");
-		tick.classList.add("tick");
-		tick.style.left = `${(i / 50) * 100}%`;
-		tick.classList.add(i % 10 === 0 ? "long" : "short");
-		ruler.appendChild(tick);
-	}
 }
 
 // Smooth cursor dot position
@@ -177,7 +161,7 @@ function updateMouseSpeed() {
 	}
 
 	// Convert pixel/s to m/s
-	const speedMps = displayedSpeed / ((rulerLength / 5) * 100);
+	const speedMps = displayedSpeed / ((dpi_x / 5) * 100);
 	const speedKmh = speedMps * MPS_TO_KMH;
 	const speedMilesH = speedMps * MPS_TO_MILES_H;
 
@@ -437,7 +421,6 @@ export function initMouseMonitors() {
 		return;
 	}
 
-	setupRuler();
 	setupRotation();
 	setupEventHandlers();
 
