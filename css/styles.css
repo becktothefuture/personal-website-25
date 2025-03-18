@@ -109,7 +109,6 @@
 
 }
 
-/* No text selection */
 * {
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -122,10 +121,8 @@
 }
 
 body {
-	font-feature-settings: "liga", "kern", "onum", "pnum", "smcp";
 	font-variant-ligatures: common-ligatures;
 	text-rendering: geometricPrecision;
-	font-variant-ligatures: discretionary-ligatures, historical-ligatures;
 	word-spacing: 0.04em;
 	background-clip: text;
 	margin: 0;
@@ -136,21 +133,13 @@ body {
 	background-color: var(--browser-color);
 	align-items: center;
 	justify-content: center;
-	overscroll-behavior: none; /* Prevent bounce/rubber-banding */
-
-}
-
-/* Updated Background glow effect with jitter */
-body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at center, var(--ambient-glow) 0%, transparent 70%);
-    z-index: 0;
+	overscroll-behavior: none; /* Prevent overscroll */
 }
 
 
-/* Marquee */
+/******************
+ * MARQUEE EFFECT *
+ ******************/
 
 .marquee-content {
 	display: flex;
@@ -158,6 +147,7 @@ body::before {
 	flex-direction: row;
 	white-space: nowrap;
 	animation: marquee-animation-horizontal 25s steps(100) infinite;
+	will-change: transform;
 }
 
 .marquee-content .vertical {
@@ -190,8 +180,6 @@ body::before {
 }
 
 
-
-
 /*********************
  * PATTERN MOVEMENTS *
  *********************/
@@ -203,7 +191,6 @@ body::before {
 .vertical-movement {
 	animation: scroll-vertical 15s steps(50) infinite;
 }
-
 
 .pattern{
 	animation: scroll-horizontal 5s steps(20) infinite;
@@ -229,11 +216,31 @@ body::before {
 }
 
 
+/******************
+ * WIDGET EFFECTS *
+ ******************/
 
 
+ .widget--startup {
+	will-change: transform, opacity, filter;
+	transform-style: preserve-3d;
+	backface-visibility: hidden;
+}
 
-/* Widget Effects – */
-/* Intro and Flicker Animation */
+@keyframes widgetStartup {
+	0% {
+		background-color: var(--robot-inactive);
+		transform: scale(0.98) translateZ(-100px);
+	}
+	50% {
+		background-color: var(--robot-idle);
+		transform: scale(1.02) translateZ(20px);
+	}
+	100% {
+		background-color: var(--robot-active);
+		transform: scale(1) translateZ(0);
+	}
+}
 
 @keyframes widgetIntro {
 	0% {
@@ -246,8 +253,7 @@ body::before {
 	}
 }
 
-/* Arrows Movement */
-
+/* Arrows Widget Movement */
 .arrow--svg {
 	animation: flash-arrows var(--animation-duration) linear infinite;
 }
@@ -305,7 +311,11 @@ body::before {
 	animation-delay: calc(var(--animation-delay-step) * 4);
 }
 
-/*Text Processor*/
+
+
+/*******************
+ * TEXT PROCESSORS *
+ *******************/
 
 .processor-animation {
 	white-space: pre;
@@ -316,44 +326,9 @@ body::before {
 }
 
 
-
-.circle {
-	width: 3vw;
-	height: 3vw;
-	max-width: 50px;
-	max-height: 50px;
-	border: 2px solid var(--color-1);
-	background-color: transparent;
-	border-radius: 50%;
-	position: absolute;
-}
-
-/*light strip*/
-
-.light-strip-svg {
-	position: absolute; /* Prevent layout shifts */
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-	display: none;
-}
-
-.light-circle {
-	opacity: 0.2;
-	transition: opacity 0.3s ease, fill 0.3s ease;
-}
-
-.light-circle.active {
-	opacity: 0.8;
-}
-
-.light-circle.surge {
-	opacity: 1;
-}
-
-/* Light Grid */
+/**************
+ * LIGHT GRID *
+ **************/
 
 .light-grid {
 	position: absolute;
@@ -377,8 +352,6 @@ body::before {
 	will-change: opacity;
 }
 
-
-/* Randomized flicker keyframes */
 @keyframes flicker {
 	0% {
 		opacity: 0.3;
@@ -394,229 +367,10 @@ body::before {
 	}
 }
 
-/* Add '@keyframes floating-body-movement' */
-@keyframes floating-body-movement {
-	0% {
-		transform: translateY(0.1em);
-	}
-	50% {
-		transform: translateY(-0.15em);
-	}
-	100% {
-		transform: translateY(0.1em);
-	}
-}
 
-
-
-/* Add '.glass-frosted::after' pseudo-element */
-.glass-frosted::after {
-	/* Frosted glass settings */
-	--blur-size: 100px;
-	--blur-intensity: 4px;
-	--inner-border: 40px;
-	--container-radius: 100px;
-
-	content: "";
-	position: absolute;
-	inset: 0;
-	backdrop-filter: blur(var(--blur-intensity));
-	mask-image: linear-gradient(
-			to right,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to bottom,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to left,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to top,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		);
-	-webkit-mask-image: linear-gradient(
-			to right,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to bottom,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to left,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to top,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		);
-	mask-composite: add;
-	-webkit-mask-composite: source-over;
-	border-radius: var(--container-radius);
-	pointer-events: none;
-}
-
-/* Add '.glass-frosted::after' pseudo-element */
-.glass-frosted.bottom::after {
-	/* Frosted glass settings */
-	--blur-size: 10px;
-	--blur-intensity: 3px;
-	--inner-border: 10px;
-	--container-radius: 100px;
-	content: "";
-	position: absolute;
-	inset: 0;
-	backdrop-filter: blur(var(--blur-intensity));
-	mask-image: linear-gradient(
-			to right,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to bottom,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to left,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to top,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		);
-	-webkit-mask-image: linear-gradient(
-			to right,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to bottom,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to left,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		),
-		linear-gradient(
-			to top,
-			black var(--inner-border),
-			transparent calc(var(--inner-border) + var(--blur-size))
-		);
-	mask-composite: add;
-	-webkit-mask-composite: source-over;
-	border-radius: var(--container-radius);
-	pointer-events: none;
-}
-
-/* Add '.quote-group', '.quote-container', and '.quote' classes */
-.quote-group {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.quote-container {
-	position: relative;
-	width: 100%;
-	height: 100%;
-	transform-style: preserve-3d;
-	animation: tombolaRotate 48s infinite cubic-bezier(0.25, 1.5, 0.5, 1);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.quote {
-	position: absolute;
-	backface-visibility: hidden;
-}
-
-/* Position each quote */
-.quote:nth-child(1) {
-	transform: rotateX(0deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(2) {
-	transform: rotateX(45deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(3) {
-	transform: rotateX(90deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(4) {
-	transform: rotateX(135deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(5) {
-	transform: rotateX(180deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(6) {
-	transform: rotateX(225deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(7) {
-	transform: rotateX(270deg) translateZ(var(--carousel-depth));
-}
-.quote:nth-child(8) {
-	transform: rotateX(315deg) translateZ(var(--carousel-depth));
-}
-
-/* Add '@keyframes tombolaRotate' */
-@keyframes tombolaRotate {
-	0%,
-	15% {
-		transform: rotateX(0deg);
-	}
-	20%,
-	35% {
-		transform: rotateX(-45deg);
-	}
-	40%,
-	55% {
-		transform: rotateX(-90deg);
-	}
-	60%,
-	75% {
-		transform: rotateX(-135deg);
-	}
-	80%,
-	95% {
-		transform: rotateX(-180deg);
-	}
-	100%,
-	115% {
-		transform: rotateX(-225deg);
-	}
-	120%,
-	135% {
-		transform: rotateX(-270deg);
-	}
-	140%,
-	155% {
-		transform: rotateX(-315deg);
-	}
-	160%,
-	175% {
-		transform: rotateX(-360deg);
-	}
-}
-
-/* Robot Character */
-
+/*********
+ * ROBOT *
+ *********/
 
 #robot-face {
 	width: 50%;
@@ -629,10 +383,9 @@ body::before {
 }
 
 
-
 #robot-button-1, #robot-button-2 {
 	will-change: fill, stroke;
-	animation: buttonPulse var(--button-pulse-duration, 4s) steps(1) infinite;
+	animation: robot-buttonPulse var(--button-pulse-duration, 4s) steps(1) infinite;
 	stroke: var(--color-2);
 }
 
@@ -646,7 +399,7 @@ body::before {
 	animation-delay: calc(var(--button-pulse-duration, 4s) / 2);
 }
 
-@keyframes buttonPulse {
+@keyframes robot-buttonPulse {
 	0%, 100% {
 		fill: var(--color-1);
 		stroke: var(--color-1);
@@ -656,7 +409,6 @@ body::before {
 		stroke: var(--color-2);
 	}
 }
-
 
 .robot-dot {
 	width: 100%;
@@ -672,9 +424,6 @@ body::before {
 	background-color: var(--robot-active);
 }
 
-
-
-
 .hidden {
 	opacity: 0;
 	transition: opacity 0.3s ease;
@@ -684,11 +433,15 @@ body::before {
 	opacity: 1;
 }
 
-/* Mini map dot */
+
+/************
+ * MINI MAP *
+ ************/
 
 .cursor-dot {
 	animation: cursor-dot-blink 1.5s infinite;
 }
+
 @keyframes cursor-dot-blink {
 	0%,
 	50%,
@@ -701,36 +454,17 @@ body::before {
 	}
 }
 
-/* Ruler Styling */
-.ruler {
-	width: 100%;
-	height: 20px;
-	position: relative;
-	background: transparent;
-}
+/***************************
+ * ROTATING CUBE ANIMATION *
+ ***************************/
 
-.ruler .tick {
-	position: absolute;
-	height: 100%;
-	width: 1px;
-	background: #9ce0a9; /* Primary information */
-}
-
-.ruler .tick.long {
-	height: 100%;
-}
-
-.ruler .tick.short {
-	height: 50%;
-}
-
-/* 34. Rotating Wireframe Cube */
 .wireframe-cube {
 	position: relative;
 	width: 100%;
 	height: 100%;
 	perspective: 400px;
 }
+
 .cube {
 	position: absolute;
 	width: 40px;
@@ -740,6 +474,7 @@ body::before {
 	transform-style: preserve-3d;
 	animation: rotate-cube 5s infinite linear;
 }
+
 .cube-face {
 	position: absolute;
 	width: 40px;
@@ -773,7 +508,10 @@ body::before {
 	}
 }
 
-/* Boot text styling */
+/**************
+ * INTRO TEXT *
+ **************/
+
 .intro-wrapper__text {
 	white-space: pre !important;
 	color: var(--intro-text);
@@ -822,27 +560,6 @@ body::before {
 
 
 
-/* Widget startup animations */
-.widget--startup {
-	will-change: transform, opacity, filter;
-	transform-style: preserve-3d;
-	backface-visibility: hidden;
-}
-
-@keyframes widgetStartup {
-	0% {
-		background-color: var(--robot-inactive);
-		transform: scale(0.98) translateZ(-100px);
-	}
-	50% {
-		background-color: var(--robot-idle);
-		transform: scale(1.02) translateZ(20px);
-	}
-	100% {
-		background-color: var(--robot-active);
-		transform: scale(1) translateZ(0);
-	}
-}
 
 @keyframes fluorescentFlicker {
 	0% {

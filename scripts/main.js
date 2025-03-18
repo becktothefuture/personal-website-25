@@ -49,8 +49,7 @@ const initializeSecondaryModules = async () => {
             import('./modules/widgetEffects.js'),
             import('./modules/mousemonitors.js'),
             import('./modules/processorAnimations.js'),
-            import('./modules/starfieldThruster.js'),
-            import('./modules/diffusionText.js') // Add the new diffusion text module
+            import('./modules/starfieldThruster.js')
         ]);
         
         // Destructure modules by array position
@@ -65,8 +64,7 @@ const initializeSecondaryModules = async () => {
                 initProcessorAnimation3, 
                 initProcessorAnimation4 
             },
-            { initStarfieldThruster },
-            { initDiffusionText }  // Extract the diffusion text initializer
+            { initStarfieldThruster }
         ] = modules;
 
         // Initialize all secondary modules
@@ -79,7 +77,6 @@ const initializeSecondaryModules = async () => {
         initProcessorAnimation3();
         initProcessorAnimation4();
         initStarfieldThruster();
-        initDiffusionText();  // Initialize diffusion text animations
         
         console.log('Secondary modules initialized');
     } catch (error) {
