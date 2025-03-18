@@ -863,7 +863,6 @@ body {
   background-color: rgba(3, 255, 255, 0.5);
   border-radius: 0.5vh;
   box-shadow: 0 0 0 0 transparent;
-  z-index: 5001;
   transform-origin: center left;
   will-change: transform, box-shadow, background-color; /* Optimization for animations */
   pointer-events: none;
@@ -940,4 +939,27 @@ background-color: black;
 /* Apply animation duration */
 .rectangle {
     animation: pullIn var(--anim-duration) linear infinite;
+}
+
+#resize-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: rgba(0, 0, 0, 0.7) !important; /* Add a visible background */
+  pointer-events: none !important;
+  z-index: 9999999 !important;
+  opacity: 0 !important;
+  transition: opacity 0.1s ease-in-out !important;
+  display: none !important; /* Start with display none */
+}
+
+#resize-overlay.resize-overlay--visible {
+  opacity: 1 !important;
+  display: block !important;
+}
+
+#resize-overlay.resize-overlay--hidden {
+  opacity: 0 !important;
 }

@@ -7,9 +7,10 @@
 import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
-
+import { initResizeOverlay } from './modules/resizeOverlay.js'; 
 
 initBrowserTheme();
+initResizeOverlay(); // <-- initialize resize overlay module
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
