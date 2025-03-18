@@ -3,104 +3,75 @@
  * -------------------------------
  */
 
-// ===== DIRECT IMPORTS =====
+// ===== IMMEDIATE INITIALISATION SEQUENCE =====
 import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
-import { initLightGrids } from './modules/lightGrid.js';
-import { initDateDisplay } from './modules/dateDisplay.js';
-import { initMarqueeContent } from './modules/marqueeContent.js';
-import { initLondonClock } from './modules/londonClock.js';
 
-// Initialize browser theme immediately (before DOM is ready)
+
 initBrowserTheme();
 
-/**
- * Core Module Initialization
- * Essential features that require sequential loading
- */
-const initializeCoreModules = async () => {
+// ===== MAIN INITIALISATION SEQUENCE =====
+document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Wait for sound system initialization and user choice
+        // Step 1: Initialize sound system and wait for user choice
         await initSoundSystem();
         await new Promise(resolve => {
             window.addEventListener(EVENTS.SOUND_CHOICE_MADE, resolve, { once: true });
         });
+        console.log('Sound system initialized');
 
-        // Start intro sequence once sound is ready
-        initIntroSequence();
-        
-        console.log('Core systems initialized');
+        // Step 2: Start intro sequence
+        const introSequencePromise = initIntroSequence();
+        console.log('Intro sequence started');
+
+        // Step 3: While intro is running, load all other modules in parallel
+        setTimeout(async () => {
+            try {
+                const { initLightGrids } = await import('./modules/lightGrid.js');
+                const { initDateDisplay } = await import('./modules/dateDisplay.js');
+                const { initMarqueeContent } = await import('./modules/marqueeContent.js');
+                const { initLondonClock } = await import('./modules/londonClock.js');
+                const { initFlicker } = await import('./modules/flicker.js');
+                const { initRobot } = await import('./modules/robotAnimation.js');
+                const { initWidgetEffects } = await import('./modules/widgetEffects.js');
+                const { initMouseMonitors } = await import('./modules/mousemonitors.js');
+                const { initStarfieldThruster } = await import('./modules/starfieldThruster.js');
+                const { 
+                    initProcessorAnimation1, 
+                    initProcessorAnimation2,
+                    initProcessorAnimation3,
+                    initProcessorAnimation4 
+                } = await import('./modules/processorAnimations.js');
+
+                initLightGrids();
+                initDateDisplay();
+                initMarqueeContent();
+                initLondonClock();
+                initFlicker();
+                initRobot();
+                initWidgetEffects();
+                initMouseMonitors();
+                initProcessorAnimation1();
+                initProcessorAnimation2();
+                initProcessorAnimation3();
+                initProcessorAnimation4();
+                initStarfieldThruster();
+
+                console.log('All modules initialized');
+
+            } catch (error) {
+                console.error('Error loading modules:', error);
+            }
+        }, 50); // Small delay to ensure intro sequence starts first
+
+        // Wait for intro to complete
+        await introSequencePromise;
+        console.log('Intro sequence completed');
+
     } catch (error) {
-        console.error('Error initializing core modules:', error);
+        console.error('Error in main initialization sequence:', error);
     }
-};
-
-/**
- * Secondary Module Initialization
- * Non-critical features loaded in parallel after core systems
- */
-const initializeSecondaryModules = async () => {
-    try {
-        // Import all secondary modules
-        const modules = await Promise.all([
-            import('./modules/flicker.js'),
-            import('./modules/robotAnimation.js'),
-            import('./modules/widgetEffects.js'),
-            import('./modules/mousemonitors.js'),
-            import('./modules/processorAnimations.js'),
-            import('./modules/starfieldThruster.js')
-        ]);
-        
-        // Destructure modules by array position
-        const [
-            { initFlicker },
-            { initRobot },
-            { initWidgetEffects },
-            { initMouseMonitors },
-            { 
-                initProcessorAnimation1, 
-                initProcessorAnimation2, 
-                initProcessorAnimation3, 
-                initProcessorAnimation4 
-            },
-            { initStarfieldThruster }
-        ] = modules;
-
-        // Initialize all secondary modules
-        initFlicker();
-        initRobot();
-        initWidgetEffects();
-        initMouseMonitors();
-        initProcessorAnimation1();
-        initProcessorAnimation2();
-        initProcessorAnimation3();
-        initProcessorAnimation4();
-        initStarfieldThruster();
-        
-        console.log('Secondary modules initialized');
-    } catch (error) {
-        console.error('Error loading secondary modules:', error);
-    }
-};
-
-/**
- * Main Initialization Sequence
- */
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize core modules first (sequential)
-    await initializeCoreModules();
-    
-    // Initialize secondary modules (parallel)
-    initializeSecondaryModules();
-    
-    // Initialize UI components
-    initLightGrids();
-    initDateDisplay();
-    initMarqueeContent();
-    initLondonClock();
-    
-    console.log('DOM fully loaded and parsed');
 });
 
 console.log("Webflow External Scripts initialized");
