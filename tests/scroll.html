@@ -2,39 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Spaceship Thrusters & Starfield</title>
+  <title>Spaceship Thrusters &amp; Starfield</title>
   <style>
-    body {
+    /* Basic reset and fixed layout to avoid unwanted scroll/bounce */
+    body, html {
       margin: 0;
-      height: 10000vh; /* Very tall page for scrolling */
-      overflow-x: hidden;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      background: #000;
+      overscroll-behaviour: none;
     }
-    
-    html {
-  scrollbar-width: auto;
-  scrollbar-color: #00ff00 black; /* Firefox thumb and track colors */
-}
-
-/* Webkit browsers (Chrome, Safari, Edge) */
-::-webkit-scrollbar {
-  width: 12px;
-  background-color: black;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #00ff00;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #00cc00;
-}
-
-::-webkit-scrollbar-track {
-  background-color: black;
-}
-    
-    /* Fullscreen starfield canvas in the background */
+    /* Scrollable container with custom scrollbar styling */
+    #scroll-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 10;
+      scrollbar-width: auto;
+      scrollbar-color: #00ff00 black;
+    }
+    #scroll-container::-webkit-scrollbar {
+      width: 12px;
+      background-color: black;
+    }
+    #scroll-container::-webkit-scrollbar-thumb {
+      background-color: #00ff00;
+      border-radius: 6px;
+    }
+    #scroll-container::-webkit-scrollbar-thumb:hover {
+      background-color: #00cc00;
+    }
+    #scroll-container::-webkit-scrollbar-track {
+      background-color: black;
+    }
+    #scroll-content {
+      height: 10000vh;
+      opacity: 0.01;
+      pointer-events: none;
+    }
+    /* Fullscreen canvas for the starfield background */
     #starfield {
       position: fixed;
       top: 0;
@@ -45,15 +58,16 @@
       z-index: -1;
       pointer-events: none;
     }
-    /* Wrapper that holds all website content and will rumble */
+    /* Wrapper for content (will “rumble”) */
     #wrapper {
       position: fixed;
       width: 100%;
       height: 100%;
       top: 0;
       left: 0;
+      z-index: 5;
     }
-    /* Centered demo content */
+    /* Centered demo text */
     .center {
       position: absolute;
       left: 50%;
@@ -62,8 +76,10 @@
       color: white;
       text-align: center;
       font-family: sans-serif;
+      z-index: 20;
+      pointer-events: none;
     }
-    /* Thruster indicator in bottom left */
+    /* Thruster indicator styling */
     #thruster {
       position: fixed;
       bottom: 3vh;
@@ -75,240 +91,291 @@
       box-shadow: 0 0 0 0 transparent;
       z-index: 100;
       transform-origin: center left;
-      will-change: transform, box-shadow, background-color; /* Optimization for animations */
+      will-change: transform, box-shadow, background-color;
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
+  
+  <!-- Scrollable container -->
+  <div id="scroll-container">
+    <div id="scroll-content"></div>
+  </div>
 
   <div id="wrapper">
-
     <div class="center">
       <h1>Spaceship Thrusters</h1>
       <p>Scroll to accelerate through space.</p>
     </div>
   </div>
   
-  <!-- Add thruster indicator -->
+  <!-- Thruster indicator -->
   <div id="thruster"></div>
 
   <script>
-    // --- Performance-Optimized Variables ---
+    /* 
+      Key Improvements:
+      1. **Typed Arrays & Lookup Tables:**  
+         Use typed arrays for star positions and pre-computed lookup tables for alpha/size based on depth.
+      2. **Spatial Partitioning & Batch Rendering:**  
+         Divide stars into grid sectors for efficient culling and grouping by depth to reduce state changes.
+      3. **Adaptive Quality Settings:**  
+         Monitor FPS and automatically reduce particle count and skip frames in low-performance mode.
+    */
+
+    // --- Performance & Physics Variables ---
     const intensityMultiplier = 0.9;
     const maxIntensity = 20;
-    const damping = 0.98; // Changed from 0.25 to 0.92 for smoother dampening (8% reduction per frame)
-    const minShakeThreshold = 1; 
-
+    const damping = 0.98;
+    const minShakeThreshold = 1;
     let shakeIntensity = 0;
-    let lastScrollY = window.scrollY;
+    let lastScrollY = 0;
     let lastTime = performance.now();
     let scrollVelocity = 0;
     let scrollAcceleration = 0;
     let prevScrollVelocity = 0;
-
-    const wrapper = document.getElementById('wrapper');
-    const thruster = document.getElementById('thruster');
     let flickerIntensity = 0;
 
-    // --- Optimized Scroll Event Handler ---
-    // Use a flag to throttle scroll events
-    let ticking = false;
-    let lastScrollEvent = 0;
-    const SCROLL_THROTTLE = 5; // ms
-
-    // --- Optimized 3D Starfield with Object Pooling ---
+    // --- DOM Elements ---
+    const wrapper = document.getElementById('wrapper');
+    const thruster = document.getElementById('thruster');
+    const scrollContainer = document.getElementById('scroll-container');
     const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for performance
-    const numStars = 800; // More stars but optimized rendering
+    const ctx = canvas.getContext('2d', { 
+      alpha: false,
+      desynchronized: true  // Helps reduce latency when available
+    });
+
+    // --- Adaptive Performance Monitoring ---
+    const perfMonitor = {
+      fps: 60,
+      frameCount: 0,
+      lastCheck: performance.now(),
+      lowPerformanceMode: false
+    };
+    const adaptiveSettings = {
+      skipFrames: false,
+      frameCounter: 0,
+      cullingEnabled: true,
+      batchByDepth: true,
+      maxParticles: 800,
+      particleReduction: 1
+    };
+
+    // --- Starfield Parameters ---
+    const numStars = 800;
     const perspective = 500;
     const maxDepth = 1000;
     const starSpeed = 2;
 
-    // Position the user in the middle of the scroll area on page load
+    // Position scroll container in the middle on page load
     window.addEventListener('DOMContentLoaded', () => {
-      const scrollHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
+      const scrollHeight = scrollContainer.scrollHeight;
       const middlePosition = Math.floor(scrollHeight / 2);
-      window.scrollTo({
-        top: middlePosition,
-        behavior: 'auto'
-      });
-      lastScrollY = middlePosition; // Update the tracked scroll position
+      scrollContainer.scrollTop = middlePosition;
+      lastScrollY = middlePosition;
     });
 
-    // Performance optimization - pre-allocate star array
-    const stars = new Array(numStars);
-    
-    // Star object pool
-    const starPool = [];
-    const POOL_SIZE = numStars * 1.5; // 50% extra capacity for recycling
+    // --- Use Typed Arrays for Star Data ---
+    const starX = new Float32Array(numStars);
+    const starY = new Float32Array(numStars);
+    const starZ = new Float32Array(numStars);
+    const starActive = new Uint8Array(numStars); // 1 = active
+    const starColors = new Array(numStars); // Pre-computed string colors
 
-    // Create optimized star objects for the pool
-    function createStar() {
-      return {
-        x: 0, 
-        y: 0, 
-        z: 0,
-        prevX: 0,
-        prevY: 0,
-        size: 0,
-        alpha: 0,
-        color: 'rgb(255, 255, 255)',
-        active: false
-      };
+    // Precompute star colors (brightness range)
+    const presetStarColors = [];
+    for (let b = 200; b <= 255; b += 3) {
+      presetStarColors.push(`rgb(${b}, ${b}, ${b})`);
     }
 
-    // Initialize star pool
-    function initStarPool() {
-      for (let i = 0; i < POOL_SIZE; i++) {
-        starPool.push(createStar());
+    // --- Lookup Tables for Alpha and Size Based on Depth ---
+    const alphaBySizeLookup = new Float32Array(maxDepth);
+    const sizeLookup = new Float32Array(maxDepth);
+    function initLookupTables() {
+      for (let z = 0; z < maxDepth; z++) {
+        alphaBySizeLookup[z] = Math.min(1, 1 - (z / maxDepth) * 0.8);
+        sizeLookup[z] = Math.max(0.5, 3 * (1 - z / maxDepth));
       }
     }
 
-    // Get star from pool
-    function getStarFromPool() {
-      for (let i = 0; i < starPool.length; i++) {
-        if (!starPool[i].active) {
-          starPool[i].active = true;
-          return starPool[i];
-        }
+    // --- Spatial Partitioning: Divide into a 4x4 Grid ---
+    const GRID_SIZE = 4;
+    const starsByGrid = Array(GRID_SIZE * GRID_SIZE).fill().map(() => []);
+    function updateStarSector(i) {
+      const normalizedX = (starX[i] + 1000) / 2000;
+      const normalizedY = (starY[i] + 1000) / 2000;
+      const gridX = Math.min(GRID_SIZE - 1, Math.floor(normalizedX * GRID_SIZE));
+      const gridY = Math.min(GRID_SIZE - 1, Math.floor(normalizedY * GRID_SIZE));
+      const gridIndex = gridY * GRID_SIZE + gridX;
+      starsByGrid[gridIndex].push(i);
+    }
+
+    // --- Initialize Stars ---
+    function initStars() {
+      initLookupTables();
+      // Clear grid sectors
+      starsByGrid.forEach(sector => sector.length = 0);
+      for (let i = 0; i < numStars; i++) {
+        starX[i] = (Math.random() * 2000) - 1000;
+        starY[i] = (Math.random() * 2000) - 1000;
+        starZ[i] = Math.random() * maxDepth;
+        starActive[i] = 1;
+        const colorIndex = Math.floor(Math.random() * presetStarColors.length);
+        starColors[i] = presetStarColors[colorIndex];
+        updateStarSector(i);
       }
-      // If no available stars, create a new one
-      const newStar = createStar();
-      newStar.active = true;
-      starPool.push(newStar);
-      return newStar;
     }
 
-    // Return star to pool
-    function returnStarToPool(star) {
-      star.active = false;
-    }
+    // --- Pre-allocate Projection Arrays ---
+    const projX = new Float32Array(numStars);
+    const projY = new Float32Array(numStars);
+    const projPrevX = new Float32Array(numStars);
+    const projPrevY = new Float32Array(numStars);
+    const projSize = new Float32Array(numStars);
+    const projAlpha = new Float32Array(numStars);
 
-    // Resize canvas with optimizations
+    // --- Canvas Resize with Throttling ---
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      
-      // Pre-calculate center coordinates
       canvas.centerX = canvas.width / 2;
       canvas.centerY = canvas.height / 2;
     }
-    window.addEventListener('resize', resizeCanvas);
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(resizeCanvas, 100);
+    });
     resizeCanvas();
-
-    // Initialize stars with optimized pooling
-    function initStars() {
-      initStarPool();
-      
-      for (let i = 0; i < numStars; i++) {
-        const star = getStarFromPool();
-        
-        // Random position with pre-defined spread
-        star.x = (Math.random() * 2000) - 1000;
-        star.y = (Math.random() * 2000) - 1000;
-        star.z = Math.random() * maxDepth;
-        
-        // Precompute color for better performance
-        const brightness = 200 + Math.random() * 55;
-        star.color = `rgb(${brightness}, ${brightness}, ${brightness})`;
-        
-        stars[i] = star;
-      }
-    }
     initStars();
 
-    // Pre-allocate reusable objects for calculations
-    const starProjection = { x: 0, y: 0, prevX: 0, prevY: 0, size: 0, alpha: 0 };
-
-    // Update and draw the 3D starfield with performance optimizations
+    // --- Starfield Update & Draw ---
     function updateAndDrawStarfield(speedMultiplier) {
-      // Clear canvas - faster than fillRect
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Reference center coordinates
-      const centerX = canvas.centerX;
-      const centerY = canvas.centerY;
-      
-      // Batch similar operations for better performance
-      const moveSpeed = starSpeed * speedMultiplier;
-      
-      // First pass - update all star positions (separate calculation from drawing)
-      for (let i = 0; i < numStars; i++) {
-        const star = stars[i];
-        
-        // Move star closer (decrease z)
-        star.z -= moveSpeed;
-        
-        // If star is too close, reset it far away (recycling)
-        if (star.z <= 0) {
-          // Return the current star to the pool
-          returnStarToPool(star);
-          
-          // Get a fresh star from the pool
-          const newStar = getStarFromPool();
-          
-          // Initialize the new star's properties
-          newStar.z = maxDepth;
-          newStar.x = (Math.random() * 2000) - 1000;
-          newStar.y = (Math.random() * 2000) - 1000;
-          
-          // Precompute color for better performance
-          const brightness = 200 + Math.random() * 55;
-          newStar.color = `rgb(${brightness}, ${brightness}, ${brightness})`;
-          
-          // Replace in the stars array
-          stars[i] = newStar;
+      // Update performance monitoring each second
+      perfMonitor.frameCount++;
+      const now = performance.now();
+      if (now - perfMonitor.lastCheck > 1000) {
+        perfMonitor.fps = Math.round((perfMonitor.frameCount * 1000) / (now - perfMonitor.lastCheck));
+        perfMonitor.frameCount = 0;
+        perfMonitor.lastCheck = now;
+        if (perfMonitor.fps < 30 && !perfMonitor.lowPerformanceMode) {
+          perfMonitor.lowPerformanceMode = true;
+          adaptiveSettings.skipFrames = true;
+          adaptiveSettings.particleReduction = 2;
+        } else if (perfMonitor.fps > 50 && perfMonitor.lowPerformanceMode) {
+          perfMonitor.lowPerformanceMode = false;
+          adaptiveSettings.skipFrames = false;
+          adaptiveSettings.particleReduction = 1;
         }
       }
-      
-      // Second pass - draw all stars (batch rendering)
-      for (let i = 0; i < numStars; i++) {
-        const star = stars[i];
-        
-        // Project 3D position to 2D screen position using perspective (reuse object)
-        const scale = perspective / star.z;
-        starProjection.x = centerX + star.x * scale;
-        starProjection.y = centerY + star.y * scale;
-        
-        // Calculate previous position for line (motion trail)
-        const prevZ = star.z + moveSpeed;
-        const prevScale = perspective / prevZ;
-        starProjection.prevX = centerX + star.x * prevScale;
-        starProjection.prevY = centerY + star.y * prevScale;
-        
-        // Star size and alpha based on distance (closer = larger & brighter)
-        starProjection.size = Math.max(0.5, 3 * (1 - star.z / maxDepth));
-        starProjection.alpha = Math.min(1, 1 - (star.z / maxDepth) * 0.8);
-        
-        // Draw star as a line with motion trail - batch similar drawing operations
-        ctx.beginPath();
-        ctx.moveTo(starProjection.prevX, starProjection.prevY);
-        ctx.lineTo(starProjection.x, starProjection.y);
-        ctx.strokeStyle = star.color;
-        ctx.globalAlpha = starProjection.alpha;
-        ctx.lineWidth = starProjection.size;
-        ctx.stroke();
-        
-        // Draw point with a single operation
-        ctx.beginPath();
-        ctx.arc(starProjection.x, starProjection.y, starProjection.size * 1.5, 0, 2 * Math.PI);
-        ctx.fillStyle = star.color;
-        ctx.fill();
+
+      // In low performance mode, optionally skip every other frame
+      if (perfMonitor.lowPerformanceMode && adaptiveSettings.skipFrames) {
+        adaptiveSettings.frameCounter++;
+        if (adaptiveSettings.frameCounter % 2 !== 0) return;
       }
-      
-      // Reset global alpha once at the end
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.centerX;
+      const centerY = canvas.centerY;
+      const viewportMinX = -20, viewportMaxX = canvas.width + 20;
+      const viewportMinY = -20, viewportMaxY = canvas.height + 20;
+      starsByGrid.forEach(sector => sector.length = 0);
+      const moveSpeed = starSpeed * speedMultiplier;
+
+      // First pass: Update star positions and compute projection values
+      for (let i = 0; i < numStars; i++) {
+        // Optionally reduce particles in low performance mode
+        if (perfMonitor.lowPerformanceMode && i % adaptiveSettings.particleReduction !== 0) continue;
+        starZ[i] -= moveSpeed;
+        if (starZ[i] <= 0) {
+          starZ[i] = maxDepth;
+          starX[i] = (Math.random() * 2000) - 1000;
+          starY[i] = (Math.random() * 2000) - 1000;
+          const colorIndex = Math.floor(Math.random() * presetStarColors.length);
+          starColors[i] = presetStarColors[colorIndex];
+        }
+        const scale = perspective / starZ[i];
+        projX[i] = centerX + starX[i] * scale;
+        projY[i] = centerY + starY[i] * scale;
+        const prevZ = starZ[i] + moveSpeed;
+        const prevScale = perspective / prevZ;
+        projPrevX[i] = centerX + starX[i] * prevScale;
+        projPrevY[i] = centerY + starY[i] * prevScale;
+        const depthIndex = Math.min(maxDepth - 1, Math.floor(starZ[i]));
+        projSize[i] = sizeLookup[depthIndex];
+        projAlpha[i] = alphaBySizeLookup[depthIndex];
+        updateStarSector(i);
+      }
+
+      // Second pass: Batch render stars by grouping via grid sectors or depth layers
+      if (adaptiveSettings.batchByDepth) {
+        const depthLayers = 3;
+        for (let layer = 0; layer < depthLayers; layer++) {
+          const depthStart = layer * (maxDepth / depthLayers);
+          const depthEnd = (layer + 1) * (maxDepth / depthLayers);
+          for (let gridIndex = 0; gridIndex < starsByGrid.length; gridIndex++) {
+            const starsInSector = starsByGrid[gridIndex];
+            if (adaptiveSettings.cullingEnabled && starsInSector.length === 0) continue;
+            for (let j = 0; j < starsInSector.length; j++) {
+              const i = starsInSector[j];
+              if (starZ[i] < depthStart || starZ[i] >= depthEnd) continue;
+              if (adaptiveSettings.cullingEnabled &&
+                  (projX[i] < viewportMinX || projX[i] > viewportMaxX ||
+                   projY[i] < viewportMinY || projY[i] > viewportMaxY)) continue;
+              drawSingleStar(i);
+            }
+          }
+        }
+      } else {
+        for (let gridIndex = 0; gridIndex < starsByGrid.length; gridIndex++) {
+          const starsInSector = starsByGrid[gridIndex];
+          for (let j = 0; j < starsInSector.length; j++) {
+            const i = starsInSector[j];
+            if (adaptiveSettings.cullingEnabled &&
+                (projX[i] < viewportMinX || projX[i] > viewportMaxX ||
+                 projY[i] < viewportMinY || projY[i] > viewportMaxY)) continue;
+            drawSingleStar(i);
+          }
+        }
+      }
       ctx.globalAlpha = 1;
     }
 
-    // --- Optimized Scroll Event Listener with Physics-Based Dampening ---
-    window.addEventListener('scroll', () => {
+    // Draw a single star (optimized for both small and regular stars)
+    function drawSingleStar(i) {
+      if (projSize[i] < 1 && perfMonitor.lowPerformanceMode) {
+        ctx.globalAlpha = projAlpha[i];
+        ctx.fillStyle = starColors[i];
+        ctx.fillRect(projX[i] - projSize[i] / 2, projY[i] - projSize[i] / 2, projSize[i], projSize[i]);
+        return;
+      }
+      ctx.beginPath();
+      ctx.moveTo(projPrevX[i], projPrevY[i]);
+      ctx.lineTo(projX[i], projY[i]);
+      ctx.strokeStyle = starColors[i];
+      ctx.globalAlpha = projAlpha[i];
+      ctx.lineWidth = projSize[i];
+      ctx.stroke();
+      ctx.beginPath();
+      if (projSize[i] <= 1.5) {
+        const size = projSize[i] * 1.5;
+        ctx.fillRect(projX[i] - size / 2, projY[i] - size / 2, size, size);
+      } else {
+        ctx.arc(projX[i], projY[i], projSize[i] * 1.5, 0, 2 * Math.PI);
+        ctx.fillStyle = starColors[i];
+        ctx.fill();
+      }
+    }
+
+    // --- Optimized Scroll Event Handling ---
+    let ticking = false;
+    let lastScrollEvent = 0;
+    const SCROLL_THROTTLE = 5;
+    scrollContainer.addEventListener('scroll', () => {
       const now = performance.now();
-      
-      // Throttle scroll events for better performance
       if (now - lastScrollEvent < SCROLL_THROTTLE) {
         if (!ticking) {
           requestAnimationFrame(() => {
@@ -319,34 +386,21 @@
         }
         return;
       }
-      
       lastScrollEvent = now;
       handleScroll();
     });
 
     function handleScroll() {
-      const currentScrollY = window.scrollY;
+      const currentScrollY = scrollContainer.scrollTop;
       const currentTime = performance.now();
       let deltaTime = currentTime - lastTime;
-      
-      // Safety check for time delta
       if (deltaTime < 10) deltaTime = 10;
-      
-      // Improved scroll reset detection with buffer
-      const scrollHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
-      const viewportHeight = window.innerHeight;
+      const scrollHeight = scrollContainer.scrollHeight;
+      const viewportHeight = scrollContainer.clientHeight;
       const buffer = 10;
-      
-      // Reset when reaching the top of the page
-      if (window.scrollY <= buffer) {
-        window.scrollTo({
-          top: scrollHeight - viewportHeight,
-          behavior: 'auto'
-        });
-        lastScrollY = scrollHeight - viewportHeight;
+      if (scrollContainer.scrollTop <= buffer) {
+        scrollContainer.scrollTop = scrollHeight - viewportHeight - buffer;
+        lastScrollY = scrollContainer.scrollTop;
         lastTime = currentTime;
         shakeIntensity = 0;
         scrollVelocity = 0;
@@ -354,103 +408,67 @@
         prevScrollVelocity = 0;
         return;
       }
-
-      // Physics-based momentum calculations
+      if (scrollContainer.scrollTop + viewportHeight >= scrollHeight - buffer) {
+        scrollContainer.scrollTop = buffer + 10;
+        lastScrollY = scrollContainer.scrollTop;
+        lastTime = currentTime;
+        shakeIntensity = 0;
+        scrollVelocity = 0;
+        scrollAcceleration = 0;
+        prevScrollVelocity = 0;
+        return;
+      }
       const deltaY = currentScrollY - lastScrollY;
-      
-      // Calculate instantaneous velocity (absolute value to ignore direction)
       const instantVelocity = Math.abs(deltaY / deltaTime * 1000);
-      
-      // Calculate acceleration (rate of velocity change)
       prevScrollVelocity = scrollVelocity;
-      
-      // Apply low-pass filter for smoother velocity
       scrollVelocity = scrollVelocity * 0.8 + instantVelocity * 0.2;
-      
-      // Calculate acceleration from velocity change
       scrollAcceleration = (scrollVelocity - prevScrollVelocity) / deltaTime * 1000;
-      
-      // Handle scrolling momentum - build speed regardless of direction
       const velocityFactor = Math.min(maxIntensity, scrollVelocity * intensityMultiplier);
-      
-      // Add acceleration component for more responsive feel
       const accelBoost = Math.min(5, Math.abs(scrollAcceleration) * 0.01);
       const newIntensity = velocityFactor + accelBoost;
-      
-      // Update shake intensity with smoother transitions
-      // Only increase intensity or maintain it, don't decrease based on direction
       shakeIntensity = Math.max(shakeIntensity, newIntensity);
-      
-      // Add flicker based on both velocity and acceleration for more dynamic effect
       flickerIntensity = Math.min(1, scrollVelocity / 300 + Math.abs(scrollAcceleration) / 1000);
-
       lastScrollY = currentScrollY;
       lastTime = currentTime;
     }
 
-    // --- Optimized Animation Loop with Time-Based Movement ---
+    // --- Animation Loop ---
     let lastFrameTime = performance.now();
     let frameDelta = 0;
-
     function animate(timestamp) {
-      // Calculate precise time between frames
       frameDelta = timestamp - lastFrameTime;
       lastFrameTime = timestamp;
-      
-      // Normalize frame rate for consistent speed
-      const frameCorrection = frameDelta / 16.67; // Target: 60fps
-      
-      // Apply natural dampening even without scroll input - adjusted to respect frame rate
+      const frameCorrection = Math.min(3, frameDelta / 16.67);
       const timeAdjustedDamping = Math.pow(damping, frameCorrection);
       shakeIntensity *= timeAdjustedDamping;
       flickerIntensity *= timeAdjustedDamping;
-      
-      // Map shakeIntensity to starfield speed (1-10 for more dramatic effect)
       const currentStarfieldSpeed = 1 + (shakeIntensity / maxIntensity) * 9;
-      
-      // Update starfield with time-based adjustment
       updateAndDrawStarfield(currentStarfieldSpeed * frameCorrection);
-
-      // Enhanced rumble effect with time-based intensity
+      
+      // Rumble effect on content wrapper
+      let wrapperTransform = 'translate3d(0, 0, 0)';
       if (shakeIntensity > minShakeThreshold) {
-        // Add variance to the shake direction with frame-normalized intensity
         const shakeFactor = shakeIntensity * frameCorrection * 0.1;
         const offsetX = (Math.random() * 2 - 1) * shakeFactor;
         const offsetY = (Math.random() * 2 - 1) * shakeFactor;
-        
-        // Add minor rotation for more realistic thruster effect
         const rotation = (Math.random() * 2 - 1) * shakeFactor * 0.2;
-        
-        // Use hardware-accelerated transforms
-        wrapper.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) rotate(${rotation}deg)`;
-      } else {
-        wrapper.style.transform = 'translate3d(0, 0, 0)';
+        wrapperTransform = `translate3d(${offsetX}px, ${offsetY}px, 0) rotate(${rotation}deg)`;
       }
+      wrapper.style.transform = wrapperTransform;
       
-      // High-fidelity thruster visualization with enhanced flicker
+      // Thruster visual effect
       if (shakeIntensity > 0) {
-        // Enhanced visual effects
         const normalizedIntensity = Math.min(1, shakeIntensity / maxIntensity);
-        
-        // Dynamic color shift based on intensity (purple to white)
-        const hue = 270 - normalizedIntensity * 30; // Shift from purple toward blue-white
-        const sat = 80 - normalizedIntensity * 70; // Reduce saturation as intensity increases
-        const lightness = 70 + normalizedIntensity * 30; // Increase brightness with intensity
-        
-        // Advanced flicker with varying frequency based on intensity
+        const hue = 270 - normalizedIntensity * 30;
+        const sat = 80 - normalizedIntensity * 70;
+        const lightness = 70 + normalizedIntensity * 30;
         const flickerBase = flickerIntensity * (0.6 + Math.random() * 0.4);
-        const fastFlicker = Math.random() > 0.7 ? (Math.random() * 0.3) : 0;  // Occasional fast flickers
+        const fastFlicker = Math.random() > 0.7 ? (Math.random() * 0.3) : 0;
         const flicker = flickerBase + fastFlicker;
-        
-        // Combine base glow with flicker effect
         const glowSize = (5 + normalizedIntensity * 25) * (0.8 + flicker * 0.2);
         const glowOpacity = 0.5 + normalizedIntensity * 0.5 + flicker * 0.2;
-        
-        // Apply physically accurate scaling based on power
         const scaleX = 1 + normalizedIntensity * 0.3 + flicker * 0.1;
         const scaleY = 1 + flicker * 0.05;
-        
-        // Apply combined effects with hardware acceleration
         thruster.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
         thruster.style.boxShadow = `0 0 ${glowSize}px ${glowSize/2}px hsla(${hue}, ${sat}%, ${lightness}%, ${glowOpacity})`;
         thruster.style.backgroundColor = `hsla(${hue}, ${sat + 10}%, ${lightness - 10}%, ${0.3 + normalizedIntensity * 0.7})`;
@@ -459,11 +477,17 @@
         thruster.style.backgroundColor = 'rgba(180, 160, 220, 0.2)';
         thruster.style.transform = 'scaleX(1) scaleY(1)';
       }
-
+      
       requestAnimationFrame(animate);
     }
     
-    // Start animation loop with timestamp
+    // Consolidated touchmove handler to prevent pull-to-refresh and rubberbanding
+    document.addEventListener('touchmove', e => {
+      // Prevent multi-touch gestures that could trigger pull-to-refresh
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    
+    // Start the animation loop
     requestAnimationFrame(animate);
   </script>
 </body>

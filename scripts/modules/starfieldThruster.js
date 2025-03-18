@@ -19,7 +19,8 @@ const CONFIG = {
     poolMultiplier: 1.5
   },
   scroll: {
-    throttle: 5 // ms
+    throttle: 5, // ms
+    height: 10000 // Default scroll height in pixels
   }
 };
 
@@ -36,6 +37,7 @@ let state = {
   ticking: false,
   lastFrameTime: 0,
   frameDelta: 0,
+  scrollHeight: 0,
   initialized: false
 };
 
@@ -44,7 +46,8 @@ let elements = {
   canvas: null,
   ctx: null,
   wrapper: null, 
-  thruster: null
+  thruster: null,
+  scrollContainer: null
 };
 
 // Star management
@@ -61,14 +64,15 @@ export function initStarfieldThruster() {
   
   console.log('Initializing Starfield Thruster effect');
   
-  // Create and inject HTML elements
-  injectElements();
-  
-  // Set up state
+  // Set up references to existing DOM elements
   elements.canvas = document.getElementById('starfield');
   elements.ctx = elements.canvas.getContext('2d', { alpha: false });
-  elements.wrapper = document.getElementById('rumble-wrapper');
-  elements.thruster = document.getElementById('thruster');
+  elements.wrapper = document.querySelector('.starfield-wrapper');
+  elements.thruster = document.getElementById('starfield-thruster-light');
+  elements.scrollContainer = document.querySelector('.scroll-container');
+  
+  // Set scroll container height
+  setupScrollContainer();
   
   // Initialize state values
   state.lastScrollY = window.scrollY;
@@ -83,7 +87,7 @@ export function initStarfieldThruster() {
   
   // Set up event listeners
   window.addEventListener('scroll', handleScrollEvent);
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', handleResize);
   
   // Initial canvas sizing
   resizeCanvas();
@@ -95,87 +99,41 @@ export function initStarfieldThruster() {
 }
 
 /**
- * Create and inject required HTML elements and styles
+ * Sets up the scroll container with proper height
  */
-function injectElements() {
-  // First, add required styles
-  const styleElement = document.createElement('style');
-  styleElement.textContent = `
-    /* Fullscreen starfield canvas in the background */
-    #starfield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: black;
-      z-index: -1;
-      pointer-events: none;
-    }
-    /* Wrapper that holds all website content and will rumble */
-    #wrapper {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-    }
-    /* Thruster indicator in bottom left */
-    #thruster {
-      position: fixed;
-      bottom: 3vh;
-      left: 3vh;
-      width: 6vh;
-      height: 2vh;
-      background-color: rgba(3, 255, 255, 0.5);
-      border-radius: 0.5vh;
-      box-shadow: 0 0 0 0 transparent;
-      z-index: 100;
-      transform-origin: center left;
-      will-change: transform, box-shadow, background-color;
-    }
-  `;
-  document.head.appendChild(styleElement);
-
-  // Check if elements already exist before creating them
-  if (!document.getElementById('starfield')) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'starfield';
-    document.body.appendChild(canvas);
+function setupScrollContainer() {
+  if (!elements.scrollContainer) {
+    console.warn('Scroll container not found. Create an element with class "scroll-container"');
+    return;
   }
+  
+  // Set height to create scrollable area
+  elements.scrollContainer.style.height = `${CONFIG.scroll.height}px`;
+  state.scrollHeight = CONFIG.scroll.height;
+}
 
-  // Only create wrapper if it doesn't exist
-  if (!document.getElementById('wrapper')) {
-    const wrapper = document.createElement('div');
-    wrapper.id = 'wrapper';
-    
-    // Move all existing body children into wrapper (except the canvas)
-    const bodyChildren = Array.from(document.body.children);
-    bodyChildren.forEach(child => {
-      if (child.id !== 'starfield' && child.tagName !== 'SCRIPT') {
-        wrapper.appendChild(child);
-      }
-    });
-    
-    document.body.appendChild(wrapper);
-  }
-
-  // Add thruster element if it doesn't exist
-  if (!document.getElementById('thruster')) {
-    const thruster = document.createElement('div');
-    thruster.id = 'thruster';
-    document.body.appendChild(thruster);
-  }
+/**
+ * Handle resize events
+ */
+function handleResize() {
+  resizeCanvas();
+  // Recalculate user position to maintain relative scroll position
+  const scrollRatio = window.scrollY / state.scrollHeight;
+  setupScrollContainer();
+  window.scrollTo({
+    top: scrollRatio * state.scrollHeight,
+    behavior: 'auto'
+  });
 }
 
 /**
  * Position the user in the middle of the scroll area
  */
 function positionUserInMiddle() {
-  const scrollHeight = Math.max(
-    document.body.scrollHeight,
-    document.documentElement.scrollHeight
-  );
+  const scrollHeight = elements.scrollContainer ? elements.scrollContainer.offsetHeight : 
+    Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  
+  state.scrollHeight = scrollHeight;
   
   // Only do this if the page has significant scrollable area
   if (scrollHeight > window.innerHeight * 2) {
@@ -315,10 +273,8 @@ function processScroll() {
   if (deltaTime < 10) deltaTime = 10;
   
   // Check for scroll reset (reaching the top of the page)
-  const scrollHeight = Math.max(
-    document.body.scrollHeight,
-    document.documentElement.scrollHeight
-  );
+  const scrollHeight = elements.scrollContainer ? elements.scrollContainer.offsetHeight : 
+    Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
   const viewportHeight = window.innerHeight;
   const buffer = 10;
   

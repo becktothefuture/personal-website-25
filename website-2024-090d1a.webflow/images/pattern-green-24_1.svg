@@ -1,0 +1,26 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Diagonal Lines Pattern</title>
+  <style>
+    .line {
+      stroke: #416C52;
+      stroke-width: 2;
+    }
+  </style>
+  
+  <g clip-path="url(#clip0_4040_13901)">
+    <g class="pattern-lines">
+      <path class="line" d="M-30 72L18 -24"/>
+      <path class="line" d="M-18 72L30 -24"/>
+      <path class="line" d="M-6 72L42 -24"/>
+      <path class="line" d="M6 72L54 -24"/>
+      <path class="line" d="M18 72L66 -24"/>
+      <path class="line" d="M30 72L78 -24"/>
+    </g>
+  </g>
+  
+  <defs>
+    <clipPath id="clip0_4040_13901">
+      <rect width="48" height="48" fill="white"/>
+    </clipPath>
+  </defs>
+</svg>

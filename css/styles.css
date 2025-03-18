@@ -3,7 +3,6 @@
 ========================================================= */
 
 :root {
-	/* Colors */
 	--background: #000000;
 	--color-1: #9ce0a9;
 	--color-2: #416c52;
@@ -20,16 +19,14 @@
 	--max-duration: 5.5s;
 	--max-delay: 3s;
 	--min-duration: 0.5s;
-	--max-duration: 2.5s; /* Make sure this is only declared once */
+	--max-duration: 2.5s; 
 
 	/* Arrow colors */
 	--arrow-off-color: var(--color-3);
 	--arrow-on-color: var(--color-1);
 
-	
 	/* Light panel settings */
 	--circle-size: 0.35em;
-
 
 	/* Grid settings */
 	--columns: 10;
@@ -56,7 +53,7 @@
 
 
 	/* Robot */
-	--robot-size: 200px; 
+	--robot-size: 150px; 
 	--button-pulse-duration:1.7s;
 	--robot-active: var(--color-1);
 	--robot-idle: var(--color-3);
@@ -67,6 +64,7 @@
 	--speech-text: var(--color-1);
 	--speech-border: var(--color-2);
 
+	/* Perspective settings */
 	--perspective-depth: 1200px;
 	--wall-depth: 450px;
 
@@ -123,23 +121,23 @@
 	padding: 0;
 }
 
-/* Add 'body' styles */
 body {
 	font-feature-settings: "liga", "kern", "onum", "pnum", "smcp";
 	font-variant-ligatures: common-ligatures;
 	text-rendering: geometricPrecision;
 	font-variant-ligatures: discretionary-ligatures, historical-ligatures;
-	word-spacing: 0.05em;
+	word-spacing: 0.04em;
 	background-clip: text;
 	margin: 0;
-	overflow: hidden; /* Prevent scrolling */
+	overflow: hidden;
 	position: fixed;
 	width: 100%;
-	height: 100%;
-	min-height: 100vh;
-	background-color: #000;
+	min-height: 100svh;
+	background-color: var(--browser-color);
 	align-items: center;
 	justify-content: center;
+	overscroll-behavior: none; /* Prevent bounce/rubber-banding */
+
 }
 
 /* Updated Background glow effect with jitter */
@@ -619,18 +617,6 @@ body::before {
 
 /* Robot Character */
 
-#animation-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	position: absolute;
-	bottom: 20px;
-	left: 20px;      /* Distance from left */
-	width: var(--robot-size);
-	height: var(--robot-size);
-	z-index: 999997;  /* Below dust but above most elements */
-}
 
 #robot-face {
 	width: 50%;
@@ -1362,13 +1348,6 @@ video {
  * STARFIELD THRUSTER *
  ***********************/
 
-.starfield-container {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
 
 #starfield {
   position: absolute;
@@ -1377,7 +1356,6 @@ video {
   width: 100%;
   height: 100%;
   background: black;
-  z-index: -1;
   pointer-events: none;
 }
 
@@ -1405,4 +1383,31 @@ video {
   transform-origin: center left;
   will-change: transform, box-shadow, background-color; /* Optimization for animations */
   pointer-events: none;
+}
+
+
+
+
+  html {
+scrollbar-width: auto;
+scrollbar-color: #00ff00 black; /* Firefox thumb and track colors */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+width: 12px;
+background-color: black;
+}
+
+::-webkit-scrollbar-thumb {
+background-color: #00ff00;
+border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+background-color: #00cc00;
+}
+
+::-webkit-scrollbar-track {
+background-color: black;
 }

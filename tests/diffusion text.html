@@ -1,0 +1,166 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Optimised Diffusion Text Animation</title>
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: #f0f0f0;
+        font-family: monospace;
+      }
+      pre {
+        font-size: 1.2rem;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <pre id="text-container"></pre>
+
+    <script>
+      // ---------------------------------
+      // Configuration Variables
+      // ---------------------------------
+      const texts = [
+        "communication designer (ba) at heart\n— hybrid UX/ UI / Dev",
+        "travelling across disciplines to create things entirely new",
+        "Reach out and let us create a brighter digital tomorrow."
+      ];
+      const animateInDuration = 2000;   // Duration (ms) for the diffusion-in phase
+      const legiblePauseDuration = 3000; // Pause (ms) where text remains fully legible
+      const animateOutDuration = 2000;   // Duration (ms) for the diffusion-out phase
+      const frameInterval = 200;         // 200ms per frame = 5 FPS
+      const letterPool =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~`";
+
+      const container = document.getElementById("text-container");
+
+      // ---------------------------------
+      // Utility Function: Random Character
+      // ---------------------------------
+      function getRandomChar() {
+        return letterPool.charAt(Math.floor(Math.random() * letterPool.length));
+      }
+
+      // ---------------------------------
+      // Phase 1: Animate In (Noise → Target)
+      // ---------------------------------
+      function animateIn(targetText, onComplete) {
+        let currentStep = 0;
+        const totalSteps = Math.ceil(animateInDuration / frameInterval);
+        // For each non-whitespace, set a threshold late in the animation so that it flickers more.
+        const thresholds = Array.from(targetText).map((char) =>
+          /\S/.test(char)
+            ? Math.floor(Math.random() * (totalSteps * 0.3)) + Math.floor(totalSteps * 0.7)
+            : 0
+        );
+
+        const intervalId = setInterval(() => {
+          let output = "";
+          for (let i = 0; i < targetText.length; i++) {
+            const char = targetText[i];
+            output += /\s/.test(char)
+              ? char
+              : currentStep >= thresholds[i]
+              ? char
+              : getRandomChar();
+          }
+          container.textContent = output;
+          currentStep++;
+          if (currentStep > totalSteps) {
+            clearInterval(intervalId);
+            // Ensure final text is fully revealed.
+            container.textContent = targetText;
+            onComplete();
+          }
+        }, frameInterval);
+      }
+
+      // ---------------------------------
+      // Phase 2: Legible Pause
+      // ---------------------------------
+      function pauseLegible(targetText, onComplete) {
+        // During this phase, we keep the text unchanged
+        container.textContent = targetText;
+        setTimeout(onComplete, legiblePauseDuration);
+      }
+
+      // ---------------------------------
+      // Phase 3: Animate Out (Target → Noise)
+      // ---------------------------------
+      function animateOut(targetText, onComplete) {
+        let currentStep = 0;
+        const totalSteps = Math.ceil(animateOutDuration / frameInterval);
+        // Determine when each non-whitespace character starts to flicker.
+        const thresholds = Array.from(targetText).map((char) =>
+          /\S/.test(char)
+            ? Math.floor(Math.random() * (totalSteps * 0.3)) + Math.floor(totalSteps * 0.7)
+            : totalSteps
+        );
+
+        const intervalId = setInterval(() => {
+          let output = "";
+          for (let i = 0; i < targetText.length; i++) {
+            const char = targetText[i];
+            output += /\s/.test(char)
+              ? char
+              : currentStep >= thresholds[i]
+              ? getRandomChar()
+              : char;
+          }
+          container.textContent = output;
+          currentStep++;
+          if (currentStep > totalSteps) {
+            clearInterval(intervalId);
+            onComplete();
+          }
+        }, frameInterval);
+      }
+
+      // ---------------------------------
+      // Cycle Through Text Segments
+      // ---------------------------------
+      function cycleTexts(index = 0) {
+        const currentText = texts[index];
+        // Run the three phases sequentially.
+        animateIn(currentText, () => {
+          pauseLegible(currentText, () => {
+            animateOut(currentText, () => {
+              const nextIndex = (index + 1) % texts.length;
+              cycleTexts(nextIndex);
+            });
+          });
+        });
+      }
+
+      // Start the animation cycle.
+      cycleTexts();
+
+      // ---------------------------------
+      // Clever Performance & Maintainability Tips:
+      // ---------------------------------
+      // 1. **Single Timer per Phase:**  
+      //    Instead of combining phases in one loop, we use separate, clearly defined phases.
+      //    This modularity makes it easier to tweak durations and logic without intermingling code.
+      //
+      // 2. **Minimal DOM Updates:**  
+      //    We update the text content only once per frame (at 5 FPS), which significantly reduces reflow.
+      //
+      // 3. **Precomputed Thresholds:**  
+      //    Random thresholds are precomputed for each character, so the per-frame loop is lightweight.
+      //
+      // 4. **Consider Canvas for Heavy Loads:**  
+      //    If you anticipate longer text or multiple such animations, a canvas-based solution might be more efficient.
+      //
+      // 5. **State Machine Approach:**  
+      //    For further optimisation, consider combining phases into a single requestAnimationFrame loop with a state machine.
+    </script>
+  </body>
+</html>
