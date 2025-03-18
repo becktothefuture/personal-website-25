@@ -508,9 +508,9 @@ body {
 	}
 }
 
-/**************
- * INTRO TEXT *
- **************/
+/*******************
+ * INTRO ANIMATION *
+ *******************/
 
 .intro-wrapper__text {
 	white-space: pre !important;
@@ -528,7 +528,6 @@ body {
 	letter-spacing: 0.5px;
 }
 
-/* Remove the existing cursor style and add new one */
 .intro-wrapper__text::after {
 	display: none;
 }
@@ -555,10 +554,6 @@ body {
 		opacity: 0;
 	}
 }
-
-
-
-
 
 
 @keyframes fluorescentFlicker {
@@ -596,74 +591,31 @@ body {
 
 @keyframes widgetZoomIn {
 	0% {
-		transform: perspective(1000px) translateZ(-100px);
+		transform:translateZ(-100px);
 		opacity: 0.3;
 	}
 	100% {
-		transform: perspective(1000px) translateZ(0);
+		transform:translateZ(0);
 		opacity: 1;
 	}
 }
 
-@keyframes blink {
-	0%,
-	100% {
-		background-color: var(--robot-active);
-	}
-	50% {
-		background-color: var(--robot-inactive);
-	}
-}
 
-/* Reflection Overlay */
-
-.reflection-overlay {
-	position: fixed;
-	inset: 0;
-}
-
-video {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
+/*****************
+ * VIDEO OVERLAY *
+ *****************/
 
 .glass-video {
-	-webkit-mask: radial-gradient(circle, black 30%, transparent 90%);
-	mask: radial-gradient(circle, black 30%, transparent 90%);
+	-webkit-mask: radial-gradient(circle, black 40%, transparent 100%);
+	mask: radial-gradient(circle, black 40%, transparent 100%);
 }
 
-.blur-overlay {
-	position: fixed;
-	inset: 0;
-	backdrop-filter: blur(45px) brightness(0.4);
-	-webkit-backdrop-filter: blur(45px) brightness(0.7);
-	isolation: isolate; /* Creates new stacking context */
-}
 
-#dynamic-mask {
-	position: absolute;
-	fill: black;
-	width: 100%;
-	height: 100%;
-	pointer-events: none;
-}
+/*********
+ * CLOCK *
+ *********/
 
-/* Clock Widget */
 
-.widget__clock {
-	position: relative;
-	width: var(--clock-size);
-	max-width: 500px;
-	aspect-ratio: 1 / 1;
-}
-
-.widget__clock svg {
-	width: 100%;
-	height: 100%;
-}
-
-/* Clock Hands Styles */
 #hour_hand,
 #minute_hand,
 #second_hand {
@@ -672,64 +624,64 @@ video {
 }
 
 #hour_hand {
-	stroke: var(--dark--color-2);
+	stroke: var(--color-2);
 	stroke-width: calc(var(--hand-stroke-width) * 4);
 }
 
 #minute_hand {
-	stroke: var(--dark--color-2);
+	stroke: var(--color-2);
 	stroke-width: calc(var(--hand-stroke-width) * 3);
 }
 
 #second_hand {
-	stroke: var(--dark--color-2);
+	stroke: var(--color-2);
 	stroke-width: calc(var(--hand-stroke-width) * 2);
 }
 
 /* Clock Face Stroke */
 .clock-face {
-	stroke: var(--dark--color-2);
+	stroke: var(--color-2);
 	stroke-width: var(--stroke-width);
 	vector-effect: non-scaling-stroke; /* Consistent stroke */
 }
 
 /* Hour Dot Styles */
 .hour-dot {
-	fill: var(--dark--color-2);
+	fill: var(--color-2);
 }
 
-/* Center Dot */
-.center_dot {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	width: 3%;
-	height: 3%;
-	background-color: var(--variables--900);
-	border-radius: 50%;
-	transform: translate(-50%, -50%);
-	z-index: 10;
+
+
+/****************
+ * MAIN WRAPPER *
+ ****************/
+
+ .main-wrapper {
+    animation: 
+        verticalJitter 0.1s infinite,
+		distortionEffect 0.05s infinite alternate;
+    transform-style: preserve-3d;
+}
+
+
+@keyframes distortionEffect {
+    0% { transform: translateX(-0.1px) skewX(-0.05deg); }
+    100% { transform: translateX(0.1px) skewX(0.05deg); }
+}
+
+
+@keyframes verticalJitter {
+    0%, 100% { transform: translateY(0); }
+    20% { transform: translateY(calc(var(--jitter-intensity) * -0.5px)); }
+    40% { transform: translateY(calc(var(--jitter-intensity) * 0.3px)); }
+    60% { transform: translateY(calc(var(--jitter-intensity) * -0.5px)); }
+    80% { transform: translateY(calc(var(--jitter-intensity) * 0.3px)); }
 }
 
 
 /*****************
  * CRT CONTAINER *
  *****************/
-
- .main-wrapper {
-    color: rgb(var(--crt-primary-color));
-    font-family: monospace;
-    z-index: 1;
-    animation: 
-        verticalJitter 0.1s infinite,
-		distortionEffect 0.05s infinite alternate;
-    transform-style: preserve-3d;
-    overflow: hidden;
-    position:absolute;
-    inset: 0;
-}
-
-
 
 
 .flicker {
@@ -799,128 +751,9 @@ video {
 
 @keyframes scanlinesMove {
     0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(0, 50%, 0); } /* Moves a full height cycle */
+    100% { transform: translate3d(0, 50%, 0); } 
 }
 
-
-@keyframes distortionEffect {
-    0% { transform: translateX(-0.1px) skewX(-0.05deg); }
-    100% { transform: translateX(0.1px) skewX(0.05deg); }
-}
-
-
-
-.screen-tear {
-    position: fixed;
-    height: 0.4px;
-    width: 100%;
-    background: rgba(var(--crt-primary-color), 0.3);
-    transform: translateY(50%);
-    opacity: 0.1;
-    animation: screenTear var(--tearing-frequency) infinite;
-    z-index: 99999;
-}
-
-
-@keyframes screenTear {
-    0% { top: -100%; opacity: 0; transform: scaleX(1.02); }
-    8% { opacity: 1; }
-    15% { top: 50%; transform: scaleX(0.98); }
-    25% { top: 120%; opacity: 0; }
-    100% { top: 120%; opacity: 0; }
-}
-
-
-
-
-
-@keyframes verticalJitter {
-    0%, 100% { transform: translateY(0); }
-    20% { transform: translateY(calc(var(--jitter-intensity) * -0.5px)); }
-    40% { transform: translateY(calc(var(--jitter-intensity) * 0.3px)); }
-    60% { transform: translateY(calc(var(--jitter-intensity) * -0.5px)); }
-    80% { transform: translateY(calc(var(--jitter-intensity) * 0.3px)); }
-}
-
-
-
-@keyframes colorShift {
-    0%, 100% { filter: hue-rotate(0deg); }
-    25% { filter: hue-rotate(1deg); }
-    75% { filter: hue-rotate(-1deg); }
-}
-
-
-
-
-
-@keyframes contentFlicker {
-    0%   { opacity: calc(var(--content-flicker-opacity) - var(--content-flicker-variance)); }
-    25%  { opacity: var(--content-flicker-opacity); }
-    50%  { opacity: calc(var(--content-flicker-opacity) - (var(--content-flicker-variance) * 0.5)); }
-    75%  { opacity: calc(var(--content-flicker-opacity) + var(--content-flicker-variance)); }
-    100% { opacity: calc(var(--content-flicker-opacity) - var(--content-flicker-variance)); }
-}
-
-
-
-
-@keyframes cockpitVibration {
-    0% { transform: translate(calc(var(--cockpit-translate-min) * 0.67), var(--cockpit-translate-max) * 0.33) rotate(calc(var(--cockpit-rotate-max) * 0.71)); }
-    6.67% { transform: translate(calc(var(--cockpit-translate-max) * 0.33), var(--cockpit-translate-min)) rotate(calc(var(--cockpit-rotate-min) * 0.43)); }
-    13.33% { transform: translate(var(--cockpit-translate-min) * 0.33, calc(var(--cockpit-translate-max) * 0.67)) rotate(var(--cockpit-rotate-max)); }
-    20% { transform: translate(var(--cockpit-translate-max), calc(var(--cockpit-translate-min) * 0.33)) rotate(calc(var(--cockpit-rotate-min) * 0.71)); }
-    26.67% { transform: translate(calc(var(--cockpit-translate-min) * 0.67), var(--cockpit-translate-min) * 0.67) rotate(calc(var(--cockpit-rotate-max) * 0.29)); }
-    33.33% { transform: translate(calc(var(--cockpit-translate-max) * 0.67), var(--cockpit-translate-max)) rotate(calc(var(--cockpit-rotate-min) * 0.57)); }
-    40% { transform: translate(var(--cockpit-translate-min), calc(var(--cockpit-translate-max) * 0.33)) rotate(calc(var(--cockpit-rotate-max) * 0.86)); }
-    46.67% { transform: translate(calc(var(--cockpit-translate-max) * 0.33), var(--cockpit-translate-min) * 0.67) rotate(calc(var(--cockpit-rotate-min) * 0.29)); }
-    53.33% { transform: translate(calc(var(--cockpit-translate-min) * 0.33), var(--cockpit-translate-max)) rotate(calc(var(--cockpit-rotate-max) * 0.57)); }
-    60% { transform: translate(calc(var(--cockpit-translate-max) * 0.67), var(--cockpit-translate-min) * 0.33) rotate(var(--cockpit-rotate-min)); }
-    66.67% { transform: translate(calc(var(--cockpit-translate-min) * 0.67), var(--cockpit-translate-max) * 0.67) rotate(calc(var(--cockpit-rotate-max) * 0.43)); }
-    73.33% { transform: translate(var(--cockpit-translate-max), var(--cockpit-translate-min)) rotate(calc(var(--cockpit-rotate-min) * 0.71)); }
-    80% { transform: translate(calc(var(--cockpit-translate-min) * 0.33), var(--cockpit-translate-max) * 0.33) rotate(calc(var(--cockpit-rotate-max) * 0.86)); }
-    86.67% { transform: translate(calc(var(--cockpit-translate-max) * 0.67), var(--cockpit-translate-min) * 0.67) rotate(calc(var(--cockpit-rotate-min) * 0.43)); }
-    93.33% { transform: translate(var(--cockpit-translate-min), calc(var(--cockpit-translate-max) * 0.67)) rotate(calc(var(--cockpit-rotate-max) * 0.57)); }
-    100% { transform: translate(calc(var(--cockpit-translate-min) * 0.67), var(--cockpit-translate-max) * 0.33) rotate(calc(var(--cockpit-rotate-max) * 0.71)); }
-}
-
-.settings-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100vw;
-	height: 100vh;
-	background: var(--browser-color);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 9999999;
-	backdrop-filter: blur(10px);
-  }
-
-  .settings-overlay.fade-out {
-	animation: fadeOut 0.1s forwards;
-  }
-  
-  @keyframes fadeOut {
-	to {
-	  opacity: 0;
-	  visibility: hidden;
-	}
-  }
-  
-
-  .sound-control { 
-	cursor: pointer;
-	transition: all 0.3s;
-  }
-  
-  .sound-control svg{
-	color: (var(--color-1));
-
-  }
-
-  
 
 /****************
  * SOUND TOGGLE *
@@ -930,7 +763,6 @@ video {
   .switch-knob {
 	transition: transform 0.1s cubic-bezier(0.19, 1, 0.22, 1);
 	cursor: pointer;
-
   }
   
   .sound-toggle.on .switch-knob {
@@ -941,75 +773,9 @@ video {
 	transform: translateY(-50%); /* knob at the top */
   }
   
-
-
 /*****************
- * TUNNEL EFFECT *
+ * DEPTH WRAPPER *
  *****************/
-
-  :root {
-    --anim-duration: 32s; /* Default, will be updated dynamically */
-}
-
-.viewport {
-	position: fixed;
-	inset: 0;
-	overflow: hidden;
-	z-index: 9999999;
-	pointer-events: none;
-}
-
-/* Update keyframe animation */
-@keyframes pullIn {
-    0% {
-        transform: translateZ(0px) scale(1);
-        opacity: 0.6;
-        filter: blur(0px);
-    }
-    10% {
-        opacity: 1;
-        filter: blur(0px);
-    }
-    60% {
-        filter: blur(4px);
-        opacity: 0.1;
-    }
-    100% {
-        transform: translateZ(var(--max-depth)) scale(1.1);
-        opacity: 0;
-        filter: blur(40px);
-    }
-}
-
-/* Apply animation duration */
-.rectangle {
-    animation: pullIn var(--anim-duration) linear infinite;
-}
-
-
-
-/* Add new CRT power-down animation */
-@keyframes crtPowerDown {
-  0% {
-    background: #000;
-    transform: scale(1, 1);
-  }
-  20% {
-    background: #fff;
-  }
-  25% {
-    background: #000;
-  }
-  30% {
-    transform: scale(1, 1);
-  }
-  100% {
-    background: #000;
-    transform: scale(1, 0.001);
-  }
-}
-
-
 
 .depth-wrapper {
 	perspective: var(--perspective-depth, 1500px);
@@ -1044,8 +810,9 @@ video {
 }
 
 
-
-/* Blinking animation */
+/**********************
+ * BLINKING ANIMATION *
+ **********************/
 
 .blink-1{
 	animation: blink 1s steps(2) infinite;
@@ -1103,7 +870,9 @@ video {
 }
 
 
-
+/*************
+ * SCROLLBAR *
+ *************/
 
   html {
 scrollbar-width: auto;
@@ -1127,4 +896,48 @@ background-color: #00cc00;
 
 ::-webkit-scrollbar-track {
 background-color: black;
+}
+
+
+/*****************
+ * TUNNEL EFFECT *
+ *****************/
+
+ :root {
+    --anim-duration: 32s; /* Default, will be updated dynamically */
+}
+
+.viewport {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	z-index: 9999999;
+	pointer-events: none;
+}
+
+/* Update keyframe animation */
+@keyframes pullIn {
+    0% {
+        transform: translateZ(0px) scale(1);
+        opacity: 0.6;
+        filter: blur(0px);
+    }
+    10% {
+        opacity: 1;
+        filter: blur(0px);
+    }
+    60% {
+        filter: blur(4px);
+        opacity: 0.1;
+    }
+    100% {
+        transform: translateZ(var(--max-depth)) scale(1.1);
+        opacity: 0;
+        filter: blur(40px);
+    }
+}
+
+/* Apply animation duration */
+.rectangle {
+    animation: pullIn var(--anim-duration) linear infinite;
 }
