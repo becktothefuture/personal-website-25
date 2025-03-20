@@ -8,9 +8,11 @@ import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
+import { initStarfieldThruster } from './modules/starfieldThruster.js'; // Import starfield early
 
 initBrowserTheme();
 initResizeOverlay(); // <-- initialize resize overlay module
+initStarfieldThruster(); // Initialize starfield early to allow setup time
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -37,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { initRobot } = await import('./modules/robotAnimation.js');
                 const { initWidgetEffects } = await import('./modules/widgetEffects.js');
                 const { initMouseMonitors } = await import('./modules/mousemonitors.js');
-                const { initStarfieldThruster } = await import('./modules/starfieldThruster.js');
                 const { 
                     initProcessorAnimation1, 
                     initProcessorAnimation2,
@@ -57,7 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initProcessorAnimation2();
                 initProcessorAnimation3();
                 initProcessorAnimation4();
-                initStarfieldThruster();
 
                 console.log('All modules initialized');
 
