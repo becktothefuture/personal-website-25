@@ -1,33 +1,45 @@
 // starfieldThruster.js
 import { scrollTracker } from './scrollTracker.js';
 
-const CONFIG = {
+/**
+ * starConfig now has an optional adaptivePerformance flag
+ * that, if set to true, can skip frames when speeds or star counts are huge.
+ */
+export const starConfig = {
+  baseSpeed: 20,      // Default starfield speed in km/h
   numStars: 400,
-  baseSpeed: 2,      // Base starfield speed.
-  maxDepth: 1500,    // Stars will have z from -maxDepth to 0.
-  perspective: 500,  // Perspective factor.
+  maxDepth: 1500,
+  perspective: 500,
+  fieldSize: 2000,
+  pointSizeFactor: 13.4,
+  starColor: [0.8, 1.0, 0.8],
+  adaptivePerformance: true // can skip frames if star count or speeds are huge
 };
 
 class StarfieldThruster {
-  // Private fields for WebGL and star data.
   #canvas;
   #gl;
   #program;
-  #aPositionLocation;
-  #uPerspectiveLocation;
-  #uResolutionLocation;
+  #aPositionLoc;
+  #uPerspectiveLoc;
+  #uResolutionLoc;
+  #uMaxDepthLoc;
+  #uPointSizeFactorLoc;
+  #uStarColorLoc;
+
   #starBuffer;
-  #stars;            // Float32Array storing star positions [x, y, z].
+  #stars;
   #lastFrameTime = performance.now();
   #resolution = [window.innerWidth, window.innerHeight];
+  #frameSkipCounter = 0; // for adaptive performance
 
-  // Extra speed updated via scrollTracker events.
+  // extraSpeed (km/h) updated by scrollTracker
   extraSpeed = 0;
 
   constructor() {
     this.#canvas = document.getElementById('starfield');
     if (!this.#canvas) {
-      console.error("Canvas element with id 'starfield' not found.");
+      console.error("Canvas element #starfield not found.");
       return;
     }
     this.#gl = this.#canvas.getContext('webgl');
@@ -39,60 +51,79 @@ class StarfieldThruster {
     this.#initStars();
     this.#resizeCanvas();
     window.addEventListener('resize', () => this.#resizeCanvas());
-    // Subscribe to scrollTracker events to update extraSpeed.
+
+    // Subscribe to scrollTracker updates
     scrollTracker.on("update", (data) => {
-      this.extraSpeed = data.velocity;
+      this.extraSpeed = data.velocityKMH;
     });
+
     requestAnimationFrame(this.#animate.bind(this));
   }
   
-  // Initialize WebGL: compile shaders, link program, and set up buffer.
   #initGL() {
     const gl = this.#gl;
-    // Vertex shader replicates a 2D perspective projection.
     const vsSource = `
       attribute vec3 a_position;
       uniform float u_perspective;
       uniform vec2 u_resolution;
+      uniform float u_maxDepth;
+      uniform float u_pointSizeFactor;
+      varying float vAlpha;
+
       void main() {
-        // Compute scale using the inverse of z (z is negative).
+        // distFactor in [0..1], used for fade in/out
+        float distFactor = clamp((-a_position.z) / u_maxDepth, 0.0, 1.0);
+
+        // fade in from [0..0.2], fade out from [0.8..1.0]
+        float fadeIn = smoothstep(0.0, 0.2, distFactor);
+        float fadeOut = 1.0 - smoothstep(0.8, 1.0, distFactor);
+        vAlpha = fadeIn * fadeOut;
+
+        // simple perspective transform
         float scale = u_perspective / -a_position.z;
-        // Transform x,y using the scale and center on the canvas.
         vec2 pos = a_position.xy * scale + u_resolution * 0.5;
-        // Convert pixel coordinates to normalized device coordinates.
         vec2 ndc = (pos / u_resolution) * 2.0 - 1.0;
-        // Flip the y-axis.
         ndc.y = -ndc.y;
         gl_Position = vec4(ndc, 0.0, 1.0);
-        gl_PointSize = 2.0;
+        gl_PointSize = u_pointSizeFactor * scale;
       }
     `;
     const fsSource = `
       precision mediump float;
+      uniform vec3 u_starColor;
+      varying float vAlpha;
       void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = vec4(u_starColor, vAlpha);
       }
     `;
-    const vertexShader = this.#compileShader(gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = this.#compileShader(gl.FRAGMENT_SHADER, fsSource);
+    const vShader = this.#compileShader(gl.VERTEX_SHADER, vsSource);
+    const fShader = this.#compileShader(gl.FRAGMENT_SHADER, fsSource);
+
     this.#program = gl.createProgram();
-    gl.attachShader(this.#program, vertexShader);
-    gl.attachShader(this.#program, fragmentShader);
+    gl.attachShader(this.#program, vShader);
+    gl.attachShader(this.#program, fShader);
     gl.linkProgram(this.#program);
+
     if (!gl.getProgramParameter(this.#program, gl.LINK_STATUS)) {
-      console.error('Shader program failed to link: ' + gl.getProgramInfoLog(this.#program));
+      console.error("Shader link error:", gl.getProgramInfoLog(this.#program));
       return;
     }
     gl.useProgram(this.#program);
-    this.#aPositionLocation = gl.getAttribLocation(this.#program, "a_position");
-    this.#uPerspectiveLocation = gl.getUniformLocation(this.#program, "u_perspective");
-    this.#uResolutionLocation = gl.getUniformLocation(this.#program, "u_resolution");
 
-    // Create and set up the buffer for star positions.
+    this.#aPositionLoc = gl.getAttribLocation(this.#program, "a_position");
+    this.#uPerspectiveLoc = gl.getUniformLocation(this.#program, "u_perspective");
+    this.#uResolutionLoc = gl.getUniformLocation(this.#program, "u_resolution");
+    this.#uMaxDepthLoc = gl.getUniformLocation(this.#program, "u_maxDepth");
+    this.#uPointSizeFactorLoc = gl.getUniformLocation(this.#program, "u_pointSizeFactor");
+    this.#uStarColorLoc = gl.getUniformLocation(this.#program, "u_starColor");
+
     this.#starBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.#starBuffer);
-    gl.enableVertexAttribArray(this.#aPositionLocation);
-    gl.vertexAttribPointer(this.#aPositionLocation, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.#aPositionLoc);
+    gl.vertexAttribPointer(this.#aPositionLoc, 3, gl.FLOAT, false, 0, 0);
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
   }
   
   #compileShader(type, source) {
@@ -101,35 +132,30 @@ class StarfieldThruster {
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error("Shader compilation error: " + gl.getShaderInfoLog(shader));
+      console.error("Shader compile error:", gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }
     return shader;
   }
   
-  // Generate initial star positions.
   #initStars() {
-    this.#stars = new Float32Array(CONFIG.numStars * 3);
-    for (let i = 0; i < CONFIG.numStars; i++) {
-      // x in [-1000, 1000]
-      this.#stars[i * 3] = (Math.random() * 2000) - 1000;
-      // y in [-1000, 1000]
-      this.#stars[i * 3 + 1] = (Math.random() * 2000) - 1000;
-      // z in [-maxDepth, 0); stars start far away and move toward 0.
-      this.#stars[i * 3 + 2] = - (Math.random() * (CONFIG.maxDepth - 0.1) + 0.1);
+    const totalFloats = starConfig.numStars * 3;
+    this.#stars = new Float32Array(totalFloats);
+    for (let i = 0; i < starConfig.numStars; i++) {
+      this.#stars[i * 3]     = (Math.random() - 0.5) * starConfig.fieldSize;
+      this.#stars[i * 3 + 1] = (Math.random() - 0.5) * starConfig.fieldSize;
+      this.#stars[i * 3 + 2] = -Math.random() * starConfig.maxDepth;
     }
     this.#updateBuffer();
   }
   
-  // Upload star data to the GPU.
   #updateBuffer() {
     const gl = this.#gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.#starBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.#stars, gl.DYNAMIC_DRAW);
   }
   
-  // Resize canvas and update resolution uniform.
   #resizeCanvas() {
     const canvas = this.#canvas;
     canvas.width = window.innerWidth;
@@ -138,45 +164,72 @@ class StarfieldThruster {
     this.#resolution = [canvas.width, canvas.height];
   }
   
-  // Animation loop: update star positions based on total speed and render.
   #animate(timestamp) {
     const dt = (timestamp - this.#lastFrameTime) / 1000;
     this.#lastFrameTime = timestamp;
-    // Total speed comes from baseSpeed plus extraSpeed from scrollTracker.
-    const totalSpeed = CONFIG.baseSpeed + this.extraSpeed;
-    
-    // Update each star's z position (moving from far to near).
-    for (let i = 0; i < CONFIG.numStars; i++) {
-      const index = i * 3 + 2;
-      this.#stars[index] += totalSpeed * dt * 50; // Factor adjusts visual speed.
-      if (this.#stars[index] >= 0) {
-        // Star has reached the viewer; reset it to far away.
-        this.#stars[index] = -CONFIG.maxDepth;
-        // Randomize x and y.
-        this.#stars[i * 3] = (Math.random() * 2000) - 1000;
-        this.#stars[i * 3 + 1] = (Math.random() * 2000) - 1000;
+
+    // Optional performance adaptation
+    if (starConfig.adaptivePerformance && this.#shouldSkipFrame()) {
+      requestAnimationFrame(this.#animate.bind(this));
+      return;
+    }
+
+    // starfield speed = baseSpeed + extraSpeed (km/h)
+    const totalSpeed = starConfig.baseSpeed + this.extraSpeed;
+    const speedMS = totalSpeed * 0.27778;
+    for (let i = 0; i < starConfig.numStars; i++) {
+      const zIdx = i * 3 + 2;
+      this.#stars[zIdx] += speedMS * dt * 50;
+      if (this.#stars[zIdx] >= 0) {
+        this.#stars[zIdx] -= starConfig.maxDepth;
       }
     }
     this.#updateBuffer();
     this.#drawScene();
     requestAnimationFrame(this.#animate.bind(this));
   }
+
+  /**
+   * Simple heuristic to skip frames if speed or star count is huge
+   */
+  #shouldSkipFrame() {
+    const speedMS = (starConfig.baseSpeed + this.extraSpeed) * 0.27778;
+    // e.g., if speed is above 300 m/s or star count is above 10k, skip every other frame
+    if (speedMS > 300 || starConfig.numStars > 10000) {
+      this.#frameSkipCounter = (this.#frameSkipCounter + 1) % 2;
+      return this.#frameSkipCounter === 1;
+    }
+    return false;
+  }
   
-  // Render the starfield.
   #drawScene() {
     const gl = this.#gl;
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(this.#program);
-    gl.uniform1f(this.#uPerspectiveLocation, CONFIG.perspective);
-    gl.uniform2fv(this.#uResolutionLocation, this.#resolution);
-    gl.drawArrays(gl.POINTS, 0, CONFIG.numStars);
+    gl.uniform1f(this.#uPerspectiveLoc, starConfig.perspective);
+    gl.uniform2fv(this.#uResolutionLoc, this.#resolution);
+    gl.uniform1f(this.#uMaxDepthLoc, starConfig.maxDepth);
+    gl.uniform1f(this.#uPointSizeFactorLoc, starConfig.pointSizeFactor);
+    gl.uniform3fv(this.#uStarColorLoc, starConfig.starColor);
+    gl.drawArrays(gl.POINTS, 0, starConfig.numStars);
+  }
+
+  /**
+   * Re-initializes star positions with the current maxDepth
+   */
+  resetStars() {
+    this.#initStars();
   }
 }
 
-// Exported initialization function.
+let starfieldThrusterInstance = null;
+
 function initStarfieldThruster() {
-  new StarfieldThruster();
+  if (!starfieldThrusterInstance) {
+    starfieldThrusterInstance = new StarfieldThruster();
+  }
+  return starfieldThrusterInstance;
 }
 
 export { initStarfieldThruster };

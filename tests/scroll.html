@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Starfield & Scroll Tracker Demo (10/10)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infinite Starfield & ScrollTracker Demo</title>
   <style>
     body, html {
       margin: 0;
@@ -12,7 +13,6 @@
       color: #fff;
       font-family: sans-serif;
     }
-    /* Fullscreen canvas for the starfield */
     #starfield {
       position: fixed;
       top: 0;
@@ -21,40 +21,308 @@
       height: 100%;
       display: block;
     }
-    /* Debug overlay displaying scroll tracker state */
-    #debug-overlay {
+    /* Debug Panels */
+    #debug-scroll, #debug-starfield {
       position: fixed;
       top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       padding: 10px;
       border-radius: 4px;
       z-index: 1000;
+      font-size: 14px;
+    }
+    #debug-scroll {
+      left: 10px;
+    }
+    #debug-starfield {
+      right: 10px;
+    }
+    /* Control Panel */
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(63, 63, 63, 0.4);
+      backdrop-filter: blur(20px);
+      padding: 10px;
+      border-radius: 4px;
+      z-index: 1000;
+      max-height: 40%;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    #controls label {
+      display: block;
+      margin: 6px 0 2px;
+    }
+    #controls input[type="range"] {
+      width: 200px;
+    }
+    .slider-container {
+      margin-bottom: 10px;
+    }
+    .slider-container span {
+      margin-left: 5px;
+      font-weight: bold;
+    }
+    .section-title {
+      margin-top: 10px;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
-  <div id="debug-overlay">Debug Info</div>
+  
+  <!-- Debug Panels -->
+  <aside id="debug-scroll">ScrollTracker Debug</aside>
+  <aside id="debug-starfield">Starfield Debug</aside>
+  
+  <!-- Control Panel -->
+  <aside id="controls">
+    <div class="section-title">ScrollTracker Controls</div>
+    <div class="slider-container">
+      <label for="slider-friction">Friction (0.01 - 5): <span id="value-friction">0.50</span></label>
+      <input type="range" id="slider-friction" min="0.01" max="5" step="0.01" value="0.50" data-target="friction" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-strokeImpulse">Stroke Impulse (10 - 1000): <span id="value-strokeImpulse">100</span></label>
+      <input type="range" id="slider-strokeImpulse" min="10" max="1000" step="5" value="100" data-target="strokeImpulse" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-maxVelocity">Top Speed (km/h) (50 - 2000): <span id="value-maxVelocity">400</span></label>
+      <input type="range" id="slider-maxVelocity" min="50" max="2000" step="50" value="400" data-target="maxVelocity" />
+    </div>
+    <hr />
+    <div class="section-title">Starfield Controls</div>
+    <div class="slider-container">
+      <label for="slider-baseSpeed">Base Speed (km/h) (0 - 500): <span id="value-baseSpeed">20</span></label>
+      <input type="range" id="slider-baseSpeed" min="0" max="500" step="10" value="20" data-target="baseSpeed" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-pointSizeFactor">Point Size (0.1 - 20): <span id="value-pointSizeFactor">13.4</span></label>
+      <input type="range" id="slider-pointSizeFactor" min="0.1" max="20" step="0.1" value="13.4" data-target="pointSizeFactor" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-fieldSizeFactor">Field Width (0.1 - 2): <span id="value-fieldSizeFactor">0.75</span></label>
+      <input type="range" id="slider-fieldSizeFactor" min="0.1" max="2" step="0.01" value="0.75" data-target="fieldSizeFactor" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-starColorR">Star Color - R (0 - 2): <span id="value-starColorR">0.8</span></label>
+      <input type="range" id="slider-starColorR" min="0" max="2" step="0.1" value="0.8" data-target="starColorR" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-starColorG">Star Color - G (0 - 2): <span id="value-starColorG">1.0</span></label>
+      <input type="range" id="slider-starColorG" min="0" max="2" step="0.1" value="1.0" data-target="starColorG" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-starColorB">Star Color - B (0 - 2): <span id="value-starColorB">0.8</span></label>
+      <input type="range" id="slider-starColorB" min="0" max="2" step="0.1" value="0.8" data-target="starColorB" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-stretchFactor">Light Speed Effect (0 - 10): <span id="value-stretchFactor">2.5</span></label>
+      <input type="range" id="slider-stretchFactor" min="0" max="10" step="0.1" value="2.5" data-target="stretchFactor" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-stretchThreshold">Stretch Start Speed (0 - 200): <span id="value-stretchThreshold">50</span></label>
+      <input type="range" id="slider-stretchThreshold" min="0" max="200" step="5" value="50" data-target="stretchThreshold" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-maxStretch">Max Stretch Speed (100 - 1000): <span id="value-maxStretch">400</span></label>
+      <input type="range" id="slider-maxStretch" min="100" max="1000" step="50" value="400" data-target="maxStretch" />
+    </div>
+    <hr />
+    <div class="section-title">Lamp Effects</div>
+    <div class="slider-container">
+      <label for="slider-lampBrightness">Max Brightness (0.5 - 1): <span id="value-lampBrightness">0.95</span></label>
+      <input type="range" id="slider-lampBrightness" min="0.5" max="1" step="0.01" value="0.95" data-target="lampBrightness" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-lampMinBrightness">Min Brightness (0 - 0.5): <span id="value-lampMinBrightness">0.2</span></label>
+      <input type="range" id="slider-lampMinBrightness" min="0" max="0.5" step="0.01" value="0.2" data-target="lampMinBrightness" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-speedThreshold">Speed Threshold (50 - 500): <span id="value-speedThreshold">200</span></label>
+      <input type="range" id="slider-speedThreshold" min="50" max="500" step="10" value="200" data-target="speedThreshold" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-exponentialFactor">Curve Steepness (1 - 10): <span id="value-exponentialFactor">3</span></label>
+      <input type="range" id="slider-exponentialFactor" min="1" max="10" step="0.1" value="3" data-target="exponentialFactor" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-lampSize">Lamp Size (20 - 100): <span id="value-lampSize">60</span></label>
+      <input type="range" id="slider-lampSize" min="20" max="100" step="1" value="60" data-target="lampSize" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-lampColorR">Lamp Color - R (0 - 1): <span id="value-lampColorR">1.0</span></label>
+      <input type="range" id="slider-lampColorR" min="0" max="1" step="0.05" value="1.0" data-target="lampColorR" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-lampColorG">Lamp Color - G (0 - 1): <span id="value-lampColorG">0.9</span></label>
+      <input type="range" id="slider-lampColorG" min="0" max="1" step="0.05" value="0.9" data-target="lampColorG" />
+    </div>
+    <div class="slider-container">
+      <label for="slider-lampColorB">Lamp Color - B (0 - 1): <span id="value-lampColorB">0.7</span></label>
+      <input type="range" id="slider-lampColorB" min="0" max="1" step="0.05" value="0.7" data-target="lampColorB" />
+    </div>
+    <div class="slider-container">
+      <label for="select-lampPosition">Lamp Position:</label>
+      <select id="select-lampPosition">
+        <option value="top-left">Top Left</option>
+        <option value="top-right">Top Right</option>
+        <option value="bottom-left">Bottom Left</option>
+        <option value="bottom-right" selected>Bottom Right</option>
+      </select>
+    </div>
+  </aside>
+  
   <script type="module">
-    import { initStarfieldThruster } from '../scripts/modules/starfieldThruster.js';
     import { scrollTracker } from '../scripts/modules/scrollTracker.js';
+    import { initStarfieldThruster, starConfig } from '../scripts/modules/starfieldThruster.js';
+    import { initLampEffect, lampConfig } from '../scripts/modules/lampEffect.js';
 
-    // Initialize the starfield (which subscribes to scrollTracker events).
-    initStarfieldThruster();
+    // Initialize the starfield.
+    const starfieldThruster = initStarfieldThruster();
+    const lampEffect = initLampEffect();
+
+    // Debug Panels
+    const debugScroll = document.getElementById("debug-scroll");
+    const debugStarfield = document.getElementById("debug-starfield");
     
-    // Debug overlay: update display with scrollTracker values.
-    const debugOverlay = document.getElementById("debug-overlay");
     function updateDebug() {
-      const state = scrollTracker.getState();
-      const config = scrollTracker.getConfig();
-      debugOverlay.innerHTML =
-        `Extra Velocity: ${state.velocity.toFixed(2)} km/h<br>` +
-        `Last Impulse: ${state.lastImpulse.toFixed(2)} km/h<br>` +
-        `Base Speed: ${config.baseSpeed} km/h<br>` +
-        `Total Speed: ${(config.baseSpeed + state.velocity).toFixed(2)} km/h`;
+      const sState = scrollTracker.getState();
+      const sConfig = scrollTracker.getConfig();
+      const velocityKMH = scrollTracker.getVelocityKMH ? scrollTracker.getVelocityKMH() : (sState.velocityMS * 3.6);
+      debugScroll.innerHTML = `
+        <strong>ScrollTracker Module</strong><br>
+        Velocity: ${velocityKMH ? velocityKMH.toFixed(2) : "N/A"} km/h<br>
+        Last Impulse: ${sState.lastImpulse !== undefined ? sState.lastImpulse.toFixed(2) : "N/A"}<br>
+        Friction: ${sConfig.dragCoefficient !== undefined ? sConfig.dragCoefficient.toFixed(2) : "N/A"}<br>
+        Stroke Impulse: ${sConfig.strokeImpulse !== undefined ? sConfig.strokeImpulse.toFixed(2) : "N/A"}<br>
+        Top Speed: ${sConfig.topSpeed !== undefined ? sConfig.topSpeed.toFixed(2) : "N/A"} km/h
+      `;
+      debugStarfield.innerHTML = `
+        <strong>Starfield Module</strong><br>
+        Base Speed: ${starConfig.baseSpeed.toFixed(2)} km/h<br>
+        Total Speed: ${(starConfig.baseSpeed + starfieldThruster.extraSpeed).toFixed(2)} km/h<br>
+        Point Size: ${starConfig.pointSizeFactor.toFixed(1)}<br>
+        Star Color: [${starConfig.starColor.map(c => c.toFixed(1)).join(", ")}]
+      `;
       requestAnimationFrame(updateDebug);
     }
+
+    // Helper to update slider display.
+    function updateSliderValue(sliderId, displayId, value) {
+      const display = document.getElementById(displayId);
+      if (display) {
+        display.textContent = value;
+      } else {
+        console.warn(`Display element with id "${displayId}" not found.`);
+      }
+    }
+    
+    // Generic function to handle slider updates.
+    function setupSlider(sliderId, updateFunction) {
+      const slider = document.getElementById(sliderId);
+      const label = document.querySelector(`label[for="${sliderId}"]`);
+      const display = label ? label.querySelector('span') : null;
+
+      if (!display) {
+        console.warn(`No display span found for slider ${sliderId}`);
+        return;
+      }
+
+      const displayId = display.id;
+
+      slider.addEventListener("input", (e) => {
+        const val = parseFloat(e.target.value);
+        updateFunction(val);
+        updateSliderValue(sliderId, displayId, val);
+      });
+      // Initialize displayed value from HTML attribute.
+      updateSliderValue(sliderId, displayId, slider.value);
+    }
+    
+    // Hook up ScrollTracker sliders.
+    setupSlider("slider-friction", (val) => scrollTracker.setDragCoefficient(val));
+    setupSlider("slider-strokeImpulse", (val) => scrollTracker.setStrokeImpulse(val));
+    setupSlider("slider-maxVelocity", (val) => scrollTracker.setTopSpeed(val / 3.6));
+    
+    // Hook up Starfield sliders.
+    setupSlider("slider-baseSpeed", (val) => starConfig.baseSpeed = val);
+    setupSlider("slider-pointSizeFactor", (val) => starConfig.pointSizeFactor = val);
+    setupSlider("slider-fieldSizeFactor", (val) => {
+      starConfig.fieldSizeFactor = val;
+      starfieldThruster.resetStars();
+    });
+    setupSlider("slider-stretchFactor", (val) => starConfig.stretchFactor = val);
+    setupSlider("slider-stretchThreshold", (val) => starConfig.stretchThreshold = val);
+    setupSlider("slider-maxStretch", (val) => starConfig.maxStretch = val);
+    
+    // Special handler for star colors.
+    const sliderStarColorR = document.getElementById("slider-starColorR");
+    const sliderStarColorG = document.getElementById("slider-starColorG");
+    const sliderStarColorB = document.getElementById("slider-starColorB");
+    function updateStarColor() {
+      starConfig.starColor = [
+        parseFloat(sliderStarColorR.value),
+        parseFloat(sliderStarColorG.value),
+        parseFloat(sliderStarColorB.value)
+      ];
+      updateSliderValue("slider-starColorR", "value-starColorR", sliderStarColorR.value);
+      updateSliderValue("slider-starColorG", "value-starColorG", sliderStarColorG.value);
+      updateSliderValue("slider-starColorB", "value-starColorB", sliderStarColorB.value);
+    }
+    sliderStarColorR.addEventListener("input", updateStarColor);
+    sliderStarColorG.addEventListener("input", updateStarColor);
+    sliderStarColorB.addEventListener("input", updateStarColor);
+    updateStarColor(); // Initialize star color.
+
+    // Hook up Lamp sliders
+    setupSlider("slider-lampBrightness", (val) => {
+      lampConfig.maxBrightness = val;
+    });
+    
+    setupSlider("slider-lampMinBrightness", (val) => {
+      lampConfig.minBrightness = val;
+    });
+    
+    setupSlider("slider-speedThreshold", (val) => {
+      lampConfig.speedThreshold = val;
+    });
+    
+    setupSlider("slider-exponentialFactor", (val) => {
+      lampConfig.exponentialFactor = val;
+    });
+    
+    setupSlider("slider-lampSize", (val) => {
+      lampEffect.setSize(val);
+    });
+    
+    // Special handler for lamp colors
+    const sliderLampColorR = document.getElementById("slider-lampColorR");
+    const sliderLampColorG = document.getElementById("slider-lampColorG");
+    const sliderLampColorB = document.getElementById("slider-lampColorB");
+    function updateLampColor() {
+      const r = parseFloat(sliderLampColorR.value);
+      const g = parseFloat(sliderLampColorG.value);
+      const b = parseFloat(sliderLampColorB.value);
+      lampEffect.setColor(r, g, b);
+      updateSliderValue("slider-lampColorR", "value-lampColorR", sliderLampColorR.value);
+      updateSliderValue("slider-lampColorG", "value-lampColorG", sliderLampColorG.value);
+      updateSliderValue("slider-lampColorB", "value-lampColorB", sliderLampColorB.value);
+    }
+    sliderLampColorR.addEventListener("input", updateLampColor);
+    sliderLampColorG.addEventListener("input", updateLampColor);
+    sliderLampColorB.addEventListener("input", updateLampColor);
+    
+    // Position selector
+    const positionSelect = document.getElementById("select-lampPosition");
+    positionSelect.addEventListener("change", (e) => {
+      lampEffect.setPosition(e.target.value);
+    });
+
     updateDebug();
   </script>
 </body>
