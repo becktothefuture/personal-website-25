@@ -13,6 +13,18 @@
       color: #fff;
       font-family: sans-serif;
     }
+    #starfield-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('./../assets/starfield-background.jpg');
+      background-size: cover;
+      z-index: 1;
+      pointer-events: none;
+      transform-origin: center center; /* Ensure scaling happens from center */
+    }
     #starfield {
       position: fixed;
       top: 0;
@@ -20,7 +32,8 @@
       width: 100%;
       height: 100%;
       display: block;
-      background-image: url('./../assets/starfield-background.jpg');
+      z-index: 10; /* Much higher z-index to ensure it's above everything */
+      pointer-events: none;
     }
     /* Debug Panels */
     #debug-scroll, #debug-starfield {
@@ -243,11 +256,16 @@
   </style>
 </head>
 <body>
+  <!-- Add background image div -->
+  <div id="starfield-background"></div>
   <canvas id="starfield"></canvas>
   
-  <!-- Debug Panels (only display values at the top) -->
-  <aside id="debug-scroll">ScrollTracker Debug</aside>
-  <aside id="debug-starfield">Starfield Debug</aside>
+  <!-- Content wrapper with full viewport size -->
+  <div id="content-wrapper" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+    <!-- Debug Panels (only display values at the top) -->
+    <aside id="debug-scroll">ScrollTracker Debug</aside>
+    <aside id="debug-starfield">Starfield Debug</aside>
+  </div>
   
   <!-- Settings Toggle Button -->
   <div id="settings-toggle">⚙️</div>
@@ -295,6 +313,42 @@
     const lampEffect = initLampEffect();
     const soundSystem = initSoundSystem();
     const rumbleEffect = initRumbleEffect();
+
+    // Start background scaling effect
+    function scaleBackgroundSlowly() {
+      const backgroundElement = document.getElementById('starfield-background');
+      const startTime = performance.now();
+      const duration = 60000; // 60 seconds
+      const startScale = 1.0;
+      const endScale = 1.05; // Scale up by 5%
+      
+      function updateScale(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        
+        if (elapsedTime < duration) {
+          // Calculate progress (0 to 1)
+          const progress = elapsedTime / duration;
+          
+          // Calculate current scale (linear interpolation)
+          const currentScale = startScale + (progress * (endScale - startScale));
+          
+          // Apply scale transform
+          backgroundElement.style.transform = `scale(${currentScale})`;
+          
+          // Continue animation
+          requestAnimationFrame(updateScale);
+        } else {
+          // Animation complete, set final scale
+          backgroundElement.style.transform = `scale(${endScale})`;
+        }
+      }
+      
+      // Start animation
+      requestAnimationFrame(updateScale);
+    }
+    
+    // Start background scaling after a short delay to ensure everything else is loaded
+    setTimeout(scaleBackgroundSlowly, 1000);
 
     // Debug Panels update
     const debugScroll = document.getElementById("debug-scroll");

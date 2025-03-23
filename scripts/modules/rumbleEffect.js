@@ -86,13 +86,32 @@ class RumbleEffect {
       style.zIndex = '5';
       style.pointerEvents = 'none';
       
-      // Move all direct children of body (except starfield) into the wrapper
+      // Get elements we want to explicitly include or exclude
       const starfield = document.getElementById('starfield');
+      const starfieldBackground = document.getElementById('starfield-background');
+      const contentWrapper = document.getElementById('content-wrapper');
+      const debugScroll = document.getElementById('debug-scroll');
+      const debugStarfield = document.getElementById('debug-starfield');
+      
+      // Move all direct children of body into the wrapper with specific rules
       const bodyChildren = Array.from(document.body.children);
       
       bodyChildren.forEach(child => {
-        if (child !== starfield && child !== wrapper) {
-          child.style.pointerEvents = 'auto';
+        // Specifically include these elements in the rumble wrapper
+        const shouldInclude = (
+          child === starfieldBackground || 
+          child === contentWrapper ||
+          (child !== starfield && 
+           child !== wrapper && 
+           child !== debugScroll && 
+           child !== debugStarfield)
+        );
+        
+        if (shouldInclude) {
+          // Enable pointer events for interactive elements
+          if (child.id !== 'starfield-background') {
+            child.style.pointerEvents = 'auto';
+          }
           wrapper.appendChild(child);
         }
       });

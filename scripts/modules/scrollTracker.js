@@ -92,10 +92,19 @@ class ScrollTracker extends EventEmitter {
       
       // Emit scroll event for lamp and other listeners
       this.emit("scroll", { impulse: effectiveImpulse, velocity: this.getVelocityKMH() });
-    } else if (delta > 0) { // Downward scroll (for debug feedback only)
+    } else if (delta > 0) { // Downward scroll = deceleration
       const magnitude = Math.min(Math.abs(delta) / this.#config.scrollScalingFactor, 1);
-      const negImpulse = -this.#config.strokeImpulse * (1 + magnitude);
+      
+      // Calculate negative impulse with magnitude scaling
+      const brakeStrength = this.#config.strokeImpulse * 1.5; // Brake strength multiplier
+      const negImpulse = -brakeStrength * (1 + magnitude);
+      
+      // Apply the negative impulse to decelerate
+      this.#state.velocityMS = Math.max(0, this.#state.velocityMS + (negImpulse / this.#config.mass));
       this.#state.lastImpulse = negImpulse;
+      
+      // Emit scroll event for other modules to react
+      this.emit("scroll", { impulse: negImpulse, velocity: this.getVelocityKMH() });
     }
     
     this.emit("update", { velocityKMH: this.getVelocityKMH(), impulse: this.#state.lastImpulse });

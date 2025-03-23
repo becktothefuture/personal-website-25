@@ -1,4 +1,3 @@
-
 import { scrollTracker } from './scrollTracker.js';
 
 /**
@@ -42,7 +41,8 @@ class StarfieldThruster {
       console.error("Canvas element #starfield not found.");
       return;
     }
-    this.#gl = this.#canvas.getContext('webgl');
+    // Create WebGL context with alpha transparency enabled
+    this.#gl = this.#canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     if (!this.#gl) {
       console.error("WebGL not supported.");
       return;
@@ -204,7 +204,8 @@ class StarfieldThruster {
   
   #drawScene() {
     const gl = this.#gl;
-    gl.clearColor(0, 0, 0, 1);
+    // Set clear color with alpha 0 (transparent)
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(this.#program);
     gl.uniform1f(this.#uPerspectiveLoc, starConfig.perspective);
