@@ -1,74 +1,84 @@
 // scrollTracker.js
-const config = {
-    baseSpeed: 5,              // Constant base speed (km/h) that is always active.
-    maxVelocity: 50,           // Maximum additional velocity (km/h) from strokes.
-    strokeImpulse: 3,          // Base impulse (km/h per stroke) added on each wheel event.
-    frictionCoefficient: 0.5,  // Friction coefficient (per second) controlling decay.
-  };
-  
-  const state = {
-    velocity: 0,         // Additional velocity (km/h) added from strokes.
-    lastImpulse: 0,      // Last applied impulse (km/h) for debugging.
-    lastUpdateTime: performance.now(),
-  };
-  
-  /**
-   * Applies friction to the current velocity using an exponential decay model.
-   */
-  function updatePhysics() {
-    const now = performance.now();
-    const deltaTime = (now - state.lastUpdateTime) / 1000; // Time in seconds.
-    state.lastUpdateTime = now;
-    // Exponential decay: v = v * exp(-frictionCoefficient * deltaTime)
-    state.velocity *= Math.exp(-config.frictionCoefficient * deltaTime);
+
+// Simple event emitter class for decoupled communication.
+class EventEmitter {
+  constructor() {
+    this.listeners = {};
   }
-  
-  /**
-   * Wheel event handler that translates scroll movements into a rowing stroke impulse.
-   */
-  function onWheel(event) {
-    event.preventDefault(); // Prevent default scrolling.
-    const scalingFactor = 100; // Scale the wheel delta to a 0–1 range.
-    // Calculate impulse: larger deltaY means a stronger stroke.
-    const impulse = config.strokeImpulse * (1 + Math.min(Math.abs(event.deltaY) / scalingFactor, 1));
-    // Add impulse to velocity, capping it at maxVelocity.
-    state.velocity = Math.min(state.velocity + impulse, config.maxVelocity);
-    state.lastImpulse = impulse;
-  }
-  
-  /**
-   * Main animation loop: updates physics and refreshes the debug overlay.
-   */
-  function animationLoop() {
-    updatePhysics();
-  
-    // Update the debug overlay with current physics values.
-    const overlay = document.getElementById("debug-overlay");
-    if (overlay) {
-      const totalSpeed = config.baseSpeed + state.velocity;
-      overlay.innerHTML =
-        `Base Speed: ${config.baseSpeed.toFixed(1)} km/h<br>` +
-        `Additional Speed: ${state.velocity.toFixed(1)} km/h<br>` +
-        `Total Speed: ${totalSpeed.toFixed(1)} km/h<br>` +
-        `Last Impulse: ${state.lastImpulse.toFixed(1)} km/h`;
+  on(event, fn) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
     }
-  
-    // Reset the last impulse (so it only shows instantaneous values).
-    state.lastImpulse = 0;
-    requestAnimationFrame(animationLoop);
+    this.listeners[event].push(fn);
+  }
+  emit(event, ...args) {
+    if (this.listeners[event]) {
+      for (const fn of this.listeners[event]) {
+        fn(...args);
+      }
+    }
+  }
+}
+
+class ScrollTracker extends EventEmitter {
+  // Private configuration and state variables.
+  #config = {
+    baseSpeed: 5,              // Constant base speed (km/h) always active.
+    maxVelocity: 500,           // Maximum additional velocity (km/h) from strokes.a
+    strokeImpulse: 1,          // km/h impulse added per wheel event.
+    frictionCoefficient: .75,  // Per-second friction decay coefficient.
+    scalingFactor: 100         // Scale factor for wheel delta.
+  };
+  #state = {
+    velocity: 0,         // Extra velocity (km/h) accumulated.
+    lastImpulse: 0,      // Most recent impulse value.
+    lastUpdateTime: performance.now()
+  };
+
+  constructor() {
+    super();
+    this.init();
   }
   
-  /**
-   * Initialise the scroll tracker: sets up the wheel event listener and starts the animation loop.
-   */
-  function initScrollTracker() {
-    state.lastUpdateTime = performance.now();
-    window.addEventListener("wheel", onWheel, { passive: false });
-    requestAnimationFrame(animationLoop);
+  init() {
+    // Listen for wheel events; use passive: false so we can prevent default scrolling.
+    window.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
+    // Start the update loop.
+    requestAnimationFrame(this.update.bind(this));
   }
   
-  // Expose the scroll tracker globally for immediate access by other modules.
-  window.scrollTracker = { config, state, init: initScrollTracker };
+  onWheel(event) {
+    event.preventDefault();
+    const delta = Math.abs(event.deltaY);
+    const impulse = this.#config.strokeImpulse *
+                    (1 + Math.min(delta / this.#config.scalingFactor, 1));
+    // Add impulse to velocity, capping at maxVelocity.
+    this.#state.velocity = Math.min(this.#state.velocity + impulse, this.#config.maxVelocity);
+    this.#state.lastImpulse = impulse;
+    // Emit an update event immediately.
+    this.emit("update", { velocity: this.#state.velocity, impulse });
+  }
   
-  // Export the init function for module systems.
-  export { initScrollTracker };
+  update() {
+    const now = performance.now();
+    const deltaTime = (now - this.#state.lastUpdateTime) / 1000; // seconds
+    this.#state.lastUpdateTime = now;
+    // Exponential decay to simulate friction.
+    this.#state.velocity *= Math.exp(-this.#config.frictionCoefficient * deltaTime);
+    // Emit update event each frame.
+    this.emit("update", { velocity: this.#state.velocity, impulse: 0 });
+    requestAnimationFrame(this.update.bind(this));
+  }
+  
+  // Expose state for debugging (read-only).
+  getState() {
+    return { ...this.#state };
+  }
+  
+  getConfig() {
+    return { ...this.#config };
+  }
+}
+
+const scrollTracker = new ScrollTracker();
+export { scrollTracker };
