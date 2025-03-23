@@ -4,15 +4,18 @@
 const CONFIG = {
   intensityMultiplier: 0.99,
   maxIntensity: 20,
-  damping: 0.99,
+  damping: 0.98, // (Unused now in favor of easingRate)
+  easingRate: 0.05, // New parameter for exponential easing decay
   minShakeThreshold: 0.5,
+  rampDownThreshold: 0.5, 
+  inactivityTimeout: 150, // Reduced from 500ms to 250ms
   numStars: 400,
   perspective: 500,
-  maxDepth: 1400,
-  starSpeed: 1,
+  maxDepth: 1500,
+  starSpeed: 2,
   gridSize: 4,
   scrollBuffer: 10,
-  scrollThrottle: 5, // in milliseconds
+  scrollThrottle: 5,
   lowFPS: 30,
   highFPS: 50,
 };
@@ -51,6 +54,11 @@ class StarfieldThruster {
       initialized: false,
       lastFrameTime: performance.now(),
       frameDelta: 0,
+      lastScrollActivity: performance.now(),
+      thrusterActive: false,
+      lastThrusterUpdate: performance.now(),
+      thrusterStylesCached: false,
+      currentScrollY: 0
     };
 
     // --- Performance Monitor ---
@@ -93,13 +101,12 @@ class StarfieldThruster {
       canvas: document.getElementById('starfield'),
       wrapper: document.getElementById('wrapper'),
       thruster: document.getElementById('thruster'),
-      scrollContainer: document.getElementById('scroll-container'),
       ctx: null,
     };
 
     // Early abort if required elements are missing
-    if (!this.elements.canvas || !this.elements.scrollContainer) {
-      console.error('Required DOM elements missing. Initialization aborted.');
+    if (!this.elements.canvas) {
+      console.error('Canvas element missing. Initialization aborted.');
       return;
     }
 
@@ -118,7 +125,7 @@ class StarfieldThruster {
     this._initLookupTables();
     this._initStars();
     this._resizeCanvas();
-    this._positionScrollContainer();
+    // Removed _positionScrollContainer() call as it's no longer needed
     this._addEventListeners();
     requestAnimationFrame((ts) => this.animate(ts));
     console.log('Starfield Thruster initialized');
@@ -169,42 +176,38 @@ class StarfieldThruster {
     canvas.centerY = canvas.height / 2;
   }
 
-  _positionScrollContainer() {
-    const { scrollContainer } = this.elements;
-    const middlePosition = Math.floor(scrollContainer.scrollHeight / 2);
-    scrollContainer.scrollTop = middlePosition;
-    this.state.lastScrollY = middlePosition;
-  }
+  // _positionScrollContainer() method removed
 
   _addEventListeners() {
     window.addEventListener('resize', throttle(() => this._resizeCanvas(), 100));
-    this.elements.scrollContainer.addEventListener('scroll', throttle(() => this._processScroll(), CONFIG.scrollThrottle));
+    // Removed scroll event listener for scrollContainer
     // Prevent unwanted pull-to-refresh on touch devices
     document.addEventListener('touchmove', (e) => {
       if (e.touches.length > 1) e.preventDefault();
     }, { passive: false });
   }
 
-  _processScroll() {
-    const { scrollContainer } = this.elements;
-    const currentScrollY = scrollContainer.scrollTop;
+  _processScroll(forcedScrollPosition = null) {
+    // Using the global customScrollPos from the previous version
+    const currentScrollY = forcedScrollPosition !== null ? forcedScrollPosition : customScrollPos;
+    
+    // Skip processing if scroll position hasn't changed
+    if (currentScrollY === this.state.currentScrollY) {
+      return false; // No scroll movement
+    }
+    
+    // Record the current position for next comparison
+    this.state.currentScrollY = currentScrollY;
+    
+    // When scroll happens, record the time and activate the thruster
+    this.state.lastScrollActivity = performance.now();
+    this.state.thrusterActive = true;
+    this.state.thrusterStylesCached = false;
+    
     const currentTime = performance.now();
     let deltaTime = currentTime - this.state.lastTime;
     if (deltaTime < 10) deltaTime = 10;
 
-    // Loop scroll behavior when reaching top or bottom
-    const viewportHeight = scrollContainer.clientHeight;
-    const scrollHeight = scrollContainer.scrollHeight;
-    if (currentScrollY <= CONFIG.scrollBuffer) {
-      scrollContainer.scrollTop = scrollHeight - viewportHeight - CONFIG.scrollBuffer;
-      this._resetScrollState(currentTime, scrollContainer.scrollTop);
-      return;
-    }
-    if (currentScrollY + viewportHeight >= scrollHeight - CONFIG.scrollBuffer) {
-      scrollContainer.scrollTop = CONFIG.scrollBuffer + 10;
-      this._resetScrollState(currentTime, scrollContainer.scrollTop);
-      return;
-    }
     const deltaY = currentScrollY - this.state.lastScrollY;
     const instantVelocity = Math.abs(deltaY / deltaTime * 1000);
     this.state.prevScrollVelocity = this.state.scrollVelocity;
@@ -217,20 +220,13 @@ class StarfieldThruster {
     this.state.flickerIntensity = Math.min(1, this.state.scrollVelocity / 300 + Math.abs(this.state.scrollAcceleration) / 1000);
     this.state.lastScrollY = currentScrollY;
     this.state.lastTime = currentTime;
-  }
-
-  _resetScrollState(time, scrollY) {
-    this.state.lastTime = time;
-    this.state.lastScrollY = scrollY;
-    this.state.shakeIntensity = 0;
-    this.state.scrollVelocity = 0;
-    this.state.scrollAcceleration = 0;
-    this.state.prevScrollVelocity = 0;
+    
+    return true; // Scroll movement detected and processed
   }
 
   _updateAndDrawStarfield(speedMultiplier, frameCorrection) {
     const { canvas, ctx } = this.elements;
-    const { centerX, centerY, width } = canvas;
+    const { centerX, centerY } = canvas;
     const centerYVal = canvas.centerY;
     const viewportMargin = 20;
     const moveSpeed = CONFIG.starSpeed * speedMultiplier;
@@ -351,34 +347,71 @@ class StarfieldThruster {
   }
 
   animate(timestamp) {
+    // Process scroll if there's a change
+    this._processScroll();
+    
     const delta = timestamp - this.state.lastFrameTime;
-    // Avoid large jumps in case of tab switching
     const frameCorrection = Math.min(3, delta / 16.67);
     this.state.frameDelta = delta;
     this.state.lastFrameTime = timestamp;
-    const timeAdjustedDamping = Math.pow(CONFIG.damping, frameCorrection);
-    this.state.shakeIntensity *= timeAdjustedDamping;
-    this.state.flickerIntensity *= timeAdjustedDamping;
+    
+    // Apply exponential easing to shake and flicker intensities for more realistic motion
+    this.state.shakeIntensity *= Math.exp(-frameCorrection * CONFIG.easingRate);
+    this.state.flickerIntensity *= Math.exp(-frameCorrection * CONFIG.easingRate);
 
-    // Update starfield speed based on shake intensity
+    // Calculate current starfield speed based on shake intensity
     const currentSpeed = 1 + (this.state.shakeIntensity / CONFIG.maxIntensity) * 9;
+
+    // Update custom scrollbar using the same currentSpeed
+    this.scrollBarPos += currentSpeed * frameCorrection;
+    const scrollbar = document.getElementById('custom-scrollbar');
+    if (scrollbar) {
+      const scrollBarHeight = scrollbar.offsetHeight;
+      const pos = this.scrollBarPos % scrollBarHeight;
+      const contents = scrollbar.querySelectorAll('.scroll-content');
+      if (contents.length >= 2) {
+        contents[0].style.transform = `translateY(${-pos}px)`;
+        contents[1].style.transform = `translateY(${scrollBarHeight - pos}px)`;
+      }
+    }
+
+    // Update debug overlay for movement speed and acceleration
+    let debugStats = document.getElementById('debug-stats');
+    if (!debugStats) {
+      debugStats = document.createElement('div');
+      debugStats.id = 'debug-stats';
+      debugStats.style.position = 'fixed';
+      debugStats.style.top = '0';
+      debugStats.style.left = '0';
+      debugStats.style.color = 'white';
+      debugStats.style.fontFamily = 'monospace';
+      debugStats.style.fontSize = '12px';
+      debugStats.style.background = 'rgba(0, 0, 0, 0.5)';
+      debugStats.style.padding = '4px';
+      document.body.appendChild(debugStats);
+    }
+    debugStats.innerHTML = `Speed: ${currentSpeed.toFixed(2)}<br>Acceleration: ${this.state.scrollAcceleration.toFixed(2)}`;
+    
     this._updateAndDrawStarfield(currentSpeed * frameCorrection, frameCorrection);
 
-    // Rumble effect for the content wrapper
-    let transform = 'translate3d(0, 0, 0)';
-    if (this.state.shakeIntensity > CONFIG.minShakeThreshold) {
-      const shakeFactor = this.state.shakeIntensity * frameCorrection * 0.1;
-      const offsetX = (Math.random() * 2 - 1) * shakeFactor;
-      const offsetY = (Math.random() * 2 - 1) * shakeFactor;
-      const rotation = (Math.random() * 2 - 1) * shakeFactor * 0.2;
-      transform = `translate3d(${offsetX}px, ${offsetY}px, 0) rotate(${rotation}deg)`;
-    }
-    if (this.elements.wrapper) {
-      this.elements.wrapper.style.transform = transform;
-    }
+    // Update thruster effects if needed
+    const timeSinceLastScroll = timestamp - this.state.lastScrollActivity;
+    const isStillRampingDown = this.state.shakeIntensity > CONFIG.rampDownThreshold;
+    const shouldUpdateThruster = this.state.thrusterActive || isStillRampingDown;
+    
+    if (shouldUpdateThruster && this.elements.thruster) {
+      let transform = 'translate3d(0, 0, 0)';
+      if (this.state.shakeIntensity > CONFIG.minShakeThreshold) {
+        const shakeFactor = this.state.shakeIntensity * frameCorrection * 0.1;
+        const offsetX = (Math.random() * 2 - 1) * shakeFactor;
+        const offsetY = (Math.random() * 2 - 1) * shakeFactor;
+        const rotation = (Math.random() * 2 - 1) * shakeFactor * 0.2;
+        transform = `translate3d(${offsetX}px, ${offsetY}px, 0) rotate(${rotation}deg)`;
+      }
+      if (this.elements.wrapper) {
+        this.elements.wrapper.style.transform = transform;
+      }
 
-    // Update thruster effect based on scroll-induced intensities
-    if (this.elements.thruster) {
       if (this.state.shakeIntensity > 0) {
         const norm = Math.min(1, this.state.shakeIntensity / CONFIG.maxIntensity);
         const hue = 270 - norm * 30;
@@ -394,18 +427,94 @@ class StarfieldThruster {
         this.elements.thruster.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
         this.elements.thruster.style.boxShadow = `0 0 ${glowSize}px ${glowSize / 2}px hsla(${hue}, ${sat}%, ${lightness}%, ${glowOpacity})`;
         this.elements.thruster.style.backgroundColor = `hsla(${hue}, ${sat + 10}%, ${lightness - 10}%, ${0.3 + norm * 0.7})`;
-      } else {
+        this.state.lastThrusterUpdate = timestamp;
+      } else if (!this.state.thrusterStylesCached) {
         this.elements.thruster.style.boxShadow = 'none';
         this.elements.thruster.style.backgroundColor = 'rgba(180, 160, 220, 0.2)';
         this.elements.thruster.style.transform = 'scaleX(1) scaleY(1)';
+        this.state.thrusterStylesCached = true;
+        this.state.thrusterActive = false;
       }
     }
+    
+    if (timeSinceLastScroll > CONFIG.inactivityTimeout && this.state.shakeIntensity < CONFIG.rampDownThreshold) {
+      this.state.thrusterActive = false;
+      if (this.state.shakeIntensity < 0.01 && this.elements.thruster) {
+        this.elements.thruster.style.boxShadow = 'none';
+        this.elements.thruster.style.backgroundColor = 'rgba(180, 160, 220, 0.2)';
+        this.elements.thruster.style.transform = 'scaleX(1) scaleY(1)';
+        this.state.thrusterStylesCached = true;
+      }
+    }
+    
     requestAnimationFrame((ts) => this.animate(ts));
   }
+}
+
+
+// Custom Scrollbar Logic
+let customScrollPos = 0;
+let lastRecordedScrollPos = 0;
+const scrollSpeed = 0.1; // adjust this value for sensitivity
+
+function initCustomScrollbar() {
+  const scrollbar = document.getElementById('custom-scrollbar');
+  if (!scrollbar) return;
+
+  // Populate both scroll-content containers with vertical line elements
+  const contents = scrollbar.querySelectorAll('.scroll-content');
+  contents.forEach((content) => {
+    // Clear any existing content
+    content.innerHTML = '';
+    // Populate with a fixed number of lines (e.g., 50 lines)
+    const numLines = 50;
+    for (let i = 0; i < numLines; i++) {
+      const line = document.createElement('div');
+      line.classList.add('line');
+      content.appendChild(line);
+    }
+  });
+
+  // Listen to mouse wheel events for scrolling simulation
+  window.addEventListener('wheel', (e) => {
+    e.preventDefault(); // prevent the native scrolling behavior
+    customScrollPos += e.deltaY * scrollSpeed;
+    
+    // Ensure the starfield thruster gets updated when scrolling happens
+    if (window.starfieldThrusterInstance) {
+      window.starfieldThrusterInstance._processScroll(customScrollPos);
+    }
+  }, { passive: false });
+
+  // Start the animation loop for the custom scrollbar
+  requestAnimationFrame(updateCustomScrollbar);
+}
+
+function updateCustomScrollbar() {
+  const scrollbar = document.getElementById('custom-scrollbar');
+  if (!scrollbar) return;
+  
+  const contents = scrollbar.querySelectorAll('.scroll-content');
+  if (contents.length !== 2) return;
+  
+  // Get the height of the scrollbar
+  const scrollHeight = scrollbar.offsetHeight;
+  
+  // Calculate position based on scrolling (use modulo for looping)
+  const scrollPosition = (customScrollPos % scrollHeight);
+  
+  // Move both content blocks to create seamless scrolling effect
+  contents[0].style.transform = `translateY(${-scrollPosition}px)`;
+  contents[1].style.transform = `translateY(${-scrollPosition}px)`;
+  
+  requestAnimationFrame(updateCustomScrollbar);
 }
 
 // Exported initialization function
 export function initStarfieldThruster() {
   const starfieldThruster = new StarfieldThruster();
+  // Store the instance globally so the scroll event can access it
+  window.starfieldThrusterInstance = starfieldThruster;
   starfieldThruster.init();
+  initCustomScrollbar();
 }

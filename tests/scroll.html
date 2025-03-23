@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Spaceship Thrusters & Starfield</title>
   <style>
     /* Basic reset */
-    body, html {
+    body,
+    html {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -14,6 +16,7 @@
       position: fixed;
       background: #000;
     }
+
     /* Scrollable container */
     #scroll-container {
       position: absolute;
@@ -25,12 +28,14 @@
       overflow-x: hidden;
       z-index: 10;
     }
+
     /* Invisible content to allow scrolling */
     #scroll-content {
       height: 10000vh;
       opacity: 0.01;
       pointer-events: none;
     }
+
     /* Fullscreen starfield canvas */
     #starfield {
       position: fixed;
@@ -40,6 +45,7 @@
       height: 100%;
       z-index: -1;
     }
+
     /* Content wrapper for centered text and rumble effect */
     #wrapper {
       position: fixed;
@@ -49,6 +55,7 @@
       height: 100%;
       z-index: 5;
     }
+
     .center {
       position: absolute;
       top: 50%;
@@ -59,6 +66,7 @@
       text-align: center;
       z-index: 20;
     }
+
     /* Thruster indicator */
     #thruster {
       position: fixed;
@@ -72,16 +80,52 @@
       transform-origin: center left;
       will-change: transform, box-shadow, background-color;
     }
+
+    /* Custom Scrollbar Container */
+    #custom-scrollbar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 1000;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    #custom-scrollbar .scroll-content {
+      position: absolute;
+      width: 100%;
+      height: 200%; /* Each takes 100% of container */
+      bottom: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly; /* This is creating gaps between lines */
+      background: rgba(0,0,0,0.1); /* Faint background to see positioning */
+    }
+    
+    /* Position the second content element directly at the bottom edge of the container */
+    .scroll-content:nth-child(2) {
+      top: 100%; /* Position at bottom edge, not transformed */
+      transform: none; /* Remove transform */
+    }
+    
+    /* Vertical line style */
+    #custom-scrollbar .scroll-content .line {
+      width: 100%;
+      height: 2px;
+      background-color: white;
+      margin: 0; /* Remove any margin */
+    }
   </style>
 </head>
+
 <body>
   <!-- Starfield background -->
   <canvas id="starfield"></canvas>
-
-  <!-- Scroll container driving the scroll-based effect -->
-  <div id="scroll-container">
-    <div id="scroll-content"></div>
-  </div>
 
   <!-- Content wrapper with centered text -->
   <div id="wrapper">
@@ -94,12 +138,20 @@
   <!-- Thruster indicator -->
   <div id="thruster"></div>
 
+  <!-- Custom Scrollbar Indicator -->
+  <div id="custom-scrollbar">
+    <div class="scroll-content"></div>
+    <div class="scroll-content"></div>
+  </div>
+
+
   <!-- Module script initialization -->
   <script type="module">
-    import { initStarfieldThruster } from './scripts/starfieldThruster.js';
+    import { initStarfieldThruster } from '../scripts/modules/starfieldThruster.js';
     document.addEventListener('DOMContentLoaded', () => {
       initStarfieldThruster();
     });
   </script>
 </body>
+
 </html>
