@@ -94,6 +94,12 @@ export function initStarfieldThruster() {
   elements.thruster = document.getElementById('thruster');
   elements.scrollContainer = document.getElementById('scroll-container');
   
+  // Check if the scroll container exists
+  if (!elements.scrollContainer) {
+    console.error('Scroll container element not found. Starfield Thruster initialization aborted.');
+    return;
+  }
+  
   // Initialize Typed Arrays
   starX = new Float32Array(numStars);
   starY = new Float32Array(numStars);
@@ -427,28 +433,34 @@ function animate(timestamp) {
     const rotation = (Math.random() * 2 - 1) * shakeFactor * 0.2;
     wrapperTransform = `translate3d(${offsetX}px, ${offsetY}px, 0) rotate(${rotation}deg)`;
   }
-  elements.wrapper.style.transform = wrapperTransform;
+
+  // Check if the wrapper element exists before modifying its style
+  if (elements.wrapper) {
+    elements.wrapper.style.transform = wrapperTransform;
+  }
   
   // Thruster visual effect
-  if (shakeIntensity > 0) {
-    const normalizedIntensity = Math.min(1, shakeIntensity / maxIntensity);
-    const hue = 270 - normalizedIntensity * 30;
-    const sat = 80 - normalizedIntensity * 70;
-    const lightness = 70 + normalizedIntensity * 30;
-    const flickerBase = flickerIntensity * (0.6 + Math.random() * 0.4);
-    const fastFlicker = Math.random() > 0.7 ? (Math.random() * 0.3) : 0;
-    const flicker = flickerBase + fastFlicker;
-    const glowSize = (5 + normalizedIntensity * 25) * (0.8 + flicker * 0.2);
-    const glowOpacity = 0.5 + normalizedIntensity * 0.5 + flicker * 0.2;
-    const scaleX = 1 + normalizedIntensity * 0.3 + flicker * 0.1;
-    const scaleY = 1 + flicker * 0.05;
-    elements.thruster.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
-    elements.thruster.style.boxShadow = `0 0 ${glowSize}px ${glowSize/2}px hsla(${hue}, ${sat}%, ${lightness}%, ${glowOpacity})`;
-    elements.thruster.style.backgroundColor = `hsla(${hue}, ${sat + 10}%, ${lightness - 10}%, ${0.3 + normalizedIntensity * 0.7})`;
-  } else {
-    elements.thruster.style.boxShadow = 'none';
-    elements.thruster.style.backgroundColor = 'rgba(180, 160, 220, 0.2)';
-    elements.thruster.style.transform = 'scaleX(1) scaleY(1)';
+  if (elements.thruster) { // Check if thruster element exists
+    if (shakeIntensity > 0) {
+      const normalizedIntensity = Math.min(1, shakeIntensity / maxIntensity);
+      const hue = 270 - normalizedIntensity * 30;
+      const sat = 80 - normalizedIntensity * 70;
+      const lightness = 70 + normalizedIntensity * 30;
+      const flickerBase = flickerIntensity * (0.6 + Math.random() * 0.4);
+      const fastFlicker = Math.random() > 0.7 ? (Math.random() * 0.3) : 0;
+      const flicker = flickerBase + fastFlicker;
+      const glowSize = (5 + normalizedIntensity * 25) * (0.8 + flicker * 0.2);
+      const glowOpacity = 0.5 + normalizedIntensity * 0.5 + flicker * 0.2;
+      const scaleX = 1 + normalizedIntensity * 0.3 + flicker * 0.1;
+      const scaleY = 1 + flicker * 0.05;
+      elements.thruster.style.transform = `scaleX(${scaleX}) scaleY(${scaleY})`;
+      elements.thruster.style.boxShadow = `0 0 ${glowSize}px ${glowSize/2}px hsla(${hue}, ${sat}%, ${lightness}%, ${glowOpacity})`;
+      elements.thruster.style.backgroundColor = `hsla(${hue}, ${sat + 10}%, ${lightness - 10}%, ${0.3 + normalizedIntensity * 0.7})`;
+    } else {
+      elements.thruster.style.boxShadow = 'none';
+      elements.thruster.style.backgroundColor = 'rgba(180, 160, 220, 0.2)';
+      elements.thruster.style.transform = 'scaleX(1) scaleY(1)';
+    }
   }
   
   requestAnimationFrame(animate);
