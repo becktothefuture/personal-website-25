@@ -20,6 +20,7 @@
       width: 100%;
       height: 100%;
       display: block;
+      background-image: url('./../assets/starfield-background.jpg');
     }
     /* Debug Panels */
     #debug-scroll, #debug-starfield {
@@ -37,171 +38,287 @@
     #debug-starfield {
       right: 10px;
     }
-    /* Control Panel */
-    #controls {
+    /* Settings Overlay */
+    #settings-toggle {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(63, 63, 63, 0.4);
-      backdrop-filter: blur(20px);
-      padding: 10px;
-      border-radius: 4px;
-      z-index: 1000;
-      max-height: 40%;
-      overflow-y: auto;
+      bottom: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: rgba(50, 50, 50, 0.7);
+      border: 1px solid rgba(156, 224, 169, 0.5);
+      color: #9ce0a9;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2000;
+      box-shadow: 0 0 10px 2px rgba(156, 224, 169, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    #settings-toggle:hover {
+      background-color: rgba(70, 70, 70, 0.8);
+      box-shadow: 0 0 15px 3px rgba(156, 224, 169, 0.3);
+    }
+    
+    #settings-overlay {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      width: 250px;
+      background-color: rgba(30, 30, 30, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 10px;
+      border: 1px solid rgba(156, 224, 169, 0.3);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+      color: #fff;
+      padding: 15px;
+      z-index: 1999;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform-origin: bottom right;
+    }
+    
+    #settings-overlay.hidden {
+      transform: scale(0.8);
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(156, 224, 169, 0.3);
+    }
+    
+    .settings-header h3 {
+      margin: 0;
+      color: #9ce0a9;
+      font-weight: normal;
+    }
+    
+    .settings-section {
+      margin-bottom: 20px;
+    }
+    
+    .settings-section-title {
       font-size: 14px;
+      color: #9ce0a9;
+      margin-bottom: 8px;
     }
-    #controls label {
-      display: block;
-      margin: 6px 0 2px;
+    
+    .sound-buttons {
+      display: flex;
+      gap: 10px;
     }
-    #controls input[type="range"] {
-      width: 200px;
+    
+    .sound-button {
+      flex: 1;
+      padding: 8px 0;
+      background-color: rgba(50, 50, 50, 0.7);
+      border: 1px solid rgba(156, 224, 169, 0.3);
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
     }
-    .slider-container {
+    
+    #button-sound-on:hover, #button-sound-on.active {
+      background-color: rgba(100, 180, 100, 0.4);
+      border-color: rgba(156, 224, 169, 0.7);
+    }
+    
+    #button-sound-off:hover, #button-sound-off.active {
+      background-color: rgba(180, 100, 100, 0.4);
+      border-color: rgba(224, 156, 156, 0.7);
+    }
+    
+    .sound-toggle {
+      width: 40px;
+      height: 20px;
+      background-color: rgba(50, 50, 50, 0.8);
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .switch-knob {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background-color: #9ce0a9;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s ease;
+    }
+    
+    .sound-toggle.on .switch-knob {
+      transform: translateX(20px);
+    }
+    
+    .knob-light {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      top: 5px;
+      left: 5px;
+    }
+    
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 10px;
     }
-    .slider-container span {
-      margin-left: 5px;
-      font-weight: bold;
+
+    /* Sound Choice Overlay */
+    #sound-choice-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
     }
-    .section-title {
-      margin-top: 10px;
-      margin-bottom: 5px;
-      font-weight: bold;
+    
+    #sound-choice-overlay h2 {
+      color: #9ce0a9;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    
+    #sound-choice-overlay p {
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 40px;
+      line-height: 1.5;
+      max-width: 600px;
+      text-align: center;
+    }
+    
+    #sound-choice-overlay button {
+      padding: 15px 30px;
+      border-radius: 4px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    #overlay-sound-on {
+      background-color: rgba(100, 180, 100, 0.4);
+      border: 1px solid rgba(156, 224, 169, 0.7);
+      color: #fff;
+    }
+    
+    #overlay-sound-on:hover {
+      background-color: rgba(120, 200, 120, 0.5);
+      box-shadow: 0 0 15px rgba(156, 224, 169, 0.5);
+    }
+    
+    #overlay-sound-off {
+      background-color: rgba(50, 50, 50, 0.7);
+      border: 1px solid rgba(156, 224, 169, 0.3);
+      color: #fff;
+    }
+    
+    #overlay-sound-off:hover {
+      background-color: rgba(70, 70, 70, 0.8);
     }
   </style>
 </head>
 <body>
   <canvas id="starfield"></canvas>
   
-  <!-- Debug Panels -->
+  <!-- Debug Panels (only display values at the top) -->
   <aside id="debug-scroll">ScrollTracker Debug</aside>
   <aside id="debug-starfield">Starfield Debug</aside>
   
-  <!-- Control Panel -->
-  <aside id="controls">
-    <div class="section-title">ScrollTracker Controls</div>
-    <div class="slider-container">
-      <label for="slider-friction">Friction (0.01 - 5): <span id="value-friction">0.50</span></label>
-      <input type="range" id="slider-friction" min="0.01" max="5" step="0.01" value="0.50" data-target="friction" />
+  <!-- Settings Toggle Button -->
+  <div id="settings-toggle">⚙️</div>
+  
+  <!-- Settings Overlay -->
+  <div id="settings-overlay" class="hidden">
+    <div class="settings-header">
+      <h3>Settings</h3>
     </div>
-    <div class="slider-container">
-      <label for="slider-strokeImpulse">Stroke Impulse (10 - 1000): <span id="value-strokeImpulse">100</span></label>
-      <input type="range" id="slider-strokeImpulse" min="10" max="1000" step="5" value="100" data-target="strokeImpulse" />
+    
+    <div class="settings-section">
+      <div class="settings-section-title">Sound</div>
+      <div class="sound-buttons">
+        <div id="button-sound-on" class="sound-button">ON</div>
+        <div id="button-sound-off" class="sound-button active">OFF</div>
+      </div>
+      
+      <div class="setting-row">
+        <span>Toggle sound</span>
+        <div class="sound-toggle off">
+          <div class="switch-knob">
+            <div class="knob-light"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="slider-container">
-      <label for="slider-maxVelocity">Top Speed (km/h) (50 - 2000): <span id="value-maxVelocity">400</span></label>
-      <input type="range" id="slider-maxVelocity" min="50" max="2000" step="50" value="400" data-target="maxVelocity" />
+    
+    <div class="settings-section">
+      <div class="settings-section-title">Controls</div>
+      <div class="setting-row">
+        <span>Use mouse wheel to accelerate</span>
+      </div>
     </div>
-    <hr />
-    <div class="section-title">Starfield Controls</div>
-    <div class="slider-container">
-      <label for="slider-baseSpeed">Base Speed (km/h) (0 - 500): <span id="value-baseSpeed">20</span></label>
-      <input type="range" id="slider-baseSpeed" min="0" max="500" step="10" value="20" data-target="baseSpeed" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-pointSizeFactor">Point Size (0.1 - 20): <span id="value-pointSizeFactor">13.4</span></label>
-      <input type="range" id="slider-pointSizeFactor" min="0.1" max="20" step="0.1" value="13.4" data-target="pointSizeFactor" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-fieldSizeFactor">Field Width (0.1 - 2): <span id="value-fieldSizeFactor">0.75</span></label>
-      <input type="range" id="slider-fieldSizeFactor" min="0.1" max="2" step="0.01" value="0.75" data-target="fieldSizeFactor" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-starColorR">Star Color - R (0 - 2): <span id="value-starColorR">0.8</span></label>
-      <input type="range" id="slider-starColorR" min="0" max="2" step="0.1" value="0.8" data-target="starColorR" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-starColorG">Star Color - G (0 - 2): <span id="value-starColorG">1.0</span></label>
-      <input type="range" id="slider-starColorG" min="0" max="2" step="0.1" value="1.0" data-target="starColorG" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-starColorB">Star Color - B (0 - 2): <span id="value-starColorB">0.8</span></label>
-      <input type="range" id="slider-starColorB" min="0" max="2" step="0.1" value="0.8" data-target="starColorB" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-stretchFactor">Light Speed Effect (0 - 10): <span id="value-stretchFactor">2.5</span></label>
-      <input type="range" id="slider-stretchFactor" min="0" max="10" step="0.1" value="2.5" data-target="stretchFactor" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-stretchThreshold">Stretch Start Speed (0 - 200): <span id="value-stretchThreshold">50</span></label>
-      <input type="range" id="slider-stretchThreshold" min="0" max="200" step="5" value="50" data-target="stretchThreshold" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-maxStretch">Max Stretch Speed (100 - 1000): <span id="value-maxStretch">400</span></label>
-      <input type="range" id="slider-maxStretch" min="100" max="1000" step="50" value="400" data-target="maxStretch" />
-    </div>
-    <hr />
-    <div class="section-title">Lamp Effects</div>
-    <div class="slider-container">
-      <label for="slider-lampBrightness">Max Brightness (0.5 - 1): <span id="value-lampBrightness">0.95</span></label>
-      <input type="range" id="slider-lampBrightness" min="0.5" max="1" step="0.01" value="0.95" data-target="lampBrightness" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-lampMinBrightness">Min Brightness (0 - 0.5): <span id="value-lampMinBrightness">0.2</span></label>
-      <input type="range" id="slider-lampMinBrightness" min="0" max="0.5" step="0.01" value="0.2" data-target="lampMinBrightness" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-speedThreshold">Speed Threshold (50 - 500): <span id="value-speedThreshold">200</span></label>
-      <input type="range" id="slider-speedThreshold" min="50" max="500" step="10" value="200" data-target="speedThreshold" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-exponentialFactor">Curve Steepness (1 - 10): <span id="value-exponentialFactor">3</span></label>
-      <input type="range" id="slider-exponentialFactor" min="1" max="10" step="0.1" value="3" data-target="exponentialFactor" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-lampSize">Lamp Size (20 - 100): <span id="value-lampSize">60</span></label>
-      <input type="range" id="slider-lampSize" min="20" max="100" step="1" value="60" data-target="lampSize" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-lampColorR">Lamp Color - R (0 - 1): <span id="value-lampColorR">1.0</span></label>
-      <input type="range" id="slider-lampColorR" min="0" max="1" step="0.05" value="1.0" data-target="lampColorR" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-lampColorG">Lamp Color - G (0 - 1): <span id="value-lampColorG">0.9</span></label>
-      <input type="range" id="slider-lampColorG" min="0" max="1" step="0.05" value="0.9" data-target="lampColorG" />
-    </div>
-    <div class="slider-container">
-      <label for="slider-lampColorB">Lamp Color - B (0 - 1): <span id="value-lampColorB">0.7</span></label>
-      <input type="range" id="slider-lampColorB" min="0" max="1" step="0.05" value="0.7" data-target="lampColorB" />
-    </div>
-    <div class="slider-container">
-      <label for="select-lampPosition">Lamp Position:</label>
-      <select id="select-lampPosition">
-        <option value="top-left">Top Left</option>
-        <option value="top-right">Top Right</option>
-        <option value="bottom-left">Bottom Left</option>
-        <option value="bottom-right" selected>Bottom Right</option>
-      </select>
-    </div>
-  </aside>
+  </div>
   
   <script type="module">
     import { scrollTracker } from '../scripts/modules/scrollTracker.js';
     import { initStarfieldThruster, starConfig } from '../scripts/modules/starfieldThruster.js';
     import { initLampEffect, lampConfig } from '../scripts/modules/lampEffect.js';
+    import { initSoundSystem, EVENTS } from '../scripts/modules/sounds.js';
+    import { initRumbleEffect, rumbleConfig } from '../scripts/modules/rumbleEffect.js';
 
-    // Initialize the starfield.
+    // Initialize modules
     const starfieldThruster = initStarfieldThruster();
     const lampEffect = initLampEffect();
+    const soundSystem = initSoundSystem();
+    const rumbleEffect = initRumbleEffect();
 
-    // Debug Panels
+    // Debug Panels update
     const debugScroll = document.getElementById("debug-scroll");
     const debugStarfield = document.getElementById("debug-starfield");
     
     function updateDebug() {
       const sState = scrollTracker.getState();
       const sConfig = scrollTracker.getConfig();
+      const rState = rumbleEffect.getState();
       const velocityKMH = scrollTracker.getVelocityKMH ? scrollTracker.getVelocityKMH() : (sState.velocityMS * 3.6);
+      
+      // Update with rumble state
       debugScroll.innerHTML = `
         <strong>ScrollTracker Module</strong><br>
         Velocity: ${velocityKMH ? velocityKMH.toFixed(2) : "N/A"} km/h<br>
         Last Impulse: ${sState.lastImpulse !== undefined ? sState.lastImpulse.toFixed(2) : "N/A"}<br>
         Friction: ${sConfig.dragCoefficient !== undefined ? sConfig.dragCoefficient.toFixed(2) : "N/A"}<br>
         Stroke Impulse: ${sConfig.strokeImpulse !== undefined ? sConfig.strokeImpulse.toFixed(2) : "N/A"}<br>
-        Top Speed: ${sConfig.topSpeed !== undefined ? sConfig.topSpeed.toFixed(2) : "N/A"} km/h
+        Top Speed: ${sConfig.topSpeed !== undefined ? sConfig.topSpeed.toFixed(2) : "N/A"} km/h<br>
+        <span style="color: ${rState.active ? '#ff9' : '#999'}">
+          Rumble: ${(rState.intensity * 100).toFixed(1)}%
+        </span>
       `;
+      
       debugStarfield.innerHTML = `
         <strong>Starfield Module</strong><br>
         Base Speed: ${starConfig.baseSpeed.toFixed(2)} km/h<br>
@@ -211,119 +328,66 @@
       `;
       requestAnimationFrame(updateDebug);
     }
-
-    // Helper to update slider display.
-    function updateSliderValue(sliderId, displayId, value) {
-      const display = document.getElementById(displayId);
-      if (display) {
-        display.textContent = value;
-      } else {
-        console.warn(`Display element with id "${displayId}" not found.`);
-      }
-    }
     
-    // Generic function to handle slider updates.
-    function setupSlider(sliderId, updateFunction) {
-      const slider = document.getElementById(sliderId);
-      const label = document.querySelector(`label[for="${sliderId}"]`);
-      const display = label ? label.querySelector('span') : null;
-
-      if (!display) {
-        console.warn(`No display span found for slider ${sliderId}`);
-        return;
-      }
-
-      const displayId = display.id;
-
-      slider.addEventListener("input", (e) => {
-        const val = parseFloat(e.target.value);
-        updateFunction(val);
-        updateSliderValue(sliderId, displayId, val);
-      });
-      // Initialize displayed value from HTML attribute.
-      updateSliderValue(sliderId, displayId, slider.value);
-    }
-    
-    // Hook up ScrollTracker sliders.
-    setupSlider("slider-friction", (val) => scrollTracker.setDragCoefficient(val));
-    setupSlider("slider-strokeImpulse", (val) => scrollTracker.setStrokeImpulse(val));
-    setupSlider("slider-maxVelocity", (val) => scrollTracker.setTopSpeed(val / 3.6));
-    
-    // Hook up Starfield sliders.
-    setupSlider("slider-baseSpeed", (val) => starConfig.baseSpeed = val);
-    setupSlider("slider-pointSizeFactor", (val) => starConfig.pointSizeFactor = val);
-    setupSlider("slider-fieldSizeFactor", (val) => {
-      starConfig.fieldSizeFactor = val;
-      starfieldThruster.resetStars();
-    });
-    setupSlider("slider-stretchFactor", (val) => starConfig.stretchFactor = val);
-    setupSlider("slider-stretchThreshold", (val) => starConfig.stretchThreshold = val);
-    setupSlider("slider-maxStretch", (val) => starConfig.maxStretch = val);
-    
-    // Special handler for star colors.
-    const sliderStarColorR = document.getElementById("slider-starColorR");
-    const sliderStarColorG = document.getElementById("slider-starColorG");
-    const sliderStarColorB = document.getElementById("slider-starColorB");
-    function updateStarColor() {
-      starConfig.starColor = [
-        parseFloat(sliderStarColorR.value),
-        parseFloat(sliderStarColorG.value),
-        parseFloat(sliderStarColorB.value)
-      ];
-      updateSliderValue("slider-starColorR", "value-starColorR", sliderStarColorR.value);
-      updateSliderValue("slider-starColorG", "value-starColorG", sliderStarColorG.value);
-      updateSliderValue("slider-starColorB", "value-starColorB", sliderStarColorB.value);
-    }
-    sliderStarColorR.addEventListener("input", updateStarColor);
-    sliderStarColorG.addEventListener("input", updateStarColor);
-    sliderStarColorB.addEventListener("input", updateStarColor);
-    updateStarColor(); // Initialize star color.
-
-    // Hook up Lamp sliders
-    setupSlider("slider-lampBrightness", (val) => {
-      lampConfig.maxBrightness = val;
-    });
-    
-    setupSlider("slider-lampMinBrightness", (val) => {
-      lampConfig.minBrightness = val;
-    });
-    
-    setupSlider("slider-speedThreshold", (val) => {
-      lampConfig.speedThreshold = val;
-    });
-    
-    setupSlider("slider-exponentialFactor", (val) => {
-      lampConfig.exponentialFactor = val;
-    });
-    
-    setupSlider("slider-lampSize", (val) => {
-      lampEffect.setSize(val);
-    });
-    
-    // Special handler for lamp colors
-    const sliderLampColorR = document.getElementById("slider-lampColorR");
-    const sliderLampColorG = document.getElementById("slider-lampColorG");
-    const sliderLampColorB = document.getElementById("slider-lampColorB");
-    function updateLampColor() {
-      const r = parseFloat(sliderLampColorR.value);
-      const g = parseFloat(sliderLampColorG.value);
-      const b = parseFloat(sliderLampColorB.value);
-      lampEffect.setColor(r, g, b);
-      updateSliderValue("slider-lampColorR", "value-lampColorR", sliderLampColorR.value);
-      updateSliderValue("slider-lampColorG", "value-lampColorG", sliderLampColorG.value);
-      updateSliderValue("slider-lampColorB", "value-lampColorB", sliderLampColorB.value);
-    }
-    sliderLampColorR.addEventListener("input", updateLampColor);
-    sliderLampColorG.addEventListener("input", updateLampColor);
-    sliderLampColorB.addEventListener("input", updateLampColor);
-    
-    // Position selector
-    const positionSelect = document.getElementById("select-lampPosition");
-    positionSelect.addEventListener("change", (e) => {
-      lampEffect.setPosition(e.target.value);
-    });
-
     updateDebug();
+    
+    // Settings panel functionality
+    const settingsToggle = document.getElementById('settings-toggle');
+    const settingsOverlay = document.getElementById('settings-overlay');
+    const soundToggle = document.querySelector('.sound-toggle');
+    const buttonSoundOn = document.getElementById('button-sound-on');
+    const buttonSoundOff = document.getElementById('button-sound-off');
+    
+    // Toggle settings panel visibility
+    settingsToggle.addEventListener('click', () => {
+      settingsOverlay.classList.toggle('hidden');
+    });
+    
+    // Close settings when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!settingsOverlay.contains(e.target) && e.target !== settingsToggle && !settingsOverlay.classList.contains('hidden')) {
+        settingsOverlay.classList.add('hidden');
+      }
+    });
+    
+    // Sound toggle functionality
+    soundToggle.addEventListener('click', () => {
+      if (soundToggle.classList.contains('off')) {
+        soundToggle.classList.remove('off');
+        soundToggle.classList.add('on');
+        buttonSoundOn.classList.add('active');
+        buttonSoundOff.classList.remove('active');
+        // Trigger sound-on button click programmatically
+        buttonSoundOn.click();
+      } else {
+        soundToggle.classList.remove('on');
+        soundToggle.classList.add('off');
+        buttonSoundOff.classList.add('active');
+        buttonSoundOn.classList.remove('active');
+        // Trigger sound-off button click programmatically
+        buttonSoundOff.click();
+      }
+    });
+    
+    // Update toggle when buttons are clicked directly
+    buttonSoundOn.addEventListener('click', () => {
+      soundToggle.classList.remove('off');
+      soundToggle.classList.add('on');
+      buttonSoundOn.classList.add('active');
+      buttonSoundOff.classList.remove('active');
+    });
+    
+    buttonSoundOff.addEventListener('click', () => {
+      soundToggle.classList.remove('on');
+      soundToggle.classList.add('off');
+      buttonSoundOff.classList.add('active');
+      buttonSoundOn.classList.remove('active');
+    });
+    
+    // Listen for sound choice events from the sound module
+    window.addEventListener(EVENTS.SOUND_CHOICE_MADE, () => {
+      console.log('Sound choice was made');
+    });
   </script>
 </body>
 </html>

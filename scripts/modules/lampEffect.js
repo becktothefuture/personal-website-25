@@ -1,25 +1,30 @@
-// lampEffect.js
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**
  * Configuration for the lamp effect
  */
 export const lampConfig = {
-  brightness: 0.8,         // Default brightness between 0-1
-  color: [1.0, 0.9, 0.7],  // Default warm light color [r,g,b]
-  fadeSpeed: 0.05,         // How quickly the lamp reacts (0-1)
-  minBrightness: 0.2,      // Minimal brightness when idle
-  maxBrightness: 0.95,     // Maximum brightness on full intensity
-  pulseOnScroll: true,     // Whether the lamp should pulse on scroll
-  speedThreshold: 200,     // Speed threshold for maximum brightness (km/h)
-  exponentialFactor: 3,    // How steep the brightness curve is
-  lampSize: 60             // Size of the lamp (percentage of screen)
+  brightness: 1,         
+  color: [.9, 1.0, .9],  
+  fadeSpeed: 1,         
+  minBrightness: 0.0,      
+  maxBrightness: 1.0,     
+  pulseOnScroll: true,     
+  speedThreshold: 200,     
+  exponentialFactor: 5,    
+  lampSize: 13,             
+  bulbSize: 20,             
+  bulbColor: "#c6ffcd",     
+  glowIntensity: 0.8,       
+  glowSpread: 30            
 };
 
 class LampEffect {
   #currentBrightness = lampConfig.minBrightness;
   #targetBrightness = lampConfig.minBrightness;
   #lampElement = null;
+  #bulbElement = null;
   #isActive = false;
   #animationFrameId = null;
   #position = 'bottom-right';
@@ -32,61 +37,87 @@ class LampEffect {
    * Initialize the lamp effect
    */
   init() {
-    // Create lamp overlay if it doesn't exist
-    this.#createLampElement();
     
-    // Subscribe to scrollTracker events
+    this.#createLampElements();
+    
+    
     scrollTracker.on("update", (data) => {
-      // Adjust lamp brightness based on velocity using exponential curve
+      
       const normalizedVelocity = Math.min(data.velocityKMH / lampConfig.speedThreshold, 1);
       const expCurve = Math.pow(normalizedVelocity, lampConfig.exponentialFactor);
       this.#targetBrightness = lampConfig.minBrightness + 
         (expCurve * (lampConfig.maxBrightness - lampConfig.minBrightness));
     });
     
-    // Listen for scroll events for immediate pulses
+    
     scrollTracker.on("scroll", (data) => {
       if (lampConfig.pulseOnScroll) {
-        // Create a quick pulse when scroll impulse is applied
+        
         const impulseStrength = Math.min(Math.abs(data.impulse) / 200, 1);
         this.pulse(impulseStrength);
       }
     });
     
-    // Start the animation
+    
     this.#isActive = true;
     this.#animate();
   }
   
   /**
-   * Create the lamp DOM element
+   * Create the lamp DOM elements (overlay and bulb)
    */
-  #createLampElement() {
-    // Only create if it doesn't already exist
+  #createLampElements() {
+    
     if (!document.getElementById('lamp-overlay')) {
       this.#lampElement = document.createElement('div');
       this.#lampElement.id = 'lamp-overlay';
       
-      // Style the lamp element
+      
       const style = this.#lampElement.style;
       style.position = 'fixed';
       style.top = '0';
       style.left = '0';
       style.width = '100%';
       style.height = '100%';
-      style.pointerEvents = 'none'; // Don't intercept interactions
-      style.zIndex = '999';
+      style.pointerEvents = 'none';
+      style.zIndex = '998';
       
-      // Set initial lamplight effect
-      this.#updateLampStyle();
       
-      // Add to DOM
       document.body.appendChild(this.#lampElement);
     } else {
       this.#lampElement = document.getElementById('lamp-overlay');
     }
     
-    // Set initial position
+    
+    if (!document.getElementById('lamp-bulb')) {
+      this.#bulbElement = document.createElement('div');
+      this.#bulbElement.id = 'lamp-bulb';
+      
+      
+      const style = this.#bulbElement.style;
+      style.position = 'fixed';
+      style.width = `${lampConfig.bulbSize}px`;
+      style.height = `${lampConfig.bulbSize}px`;
+      style.background = lampConfig.bulbColor;
+      style.borderRadius = '50%';
+      style.boxShadow = '0 0 10px 2px rgba(255, 253, 234, 0.7)';
+      style.pointerEvents = 'none';
+      style.zIndex = '999';
+      style.transition = 'box-shadow 0.1s ease';
+      
+      
+      this.#bulbElement.innerHTML = `
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; 
+                   background: rgba(255, 255, 255, 0.9); border-radius: 50%;"></div>
+      `;
+      
+      
+      document.body.appendChild(this.#bulbElement);
+    } else {
+      this.#bulbElement = document.getElementById('lamp-bulb');
+    }
+    
+    
     this.setPosition(this.#position);
   }
   
@@ -94,21 +125,56 @@ class LampEffect {
    * Update the visual style of the lamp
    */
   #updateLampStyle() {
-    if (!this.#lampElement) return;
+    if (!this.#lampElement || !this.#bulbElement) return;
     
     const color = lampConfig.color;
     const brightness = this.#currentBrightness;
     const size = lampConfig.lampSize;
-    
-    // Get position coordinates based on selected position
     const position = this.#getLampPosition();
     
-    // Create a radial gradient for lamp effect
+    
+    this.#bulbElement.style.left = `${position.x}%`;
+    this.#bulbElement.style.top = `${position.y}%`;
+    this.#bulbElement.style.transform = 'translate(-50%, -50%)';
+    
+    
+    const glowIntensity = brightness * lampConfig.glowIntensity;
+    const bulbOpacity = 0.4 + (brightness * 0.6); 
+    
+    
+    this.#bulbElement.style.boxShadow = `
+      0 0 ${2 + (glowIntensity * 5)}px ${1 + (glowIntensity * 2)}px rgba(255, 253, 234, ${0.6 * brightness}),
+      0 0 ${5 + (glowIntensity * 10)}px ${2 + (glowIntensity * 5)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.5 * brightness}),
+      0 0 ${10 + (glowIntensity * 20)}px ${5 + (glowIntensity * 10)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.3 * brightness})
+    `;
+    
+    
+    this.#bulbElement.style.opacity = bulbOpacity.toString();
+    
+    
     this.#lampElement.style.background = `radial-gradient(
       circle at ${position.x}% ${position.y}%, 
-      rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${brightness * 0.7}), 
+      rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${brightness * 0.4}), 
       rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, 0) ${size}%
     )`;
+    
+    
+    if (brightness > 0.5) {
+      this.#bulbElement.style.animation = 'bulb-pulse 2s infinite alternate';
+      if (!document.getElementById('bulb-pulse-style')) {
+        const style = document.createElement('style');
+        style.id = 'bulb-pulse-style';
+        style.textContent = `
+          @keyframes bulb-pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.05); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    } else {
+      this.#bulbElement.style.animation = 'none';
+    }
   }
   
   /**
@@ -120,7 +186,7 @@ class LampEffect {
       case 'top-right': return { x: 80, y: 20 };
       case 'bottom-left': return { x: 20, y: 80 };
       case 'bottom-right': return { x: 80, y: 80 };
-      default: return { x: 50, y: 50 }; // center as fallback
+      default: return { x: 50, y: 50 }; 
     }
   }
   
@@ -130,7 +196,7 @@ class LampEffect {
   #animate() {
     if (!this.#isActive) return;
     
-    // Smoothly transition brightness towards target
+    
     const diff = this.#targetBrightness - this.#currentBrightness;
     if (Math.abs(diff) > 0.001) {
       this.#currentBrightness += diff * lampConfig.fadeSpeed;
@@ -144,7 +210,7 @@ class LampEffect {
    * Create a quick pulse effect (e.g. on scroll)
    */
   pulse(intensity = 1.0) {
-    // Temporarily boost brightness
+    
     const boostAmount = intensity * (lampConfig.maxBrightness - this.#targetBrightness);
     this.#currentBrightness = Math.min(this.#targetBrightness + boostAmount, lampConfig.maxBrightness);
     this.#updateLampStyle();
@@ -163,7 +229,7 @@ class LampEffect {
    */
   setColor(r, g, b) {
     lampConfig.color = [
-      Math.max(0, Math.min(r, 1)), // Clamp to 0-1
+      Math.max(0, Math.min(r, 1)), 
       Math.max(0, Math.min(g, 1)),
       Math.max(0, Math.min(b, 1))
     ];
@@ -198,14 +264,18 @@ class LampEffect {
       cancelAnimationFrame(this.#animationFrameId);
     }
     
-    // Remove the element from DOM
+    
     if (this.#lampElement && this.#lampElement.parentNode) {
       this.#lampElement.parentNode.removeChild(this.#lampElement);
+    }
+    
+    if (this.#bulbElement && this.#bulbElement.parentNode) {
+      this.#bulbElement.parentNode.removeChild(this.#bulbElement);
     }
   }
 }
 
-// Singleton instance
+
 let lampEffectInstance = null;
 
 /**

@@ -21,20 +21,22 @@ class EventEmitter {
 }
 
 /**
- * Realistic rowing boat model using impulses & v² drag:
- * - topSpeed stored in km/h; converted to m/s internally.
- * - impulseDamping: a factor that reduces stroke impulse effectiveness as velocity approaches top speed.
- * - strokeImpulse: the base momentum (N·s) added per strong upward scroll stroke.
- * - dragCoefficient: water drag factor for v² deceleration.
+ * Enhanced ScrollTracker with improved control over physics parameters:
+ * - topSpeed: Maximum velocity in km/h, strictly enforced
+ * - strokeImpulse: Base impulse added per scroll stroke
+ * - scrollScalingFactor: How much scroll distance impacts impulse
+ * - dragCoefficient: Friction/resistance factor
+ * - impulseDamping: Reduces impulse effectiveness as velocity approaches topSpeed
  */
 class ScrollTracker extends EventEmitter {
   #config = {
-    mass: 85,                // kg (boat + rower)
-    dragCoefficient: 10.0,    // Increased from 0.50 to 2.0 for much faster deceleration
-    strokeImpulse: 150,      // Increased from 100 to 250 for more immediate effect
-    scalingFactor: 50,       // Reduced from 100 to 50 to make scrolling more responsive
-    topSpeed: 300,           // km/h (max target speed)
-    impulseDamping: 5        // damping factor for impulse near top speed
+    mass: 30,                    // kg (boat + rower)
+    dragCoefficient: 0.2,          // Increased drag
+    strokeImpulse: 7,           // Reduced impulse strength
+    scrollScalingFactor: 10,    // How scroll distance translates to impulse
+    topSpeed: 400,               // km/h (absolute maximum)
+    impulseDamping: 0.8,        // Increased damping
+    velocityScaleFactor: 1     // Reduced velocity scale
   };
 
   // Internal velocity in m/s.
@@ -55,55 +57,74 @@ class ScrollTracker extends EventEmitter {
   }
 
   /**
-   * onWheel: upward scroll => add momentum, downward => record negative impulse for debug only.
+   * Enhanced onWheel handler with better control over impulse scaling
    */
   onWheel(event) {
     event.preventDefault();
     const delta = event.deltaY;
-    if (delta < 0) {
-      const magnitude = Math.min(Math.abs(delta) / this.#config.scalingFactor, 1);
-      let impulse = this.#config.strokeImpulse * (1 + magnitude * 1.5); // Increased multiplier for better response
-      // Guard for negative or zero impulse
-      if (impulse < 0) impulse = 10; // clamp to a minimum
+    
+    if (delta < 0) { // Upward scroll = forward momentum
+      // Normalize the scroll distance impact
+      const magnitude = Math.min(Math.abs(delta) / this.#config.scrollScalingFactor, 1);
+      
+      // Calculate base impulse with scroll magnitude factor
+      let impulse = this.#config.strokeImpulse * (1 + magnitude * 1.5);
+      
+      // Safety check
+      if (impulse <= 0) impulse = 10;
 
-      // Convert topSpeed from km/h to m/s
+      // Calculate top speed in m/s
       const topSpeedMS = this.#config.topSpeed / 3.6;
-
-      // Reverse exponential damping
-      const effectiveImpulse = impulse * Math.exp(
-        -this.#config.impulseDamping * (this.#state.velocityMS / topSpeedMS)
-      );
-
-      this.#state.velocityMS += effectiveImpulse / this.#config.mass;
+      
+      // Calculate velocity ratio (how close we are to top speed)
+      const velocityRatio = this.#state.velocityMS / topSpeedMS;
+      
+      // Apply damping: exponential decrease in effectiveness as we approach top speed
+      const dampingFactor = Math.exp(-this.#config.impulseDamping * velocityRatio);
+      const effectiveImpulse = impulse * dampingFactor;
+      
+      // Apply impulse to velocity
+      const newVelocity = this.#state.velocityMS + (effectiveImpulse / this.#config.mass);
+      
+      // Strictly enforce top speed limit
+      this.#state.velocityMS = Math.min(newVelocity, topSpeedMS);
       this.#state.lastImpulse = effectiveImpulse;
       
-      // Emit a special "scroll" event for immediate lamp response
+      // Emit scroll event for lamp and other listeners
       this.emit("scroll", { impulse: effectiveImpulse, velocity: this.getVelocityKMH() });
-    } else if (delta > 0) {
-      // Downward scroll => negative impulse debug
-      const magnitude = Math.min(Math.abs(delta) / this.#config.scalingFactor, 1);
-      let negImpulse = -this.#config.strokeImpulse * (1 + magnitude);
-      if (negImpulse > 0) negImpulse = -10; // clamp
+    } else if (delta > 0) { // Downward scroll (for debug feedback only)
+      const magnitude = Math.min(Math.abs(delta) / this.#config.scrollScalingFactor, 1);
+      const negImpulse = -this.#config.strokeImpulse * (1 + magnitude);
       this.#state.lastImpulse = negImpulse;
     }
+    
     this.emit("update", { velocityKMH: this.getVelocityKMH(), impulse: this.#state.lastImpulse });
   }
   
   /**
-   * update: applies v² drag each frame and clamps velocity to >= 0
+   * Enhanced update with improved physics and velocity scaling
    */
   update() {
     const now = performance.now();
     let dt = (now - this.#state.lastUpdateTime) / 1000;
-    if (dt > 0.05) dt = 0.05;
+    if (dt > 0.05) dt = 0.05; // Cap dt for stability
     this.#state.lastUpdateTime = now;
 
-    // v² drag
+    // Apply quadratic drag (v²) - realistic fluid dynamics
     const v = this.#state.velocityMS;
-    const dv = - (this.#config.dragCoefficient / this.#config.mass) * v * v * dt;
-    this.#state.velocityMS += dv;
-    if (this.#state.velocityMS < 0) this.#state.velocityMS = 0;
+    const dragForce = this.#config.dragCoefficient * v * v;
+    const acceleration = -dragForce / this.#config.mass;
+    
+    // Apply acceleration to velocity
+    let newVelocity = this.#state.velocityMS + (acceleration * dt);
+    
+    // Enforce minimum velocity of 0
+    newVelocity = Math.max(0, newVelocity);
+    
+    // Apply global velocity scale factor for easy tuning
+    this.#state.velocityMS = newVelocity * this.#config.velocityScaleFactor;
 
+    // Emit update event
     this.emit("update", { velocityKMH: this.getVelocityKMH(), impulse: 0 });
     requestAnimationFrame(this.update.bind(this));
   }
@@ -125,32 +146,64 @@ class ScrollTracker extends EventEmitter {
     return { ...this.#config };
   }
   
-  // Public setters with minimal clamping
+  // Enhanced setters with improved validation and comments
+  
+  /**
+   * Set overall mass (affects acceleration)
+   * Higher mass = slower acceleration but more momentum
+   */
   setMass(val) {
-    if (val < 1) val = 1;
-    this.#config.mass = val;
+    this.#config.mass = Math.max(1, val);
   }
+  
+  /**
+   * Set drag coefficient (affects deceleration)
+   * Higher values = faster stopping
+   */
   setDragCoefficient(val) {
-    if (val < 0) val = 0;
-    this.#config.dragCoefficient = val;
+    this.#config.dragCoefficient = Math.max(0, val);
   }
+  
+  /**
+   * Set base impulse strength from each scroll stroke
+   * Higher values = stronger acceleration per scroll
+   */
   setStrokeImpulse(val) {
-    if (val < 1) val = 1;
-    this.#config.strokeImpulse = val;
+    this.#config.strokeImpulse = Math.max(1, val);
   }
-  setScalingFactor(val) {
-    if (val < 1) val = 1;
-    this.#config.scalingFactor = val;
+  
+  /**
+   * Set scroll scaling factor (how scroll distance impacts impulse)
+   * Lower values = more sensitive to small scrolls
+   */
+  setScrollScalingFactor(val) {
+    this.#config.scrollScalingFactor = Math.max(1, val);
   }
+  
+  /**
+   * Set top speed limit in m/s 
+   * Converted to km/h for storage
+   */
   setTopSpeed(valMS) {
-    // valMS is m/s, convert to km/h
     let kmh = valMS * 3.6;
-    if (kmh < 1) kmh = 1;
+    kmh = Math.max(1, kmh);
     this.#config.topSpeed = kmh;
   }
+  
+  /**
+   * Set impulse damping (reduces effectiveness near top speed)
+   * Higher values = harder to reach top speed
+   */
   setImpulseDamping(val) {
-    if (val < 0) val = 0;
-    this.#config.impulseDamping = val;
+    this.#config.impulseDamping = Math.max(0, val);
+  }
+  
+  /**
+   * Set global velocity scale factor
+   * Easy way to tune overall speed without changing other parameters
+   */
+  setVelocityScaleFactor(val) {
+    this.#config.velocityScaleFactor = Math.max(0.1, Math.min(val, 5.0));
   }
 }
 

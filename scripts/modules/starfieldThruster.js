@@ -1,4 +1,4 @@
-// starfieldThruster.js
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**
@@ -6,14 +6,14 @@ import { scrollTracker } from './scrollTracker.js';
  * that, if set to true, can skip frames when speeds or star counts are huge.
  */
 export const starConfig = {
-  baseSpeed: 20,      // Default starfield speed in km/h
+  baseSpeed: 5,      
   numStars: 400,
-  maxDepth: 1500,
+  maxDepth: 2000,
   perspective: 500,
-  fieldSize: 2000,
-  pointSizeFactor: 13.4,
+  fieldSize: 3000,
+  pointSizeFactor: 3.4,
   starColor: [0.8, 1.0, 0.8],
-  adaptivePerformance: true // can skip frames if star count or speeds are huge
+  adaptivePerformance: true 
 };
 
 class StarfieldThruster {
@@ -31,9 +31,9 @@ class StarfieldThruster {
   #stars;
   #lastFrameTime = performance.now();
   #resolution = [window.innerWidth, window.innerHeight];
-  #frameSkipCounter = 0; // for adaptive performance
+  #frameSkipCounter = 0; 
 
-  // extraSpeed (km/h) updated by scrollTracker
+  
   extraSpeed = 0;
 
   constructor() {
@@ -52,7 +52,7 @@ class StarfieldThruster {
     this.#resizeCanvas();
     window.addEventListener('resize', () => this.#resizeCanvas());
 
-    // Subscribe to scrollTracker updates
+    
     scrollTracker.on("update", (data) => {
       this.extraSpeed = data.velocityKMH;
     });
@@ -71,15 +71,15 @@ class StarfieldThruster {
       varying float vAlpha;
 
       void main() {
-        // distFactor in [0..1], used for fade in/out
+        
         float distFactor = clamp((-a_position.z) / u_maxDepth, 0.0, 1.0);
 
-        // fade in from [0..0.2], fade out from [0.8..1.0]
+        
         float fadeIn = smoothstep(0.0, 0.2, distFactor);
         float fadeOut = 1.0 - smoothstep(0.8, 1.0, distFactor);
         vAlpha = fadeIn * fadeOut;
 
-        // simple perspective transform
+        
         float scale = u_perspective / -a_position.z;
         vec2 pos = a_position.xy * scale + u_resolution * 0.5;
         vec2 ndc = (pos / u_resolution) * 2.0 - 1.0;
@@ -168,13 +168,13 @@ class StarfieldThruster {
     const dt = (timestamp - this.#lastFrameTime) / 1000;
     this.#lastFrameTime = timestamp;
 
-    // Optional performance adaptation
+    
     if (starConfig.adaptivePerformance && this.#shouldSkipFrame()) {
       requestAnimationFrame(this.#animate.bind(this));
       return;
     }
 
-    // starfield speed = baseSpeed + extraSpeed (km/h)
+    
     const totalSpeed = starConfig.baseSpeed + this.extraSpeed;
     const speedMS = totalSpeed * 0.27778;
     for (let i = 0; i < starConfig.numStars; i++) {
@@ -194,7 +194,7 @@ class StarfieldThruster {
    */
   #shouldSkipFrame() {
     const speedMS = (starConfig.baseSpeed + this.extraSpeed) * 0.27778;
-    // e.g., if speed is above 300 m/s or star count is above 10k, skip every other frame
+    
     if (speedMS > 300 || starConfig.numStars > 10000) {
       this.#frameSkipCounter = (this.#frameSkipCounter + 1) % 2;
       return this.#frameSkipCounter === 1;
