@@ -265,6 +265,8 @@
     <!-- Debug Panels (only display values at the top) -->
     <aside id="debug-scroll">ScrollTracker Debug</aside>
     <aside id="debug-starfield">Starfield Debug</aside>
+    <!-- Mouse debug panel -->
+    <aside id="mouse-debug" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 10px; border-radius: 4px; font-size: 14px; z-index: 1000; text-align: center;">Mouse Monitor</aside>
   </div>
   
   <!-- Settings Toggle Button -->
@@ -307,12 +309,14 @@
     import { initLampEffect, lampConfig } from '../scripts/modules/lampEffect.js';
     import { initSoundSystem, EVENTS } from '../scripts/modules/sounds.js';
     import { initRumbleEffect, rumbleConfig } from '../scripts/modules/rumbleEffect.js';
+    import { initMouseMonitors } from '../scripts/modules/mousemonitors.js';
 
     // Initialize modules
     const starfieldThruster = initStarfieldThruster();
     const lampEffect = initLampEffect();
     const soundSystem = initSoundSystem();
     const rumbleEffect = initRumbleEffect();
+    initMouseMonitors(); // Initialize mouse monitors
 
     // Start background scaling effect
     function scaleBackgroundSlowly() {
