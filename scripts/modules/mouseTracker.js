@@ -56,18 +56,30 @@ let dpi_x = window.devicePixelRatio ? 96 * window.devicePixelRatio : 96;
 dpi_x *= 5 / 6.5; // Adjusted based on measurement
 
 // **DOM Elements**
-let mouseDebugPanel;
 let miniMap, cursorDot;
+// DOM elements for displaying tracking values
+let speedValueM, speedValueMiles, speedValuePx;
+let scrollValueM, scrollValueMiles, scrollValuePx;
+let clickCounterElement, distanceValueM, distanceValueMiles;
 
 // Initialize DOM elements
 function initializeElements() {
-  mouseDebugPanel = document.getElementById('mouse-debug');
+  // Get references to minimap and cursor dot
   miniMap = document.getElementById('mini-map');
   cursorDot = document.getElementById('cursor-dot');
   
-  if (!mouseDebugPanel) {
-    console.warn("Mouse debug panel element not found. Mouse tracking will proceed but no debug info will be displayed.");
-  }
+  // Get references to the tracking display elements
+  speedValueM = document.getElementById('speed-value-m');
+  speedValueMiles = document.getElementById('speed-value-miles');
+  speedValuePx = document.getElementById('speed-value-px');
+  
+  scrollValueM = document.getElementById('scroll-value-m');
+  scrollValueMiles = document.getElementById('scroll-value-miles');
+  scrollValuePx = document.getElementById('scroll-value-px');
+  
+  clickCounterElement = document.getElementById('click-counter');
+  distanceValueM = document.getElementById('distance-value-m');
+  distanceValueMiles = document.getElementById('distance-value-miles');
 
   return true;
 }
@@ -128,17 +140,22 @@ function updateDistanceMetrics() {
   smoothedDistanceMiles += (distanceMilesVal - smoothedDistanceMiles) * SMOOTH_FACTOR;
 }
 
-// Update debug display
+// Update DOM elements with tracking data
 function updateDebugDisplay() {
-  if (!mouseDebugPanel) return;
+  // Update speed values
+  if (speedValueM) speedValueM.textContent = smoothedSpeedKmh.toFixed(2);
+  if (speedValueMiles) speedValueMiles.textContent = smoothedSpeedMilesH.toFixed(2);
+  if (speedValuePx) speedValuePx.textContent = displayedSpeed.toFixed(1);
   
-  mouseDebugPanel.innerHTML = `
-    <strong>Mouse Tracker</strong><br>
-    Position: ${(mouseXPercent * 100).toFixed(1)}%, ${(mouseYPercent * 100).toFixed(1)}%<br>
-    Speed: ${smoothedSpeedKmh.toFixed(2)} km/h (${displayedSpeed.toFixed(1)} px/s)<br>
-    Distance: ${smoothedDistanceMeters.toFixed(2)} m<br>
-    Clicks: ${clickCount}
-  `;
+  // Update scroll/position values
+  if (scrollValueM) scrollValueM.textContent = (mouseYPercent * 100).toFixed(1);
+  if (scrollValueMiles) scrollValueMiles.textContent = (mouseXPercent * 100).toFixed(1);
+  if (scrollValuePx) scrollValuePx.textContent = `${Math.round(targetCursorX)}:${Math.round(targetCursorY)}`;
+  
+  // Update click counter and distance values
+  if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
+  if (distanceValueM) distanceValueM.textContent = smoothedDistanceMeters.toFixed(2);
+  if (distanceValueMiles) distanceValueMiles.textContent = smoothedDistanceMiles.toFixed(4);
 }
 
 // **Mouse tracking – Event Handlers**
