@@ -175,8 +175,10 @@ class StarfieldThruster {
   
   #resizeCanvas() {
     const canvas = this.#canvas;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Get dimensions from parent element instead of window
+    const rect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
     this.#gl.viewport(0, 0, canvas.width, canvas.height);
     this.#resolution = [canvas.width, canvas.height];
   }
