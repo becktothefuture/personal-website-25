@@ -16,7 +16,7 @@
 // The modulation previously tied to mouse position has been replaced with defaults and scroll-based modulation.
 // Both sounds fade in when the user is active and fade out after inactivity.
 
-console.log("Sound system initialized");
+console.log("Sound system module initialized");
 
 // Import the scroll tracker to use the spaceship velocity for modulation
 import { scrollTracker } from './scrollTracker.js';

@@ -10,6 +10,10 @@
  * - Provides clean DOM management by setting display:none after transitions complete
  */
 
+
+console.log('Resize Overlay Module Initialized');
+
+
 function setupResizeOverlay() {
   const overlay = document.getElementById('resize-overlay');
   if (!overlay) {

@@ -20,6 +20,9 @@
  */
 
 
+console.log('Date Display module intialized');
+
+
 export function initDateDisplay() {
     const updateDateDisplay = () => {
       const now = new Date();

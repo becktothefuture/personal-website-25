@@ -27,6 +27,10 @@
  * ```
  */
 
+
+console.log('Intro sequence module intialized');
+
+
 const ANIMATION_SPEED = {
   GLOBAL_MULTIPLIER: 1.0,
   TYPING_SPEED: 2.0,

@@ -22,7 +22,6 @@
  */
 
 
-
 console.log('Light grid module intialized');
 
 export function initLightGrids() {

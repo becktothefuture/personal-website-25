@@ -28,6 +28,8 @@
  */
 
 import { scrollTracker } from './scrollTracker.js';
+console.log('Lamp Effect module intialized');
+
 
 /**
  * Configuration for the lamp effect

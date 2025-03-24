@@ -12,6 +12,9 @@
  * Dependencies: scrollTracker.js
  */
 
+console.log('Starfield Thruster Module Initialized');
+
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**

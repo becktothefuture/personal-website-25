@@ -11,6 +11,10 @@
  * --animation-delay variables.
  */
 
+console.log('Flicker module intialized');
+
+
+
 export function initFlicker() {
     const flickerElements = document.querySelectorAll('.widget');
 

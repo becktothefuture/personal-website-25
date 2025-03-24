@@ -25,7 +25,7 @@
  */
 
 
-console.log("Text processor initialized");
+console.log("Text processor module initialized");
 
 
 

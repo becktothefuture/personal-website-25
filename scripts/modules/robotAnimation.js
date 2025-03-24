@@ -11,7 +11,7 @@
  * - Coordinates facial expressions with dialog content
  */
 
-console.log("Robot animation initialized");
+console.log("Robot animation module initialized");
 
 export function initRobot() {
     // =======================

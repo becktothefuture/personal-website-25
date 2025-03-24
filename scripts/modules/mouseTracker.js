@@ -1,5 +1,5 @@
 /**
- * Mouse Monitors Module
+ * Mouse Tracker Module
  * --------------------
  * Tracks mouse movements, speed, position, clicks and distance traveled.
  * 
@@ -66,7 +66,7 @@ function initializeElements() {
   cursorDot = document.getElementById('cursor-dot');
   
   if (!mouseDebugPanel) {
-    console.warn("Mouse debug panel element not found. Mouse monitoring will proceed but no debug info will be displayed.");
+    console.warn("Mouse debug panel element not found. Mouse tracking will proceed but no debug info will be displayed.");
   }
 
   return true;
@@ -133,7 +133,7 @@ function updateDebugDisplay() {
   if (!mouseDebugPanel) return;
   
   mouseDebugPanel.innerHTML = `
-    <strong>Mouse Monitor</strong><br>
+    <strong>Mouse Tracker</strong><br>
     Position: ${(mouseXPercent * 100).toFixed(1)}%, ${(mouseYPercent * 100).toFixed(1)}%<br>
     Speed: ${smoothedSpeedKmh.toFixed(2)} km/h (${displayedSpeed.toFixed(1)} px/s)<br>
     Distance: ${smoothedDistanceMeters.toFixed(2)} m<br>
@@ -206,18 +206,18 @@ function animationLoop() {
 }
 
 // **Initialization**
-export function initMouseMonitors() {
-  console.log("Initializing mouse monitors...");
+export function initMouseTracker() {
+  console.log("Initializing mouse tracker...");
 
   if (!initializeElements()) {
-    console.error("Failed to initialize mouse monitors");
+    console.error("Failed to initialize mouse tracker");
     return;
   }
 
   setupEventHandlers();
   animationLoop();
 
-  console.log("Mouse monitors initialized successfully");
+  console.log("Mouse tracker initialized successfully");
 }
 
 export { mouseXPercent, mouseYPercent };

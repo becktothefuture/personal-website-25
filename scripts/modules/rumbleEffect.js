@@ -4,15 +4,14 @@
  * Creates a physical rumbling/shaking effect based on scroll velocity.
  * 
  * This module:
- * - Creates a wrapper element that encloses most of the site content
- * - Applies physics-based motion to this wrapper when scroll speed exceeds thresholds
+ * - Applies physics-based motion to an element with id 'rumble-wrapper'
  * - Uses spring physics to create realistic oscillation and damping
  * - Scales effect intensity exponentially with scroll speed
- * - Automatically excludes elements that shouldn't be affected by rumble
  * 
  * Dependencies:
  * - scrollTracker.js - For monitoring scroll velocity
  */
+
 
 import { scrollTracker } from './scrollTracker.js';
 
@@ -49,7 +48,10 @@ class RumbleEffect {
    * Initialize the rumble effect
    */
   init() {
-    this.#createWrapper();
+    if (!this.#findWrapper()) {
+      console.warn('Rumble effect: No element with ID "rumble-wrapper" found. Effect disabled.');
+      return;
+    }
     
     // Subscribe to scrollTracker updates for velocity-based rumble
     scrollTracker.on("update", (data) => {
@@ -83,59 +85,19 @@ class RumbleEffect {
   }
   
   /**
-   * Create wrapper element that will be affected by rumble 
+   * Find the element that will be affected by rumble 
+   * @returns {boolean} True if the wrapper element was found, false otherwise
    */
-  #createWrapper() {
-    // Check if wrapper already exists
-    let wrapper = document.getElementById('rumble-wrapper');
+  #findWrapper() {
+    // Find the element with id 'rumble-wrapper'
+    const wrapper = document.getElementById('rumble-wrapper');
     
     if (!wrapper) {
-      wrapper = document.createElement('div');
-      wrapper.id = 'rumble-wrapper';
-      
-      const style = wrapper.style;
-      style.position = 'fixed';
-      style.top = '0';
-      style.left = '0';
-      style.width = '100%';
-      style.height = '100%';
-      style.zIndex = '5';
-      style.pointerEvents = 'none';
-      
-      // Get elements we want to explicitly include or exclude
-      const starfield = document.getElementById('starfield');
-      const starfieldBackground = document.getElementById('starfield-background');
-      const contentWrapper = document.getElementById('content-wrapper');
-      const debugScroll = document.getElementById('debug-scroll');
-      const debugStarfield = document.getElementById('debug-starfield');
-      
-      // Move all direct children of body into the wrapper with specific rules
-      const bodyChildren = Array.from(document.body.children);
-      
-      bodyChildren.forEach(child => {
-        // Specifically include these elements in the rumble wrapper
-        const shouldInclude = (
-          child === starfieldBackground || 
-          child === contentWrapper ||
-          (child !== starfield && 
-           child !== wrapper && 
-           child !== debugScroll && 
-           child !== debugStarfield)
-        );
-        
-        if (shouldInclude) {
-          // Enable pointer events for interactive elements
-          if (child.id !== 'starfield-background') {
-            child.style.pointerEvents = 'auto';
-          }
-          wrapper.appendChild(child);
-        }
-      });
-      
-      document.body.appendChild(wrapper);
+      return false;
     }
     
     this.#wrapperElement = wrapper;
+    return true;
   }
   
   /**

@@ -65,8 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { initLondonClock } = await import('./modules/londonClock.js');
                 const { initFlicker } = await import('./modules/flicker.js');
                 const { initRobot } = await import('./modules/robotAnimation.js');
-                const { initWidgetEffects } = await import('./modules/widgetEffects.js');
-                const { initMouseMonitors } = await import('./modules/mousemonitors.js');
+                const { initMouseTracker } = await import('./modules/mouseTracker.js');
                 const { 
                     initProcessorAnimation1, 
                     initProcessorAnimation2,
@@ -80,8 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initLondonClock();
                 initFlicker();
                 initRobot();
-                initWidgetEffects();
-                initMouseMonitors();
+                initMouseTracker();
                 initProcessorAnimation1();
                 initProcessorAnimation2();
                 initProcessorAnimation3();

@@ -30,7 +30,7 @@
  *  - data-letter-pool: String of characters to use for random substitution
  */
 
-
+console.log('Diffusion Text module intialized');
 
 class DiffusionTextAnimator {
   constructor(options) {

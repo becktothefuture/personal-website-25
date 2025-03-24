@@ -15,6 +15,10 @@
 
 // scrollTracker.js
 
+
+console.log('Scroll Tracker Module Initialized');
+
+
 // Simple event emitter for decoupled communication
 class EventEmitter {
   constructor() {
