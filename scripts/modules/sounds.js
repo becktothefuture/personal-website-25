@@ -43,7 +43,7 @@ const CONFIG = {
   fadeDuration: 1,      // Increased for smoother transitions
   idleTimeout: 3000,      // 3 seconds idle timeout
   ambient: {
-    url: "https://github.com/becktothefuture/personal-website-25/blob/b8b9bc7b6c64174ddb3853bebb19e0075c0c3f26/assets/ambience.mp3",
+    url: "assets/ambience.mp3",
     targetVolume: 1,
     // Direct speed-based pitch shift only
     minPitch: 0.8,
