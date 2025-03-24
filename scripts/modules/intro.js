@@ -1,3 +1,32 @@
+/**
+ * @module intro
+ * @description Handles the website intro animation sequence with a typewriter effect
+ * 
+ * This module manages an animated boot sequence with typewriter text effects and
+ * widget animations. It simulates a computer boot/startup screen with configurable
+ * animation speeds.
+ * 
+ * Features:
+ * - Typewriter text animation with realistic typing speed variations
+ * - Ability to skip the intro by pressing ENTER
+ * - Safety timeout to ensure website visibility if animation fails
+ * - Sequential widget animations after intro completes
+ * - Configurable animation speeds via the ANIMATION_SPEED object
+ *
+ * @usage Import the initIntroSequence function and call it when the page loads.
+ * The function returns a Promise that resolves when the intro sequence completes.
+ *
+ * Example: 
+ * ```
+ * import { initIntroSequence } from './modules/intro.js';
+ * 
+ * document.addEventListener('DOMContentLoaded', async () => {
+ *   await initIntroSequence();
+ *   // Continue with other page initialization
+ * });
+ * ```
+ */
+
 const ANIMATION_SPEED = {
   GLOBAL_MULTIPLIER: 1.0,
   TYPING_SPEED: 2.0,

@@ -1,3 +1,18 @@
+/**
+ * Scroll Tracker Module
+ * --------------------
+ * Tracks scrolling behavior and velocity, emitting events for other components.
+ * 
+ * This module:
+ * - Implements a physics-based model for scroll momentum and velocity
+ * - Provides configurable parameters for mass, drag, impulse and damping
+ * - Calculates scroll speed in m/s and km/h with realistic physics
+ * - Includes an event system to notify other modules of scroll updates
+ * - Applies quadratic drag for realistic deceleration
+ * - Handles both upward (accelerate) and downward (brake) scroll inputs
+ * - Enforces maximum velocity limits with smooth damping
+ */
+
 // scrollTracker.js
 
 // Simple event emitter for decoupled communication

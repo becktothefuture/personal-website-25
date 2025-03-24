@@ -1,3 +1,16 @@
+/**
+ * Tunnel Effect Module
+ * 
+ * This module creates an animated tunnel/warp effect that responds to 
+ * user scrolling. It dynamically adjusts the animation speed based on
+ * scroll intensity, creating a sense of acceleration and deceleration.
+ * 
+ * Features:
+ * - Scroll-responsive animation speed
+ * - Configurable speed parameters
+ * - Smooth decay when scrolling stops
+ */
+
 // modules/tunnelEffect.js
 console.log('Tunnel effect module initialised');
 

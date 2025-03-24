@@ -1,4 +1,28 @@
+/**
+ * @module browserTheme
+ * Browser Theme Module
+ * 
+ * Detects and applies browser-specific UI colors to match the native browser chrome
+ * appearance in both light and dark modes. This helps create a seamless visual
+ * integration between the website and the browser interface.
+ *
+ * 
+ * Features:
+ * - Detects browser type (Chrome, Safari, Firefox, Edge, Opera, Brave, Arc)
+ * - Sets CSS variables for browser UI colors (--browser-color, --line-color)
+ * - Updates meta theme-color tag to match the browser UI
+ * - Automatically responds to system theme changes
+ * 
+ * Usage:
+ * Import and call the initBrowserTheme() function when your application starts.
+ * 
+ * @example
+ * import { initBrowserTheme } from './modules/browserTheme.js';
+ * initBrowserTheme();
+ */
+
 console.log('Browser Theme Initialised');
+
 
 const userAgent = navigator.userAgent.toLowerCase();
 const prefersDarkMode = window.matchMedia("(prefers-color-scheme: dark)");

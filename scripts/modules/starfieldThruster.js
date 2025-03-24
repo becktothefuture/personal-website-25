@@ -1,3 +1,17 @@
+/**
+ * Starfield Thruster Module
+ * 
+ * This module renders a WebGL-based starfield animation that creates the
+ * illusion of moving through space. The star movement speed is tied to
+ * scroll velocity, enhancing the feeling of acceleration. Features include:
+ * - WebGL-powered star rendering for performance
+ * - Dynamic star movement based on scroll speed
+ * - Adaptive performance optimization
+ * - Depth-based star scaling and opacity
+ * 
+ * Dependencies: scrollTracker.js
+ */
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**

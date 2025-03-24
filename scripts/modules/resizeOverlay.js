@@ -1,3 +1,15 @@
+/**
+ * Resize Overlay Module
+ * --------------------
+ * Manages the overlay that appears during browser resize events.
+ * 
+ * This module:
+ * - Shows an overlay during window resize to prevent layout jumps and visual glitches
+ * - Uses debounced event handling to manage resize events efficiently
+ * - Controls the CSS transitions for smooth fade in/out of the overlay
+ * - Provides clean DOM management by setting display:none after transitions complete
+ */
+
 function setupResizeOverlay() {
   const overlay = document.getElementById('resize-overlay');
   if (!overlay) {

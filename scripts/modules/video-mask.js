@@ -1,5 +1,15 @@
+/**
+ * Video Mask Module
+ * 
+ * This module creates a dynamic mask effect for video elements.
+ * It tracks elements with the class 'display__top' and creates a
+ * mask that matches their position, size, and border radius, 
+ * applying this mask to a blur overlay.
+ * 
+ * Dependencies: config.js
+ */
+
 console.log("Video mask initialized");
-import { config } from "./config.js";
 
 
 export function initVideoMask() {

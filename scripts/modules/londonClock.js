@@ -1,3 +1,16 @@
+/**
+ * London Clock Module
+ * --------------------
+ * Renders and updates an analog clock showing London time.
+ * 
+ * This module:
+ * - Accesses the system time and converts it to London timezone
+ * - Calculates the appropriate angles for hour, minute and second hands
+ * - Applies rotation transforms to clock hand DOM elements
+ * - Updates clock display once per second
+ * - Provides start/stop controls for the clock animation
+ */
+
 console.log('London Clock Module Initialized');
 
 let clockInterval = null;

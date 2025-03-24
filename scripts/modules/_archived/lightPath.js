@@ -1,9 +1,39 @@
+/**
+ * LightPath Module
+ * 
+ * This module creates an animated light path effect along an SVG path.
+ * It generates small circles ("lights") that follow the path with animated 
+ * movement and pulsing effects.
+ * 
+ * @module lightPath
+ * 
+ * @example
+ * // HTML structure needed:
+ * // <svg class="light-path">
+ * //   <path class="light-path__path"></path>
+ * //   <g class="light-path__lights"></g>
+ * // </svg>
+ * 
+ * import { initLightPath } from './modules/lightPath.js';
+ * 
+ * const svg = document.querySelector('.light-path');
+ * const pathElement = svg.querySelector('.light-path__path');
+ * const lightsContainer = svg.querySelector('.light-path__lights');
+ * 
+ * initLightPath(svg, pathElement, lightsContainer);
+ * 
+ * @param {SVGElement} svg - The main SVG container element
+ * @param {SVGPathElement} pathElement - The path element defining the shape lights will follow
+ * @param {SVGGElement} lightsContainer - The container where light circles will be appended
+ * @returns {void}
+ */
+
+
+
 console.log("lightPath initialized");
 
 export function initLightPath(svg, pathElement, lightsContainer) {
   // Constants
-
-
 
   const circleDiameter = 6;
   const circleSpacing = 12;

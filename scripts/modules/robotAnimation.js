@@ -1,3 +1,16 @@
+/**
+ * Robot Animation Module
+ * ---------------------
+ * Controls the robot character animations, expressions and dialog system.
+ * 
+ * This module:
+ * - Creates and manages a dot-matrix robot face with dynamic expressions
+ * - Handles blinking, eye movement, and mouth animations synchronized with speech
+ * - Manages a speech bubble with typewriter-style text animation
+ * - Contains a library of tech/design jokes that are displayed randomly
+ * - Coordinates facial expressions with dialog content
+ */
+
 console.log("Robot animation initialized");
 
 export function initRobot() {

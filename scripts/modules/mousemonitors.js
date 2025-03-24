@@ -1,3 +1,18 @@
+/**
+ * Mouse Monitors Module
+ * --------------------
+ * Tracks mouse movements, speed, position, clicks and distance traveled.
+ * 
+ * This module:
+ * - Calculates mouse speed in multiple units (px/s, km/h, mph)
+ * - Tracks total mouse travel distance with unit conversion
+ * - Maintains click count statistics
+ * - Applies smooth animation to cursor positioning
+ * - Uses requestAnimationFrame for optimized performance
+ * - Provides minimap cursor visualization
+ * - Exports mouse position data for use by other modules
+ */
+
 // ------------------------------------------------------------
 // Annotations:
 // This code tracks mouse movements, click counts and distance traveled.

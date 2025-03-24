@@ -1,3 +1,16 @@
+/**
+ * Flicker Module
+ * 
+ * This module handles the "breathing" animation effect for widget elements.
+ * It applies a consistent animation duration (3 seconds) with randomized
+ * starting delays to create a natural, staggered effect across multiple
+ * elements on the page.
+ * 
+ * The module uses CSS custom properties to control the animation timing
+ * which can be targeted in the stylesheet with --breathe-duration and
+ * --animation-delay variables.
+ */
+
 export function initFlicker() {
     const flickerElements = document.querySelectorAll('.widget');
 

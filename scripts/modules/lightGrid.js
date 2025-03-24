@@ -1,4 +1,28 @@
-// Export verification
+/**
+ * Light Grid Module
+ * 
+ * Creates animated grid of circles that flicker with randomized timing.
+ * This module finds elements with the class 'light-grid' and populates them
+ * with animated circle elements based on data-rows and data-columns attributes.
+ * 
+ * @module lightGrid
+ * 
+ * @example
+ * // HTML structure:
+ * // <div class="light-grid" data-rows="5" data-columns="5"></div>
+ * 
+ * import { initLightGrids } from './modules/lightGrid.js';
+ * initLightGrids();
+ * 
+ * @function initLightGrids
+ * @description Initializes all light grid elements on the page by:
+ *   1. Creating circle elements inside each .light-grid container based on data attributes
+ *   2. Applying randomized flickering animations to each circle
+ * @returns {void}
+ */
+
+
+
 console.log('Light grid module intialized');
 
 export function initLightGrids() {

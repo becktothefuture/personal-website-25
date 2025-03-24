@@ -1,3 +1,16 @@
+/**
+ * Sound System Module
+ * 
+ * This module manages an interactive sound system with ambient background audio and
+ * a dynamic engine sound that responds to user scrolling behavior. It includes:
+ * - Ambient sound with speed-based pitch modulation
+ * - Engine/rumble sounds with frequency and volume tied to scroll speed
+ * - Auto-fade on user inactivity
+ * - Sound toggle controls with UI interaction
+ * 
+ * Dependencies: scrollTracker.js
+ */
+
 // sounds.js
 // This script sets up a sound system that plays ambient noise and a low-frequency rumble effect.
 // The modulation previously tied to mouse position has been replaced with defaults and scroll-based modulation.

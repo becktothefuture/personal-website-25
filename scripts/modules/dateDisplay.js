@@ -1,3 +1,25 @@
+/**
+ * @module dateDisplay
+ * @description A module that handles date formatting and display for webpage elements.
+ * It updates DOM elements with formatted date information in British format.
+ * 
+ * Usage: Import and call initDateDisplay() to initialize the date display functionality.
+ * The module will update elements with IDs "greeting" and "logbook" with formatted date text.
+ * 
+ * @example
+ * import { initDateDisplay } from './modules/dateDisplay.js';
+ * initDateDisplay();
+ */
+
+/**
+ * Initializes the date display functionality.
+ * Updates the greeting element with the current day of week and the logbook element
+ * with a formatted date including ordinal suffix (e.g. "Logbook 21st Mar 2023").
+ * Uses British date format and Europe/London timezone.
+ * @function initDateDisplay
+ */
+
+
 export function initDateDisplay() {
     const updateDateDisplay = () => {
       const now = new Date();

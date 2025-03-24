@@ -1,12 +1,37 @@
-/**
- * Diffusion Text Animation Module
- * Creates a text animation that transitions between phrases using a "diffusion" effect
- */
 
 /**
- * DiffusionTextAnimator encapsulates the diffusion animation state machine.
- * Designed for performance, maintainability and scalability.
+ * @module diffusionText
+ * @description Creates animated text transitions with a "diffusion" effect where characters
+ * gradually transform between different phrases through random character substitution.
+ * The animation cycles through three phases: diffusing in (random to text), pause (legible text),
+ * and diffusing out (text to random).
+ * 
+ * @example
+ * // HTML usage:
+ * // <div class="diffusion-text" data-texts='["First text", "Second text"]' 
+ * //   data-in-duration="1500" data-pause-duration="2000" data-out-duration="1500"></div>
+ * 
+ * // JavaScript:
+ * import { initDiffusionText } from './modules/diffusionText.js';
+ * 
+ * // Initialize all diffusion text elements on the page
+ * initDiffusionText();
+ * 
+ * @property {Object} DiffusionTextAnimator - Class that handles the animation logic
+ * 
+ * @throws {Error} Will log a warning if data-texts attribute cannot be parsed
+ * 
+ * @see Data attributes:
+ *  - data-texts: JSON string array of texts to cycle through
+ *  - data-in-duration: Duration in ms for the diffusion-in animation (default: 1500)
+ *  - data-pause-duration: Duration in ms to show legible text (default: 2000)
+ *  - data-out-duration: Duration in ms for the diffusion-out animation (default: 1500)
+ *  - data-frame-interval: Interval in ms between animation frames (default: 200)
+ *  - data-letter-pool: String of characters to use for random substitution
  */
+
+
+
 class DiffusionTextAnimator {
   constructor(options) {
     // Animation configuration

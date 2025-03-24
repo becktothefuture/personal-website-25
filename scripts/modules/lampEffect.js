@@ -1,4 +1,32 @@
 
+/**
+ * @module lampEffect
+ * 
+ * Creates a decorative lamp visual effect that responds to page scrolling.
+ * The effect consists of a "bulb" element and a radial gradient overlay that
+ * simulates light spreading from the source. The brightness of the lamp varies
+ * based on scroll speed and impulse.
+ * 
+ * Usage:
+ * 1. Import the module
+ * 2. Call initLampEffect() to create and activate the lamp
+ * 3. Use the returned instance to control the lamp (change position, color, etc.)
+ * 
+ * @requires ./scrollTracker.js
+ * 
+ * @example
+ * // Import and initialize the lamp effect
+ * import { initLampEffect, lampConfig } from './modules/lampEffect.js';
+ * 
+ * // Initialize with default settings
+ * const lamp = initLampEffect();
+ * 
+ * // Optionally customize the lamp
+ * lamp.setPosition('top-right');
+ * lamp.setBrightness(0.8);
+ * lamp.setColor(1, 0.9, 0.8); // Warm light
+ */
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**

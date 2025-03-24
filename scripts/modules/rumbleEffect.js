@@ -1,3 +1,19 @@
+/**
+ * Rumble Effect Module
+ * --------------------
+ * Creates a physical rumbling/shaking effect based on scroll velocity.
+ * 
+ * This module:
+ * - Creates a wrapper element that encloses most of the site content
+ * - Applies physics-based motion to this wrapper when scroll speed exceeds thresholds
+ * - Uses spring physics to create realistic oscillation and damping
+ * - Scales effect intensity exponentially with scroll speed
+ * - Automatically excludes elements that shouldn't be affected by rumble
+ * 
+ * Dependencies:
+ * - scrollTracker.js - For monitoring scroll velocity
+ */
+
 import { scrollTracker } from './scrollTracker.js';
 
 /**
