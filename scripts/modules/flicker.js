@@ -30,6 +30,5 @@ export function initFlicker() {
     flickerElements.forEach((element) => {
         setBreatheDuration(element);
         setAnimationDelay(element);
-        setInterval(() => setBreatheDuration(element), 1000); // Update every second
     });
 }
