@@ -11,6 +11,7 @@
  * Dependencies:
  * - scrollTracker.js - For monitoring scroll velocity
  */
+console.log("Rumble Effect module initialized");
 
 
 import { scrollTracker } from './scrollTracker.js';

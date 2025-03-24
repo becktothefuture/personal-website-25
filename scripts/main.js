@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     initProcessorAnimation3,
                     initProcessorAnimation4 
                 } = await import('./modules/processorAnimations.js');
+                const { initRumbleEffect } = await import('./modules/rumbleEffect.js');
 
                 initLightGrids();
                 initDateDisplay();
@@ -84,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initProcessorAnimation2();
                 initProcessorAnimation3();
                 initProcessorAnimation4();
+                initRumbleEffect();
 
                 console.log('All modules initialized');
 
