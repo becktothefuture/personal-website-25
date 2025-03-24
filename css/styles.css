@@ -782,7 +782,7 @@ body {
 	perspective-origin: 50% 50%;
 	transform-style: preserve-3d;
 	position: relative;
-	animation: perspective-shift 4s linear infinite;
+	/* animation: perspective-shift 4s linear infinite; */
 	--movement-multiplier: 0.25; /* Default multiplier, can be overridden */
 }
 
