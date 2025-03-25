@@ -1,4 +1,3 @@
-
 /**
  * @module lampEffect
  * 
@@ -118,36 +117,27 @@ class LampEffect {
       this.#lampElement = document.getElementById('lamp-overlay');
     }
     
+    // Use existing thruster-lamp element instead of creating a new one
+    this.#bulbElement = document.getElementById('thruster-lamp');
     
-    if (!document.getElementById('lamp-bulb')) {
-      this.#bulbElement = document.createElement('div');
-      this.#bulbElement.id = 'lamp-bulb';
-      
-      
-      const style = this.#bulbElement.style;
-      style.position = 'fixed';
-      style.width = `${lampConfig.bulbSize}px`;
-      style.height = `${lampConfig.bulbSize}px`;
-      style.background = lampConfig.bulbColor;
-      style.borderRadius = '50%';
-      style.boxShadow = '0 0 10px 2px rgba(255, 253, 234, 0.7)';
-      style.pointerEvents = 'none';
-      style.zIndex = '999';
-      style.transition = 'box-shadow 0.1s ease';
-      
-      
-      this.#bulbElement.innerHTML = `
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; 
-                   background: rgba(255, 255, 255, 0.9); border-radius: 50%;"></div>
-      `;
-      
-      
-      document.body.appendChild(this.#bulbElement);
-    } else {
-      this.#bulbElement = document.getElementById('lamp-bulb');
+    if (!this.#bulbElement) {
+      console.warn('Element with id "thruster-lamp" not found. Lamp effect may not work correctly.');
+      return;
     }
     
+    // Ensure the bulb element has the necessary styling
+    const style = this.#bulbElement.style;
+    style.position = 'fixed';
+    style.width = `${lampConfig.bulbSize}px`;
+    style.height = `${lampConfig.bulbSize}px`;
+    style.background = lampConfig.bulbColor;
+    style.borderRadius = '50%';
+    style.boxShadow = '0 0 10px 2px rgba(255, 253, 234, 0.7)';
+    style.pointerEvents = 'none';
+    style.zIndex = '999';
+    style.transition = 'box-shadow 0.1s ease';
     
+    // Set position
     this.setPosition(this.#position);
   }
   

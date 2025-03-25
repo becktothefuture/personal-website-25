@@ -18,6 +18,26 @@
 
 console.log('Scroll Tracker Module Initialized');
 
+// DOM elements for displaying tracking values
+let scrollValueM, scrollValueMiles, scrollValuePx;
+
+// Improved version with error handling
+function initializeElements() {
+  // Get references to the tracking display elements
+  scrollValueM = document.getElementById('scroll-value-m');
+  scrollValueMiles = document.getElementById('scroll-value-miles');
+  scrollValuePx = document.getElementById('scroll-value-px');
+
+  // Validate that all elements were found
+  const allElementsFound = scrollValueM && scrollValueMiles && scrollValuePx;
+  
+  // Log warning if elements are missing
+  if (!allElementsFound) {
+    console.warn('ScrollTracker: Some display elements were not found in the DOM');
+  }
+
+  return allElementsFound;
+}
 
 // Simple event emitter for decoupled communication
 class EventEmitter {
@@ -62,7 +82,8 @@ class ScrollTracker extends EventEmitter {
   #state = {
     velocityMS: 0,
     lastImpulse: 0,
-    lastUpdateTime: performance.now()
+    lastUpdateTime: performance.now(),
+    totalDistance: 0
   };
 
   constructor() {
@@ -73,6 +94,7 @@ class ScrollTracker extends EventEmitter {
   init() {
     window.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
     requestAnimationFrame(this.update.bind(this));
+    initializeElements();
   }
 
   /**
@@ -152,13 +174,45 @@ class ScrollTracker extends EventEmitter {
     // Apply global velocity scale factor for easy tuning
     this.#state.velocityMS = newVelocity * this.#config.velocityScaleFactor;
 
+    // Update total distance traveled
+    this.#state.totalDistance += this.#state.velocityMS * dt;
+    
+    // Update DOM displays
+    this.updateDisplayValues();
+
     // Emit update event
     this.emit("update", { velocityKMH: this.getVelocityKMH(), impulse: 0 });
     requestAnimationFrame(this.update.bind(this));
   }
   
+  /**
+   * Update DOM display values with current speed and distance
+   */
+  updateDisplayValues() {
+    if (scrollValueM) scrollValueM.textContent = this.getVelocityKMH().toFixed(2);
+    if (scrollValueMiles) scrollValueMiles.textContent = (this.getVelocityKMH() / 1.60934).toFixed(2); // km/h to mph
+    if (scrollValuePx) scrollValuePx.textContent = this.#state.velocityMS.toFixed(1);
+    
+    // Additional distance displays can be implemented here if needed
+    // e.g., document.getElementById('scroll-distance').textContent = this.getDistanceKM().toFixed(2);
+  }
+  
   getVelocityKMH() {
     return this.#state.velocityMS * 3.6;
+  }
+
+  /**
+   * Get total distance traveled in kilometers
+   */
+  getDistanceKM() {
+    return this.#state.totalDistance / 1000;
+  }
+
+  /**
+   * Get total distance traveled in miles
+   */
+  getDistanceMiles() {
+    return this.getDistanceKM() / 1.60934;
   }
 
   // Additional safe getters
@@ -166,7 +220,8 @@ class ScrollTracker extends EventEmitter {
     return {
       velocityMS: this.#state.velocityMS,
       velocityKMH: this.getVelocityKMH(),
-      lastImpulse: this.#state.lastImpulse
+      lastImpulse: this.#state.lastImpulse,
+      totalDistance: this.#state.totalDistance
     };
   }
   

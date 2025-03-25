@@ -73,10 +73,6 @@ function initializeElements() {
   speedValueMiles = document.getElementById('speed-value-miles');
   speedValuePx = document.getElementById('speed-value-px');
   
-  scrollValueM = document.getElementById('scroll-value-m');
-  scrollValueMiles = document.getElementById('scroll-value-miles');
-  scrollValuePx = document.getElementById('scroll-value-px');
-  
   clickCounterElement = document.getElementById('click-counter');
   distanceValueM = document.getElementById('distance-value-m');
   distanceValueMiles = document.getElementById('distance-value-miles');
@@ -147,11 +143,8 @@ function updateDebugDisplay() {
   if (speedValueMiles) speedValueMiles.textContent = smoothedSpeedMilesH.toFixed(2);
   if (speedValuePx) speedValuePx.textContent = displayedSpeed.toFixed(1);
   
-  // Update scroll/position values
-  if (scrollValueM) scrollValueM.textContent = (mouseYPercent * 100).toFixed(1);
-  if (scrollValueMiles) scrollValueMiles.textContent = (mouseXPercent * 100).toFixed(1);
-  if (scrollValuePx) scrollValuePx.textContent = `${Math.round(targetCursorX)}:${Math.round(targetCursorY)}`;
-  
+
+
   // Update click counter and distance values
   if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
   if (distanceValueM) distanceValueM.textContent = smoothedDistanceMeters.toFixed(2);

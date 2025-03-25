@@ -21,6 +21,7 @@
  * - mousemonitors.js: Tracks mouse movement, speed and interaction metrics
  * - processorAnimations.js: Handles the multiple processor visualization animations
  * - rumbleEffect.js: Creates physical rumble/shake effects based on scroll velocity
+ * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * 
  * The initialization process is divided into two phases:
  * 1. Immediate initialization: Components that need to be available immediately
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     initProcessorAnimation4 
                 } = await import('./modules/processorAnimations.js');
                 const { initRumbleEffect } = await import('./modules/rumbleEffect.js');
+                const { initLampEffect } = await import('./modules/lampEffect.js');
 
                 initLightGrids();
                 initDateDisplay();
@@ -86,6 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initProcessorAnimation3();
                 initProcessorAnimation4();
                 initRumbleEffect();
+                initLampEffect();
 
                 console.log('All modules initialized');
 
