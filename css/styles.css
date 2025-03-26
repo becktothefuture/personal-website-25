@@ -797,36 +797,38 @@ body {
 
 :root {
   /* Overall animation settings */
-  --starship-movement-duration: 40s;
+  --starship-movement-duration: 80s;
   
   /* Page-wrapper movement values (outer container) */
   --page-translate-x: 1%;
-  --page-translate-y: 0.6%;
-  --page-rotate-x: 2.8deg;
-  --page-rotate-y: 1.4deg;
+  --page-translate-y: 0.5%;
+  --page-rotate-x: 1deg;
+  --page-rotate-y: 1deg;
   
   /* Correlation factors for depth-wrapper perspective shift */
-  --perspective-shift-factor-x: -10;
-  --perspective-shift-factor-y: -8;
+  --perspective-shift-factor-x: -5;
+  --perspective-shift-factor-y: -5;
   
   /* Rotation multiplier */
-  --rotation-multiplier: 1.2;
+  --rotation-multiplier: 1  ;
+  --glass-movement-multiplier: -6;
+
 }
 
 /* Setup for 3D animations with improved will-change properties */
 .page-wrapper,
 .depth-wrapper,
-.depth-wrapper-bottom {
+.depth-wrapper-bottom,
+.glass-video {
   will-change: transform, perspective-origin;
   transform-style: preserve-3d;
-  position: relative;
-  transform-origin: center center;
+    transform-origin: center center;
 }
 
 /* Outer container (the entire scene) */
 .page-wrapper {
   animation: pageWrapper-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 0.5s ease-in-out;
+  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 
 /* Inner container (the screen with depth) */
@@ -834,13 +836,21 @@ body {
   perspective: var(--perspective-depth);
   perspective-origin: 50% 50%;
   animation: depthWrapper-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 0.5s ease-in-out;
+  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+}
+
+/* Glass video animation */
+.glass-video {
+  -webkit-mask: radial-gradient(circle, black 40%, transparent 100%);
+  mask: radial-gradient(circle, black 40%, transparent 100%);
+  animation: glassVideo-naturalMovement var(--starship-movement-duration) infinite;
+  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 
 /* Additional bottom element */
 .depth-wrapper-bottom {
   animation: depthWrapperBottom-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 0.5s ease-in-out;
+  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
 }
 
 /* --- Natural Page Wrapper Movement --- */
@@ -858,6 +868,24 @@ body {
   82% { transform: translateX(calc(var(--page-translate-x) * -0.3)) translateY(calc(var(--page-translate-y) * -0.2)) rotateX(calc(var(--page-rotate-x) * -0.3)) rotateY(calc(var(--page-rotate-y) * -0.4)) scale(1.002); }
   90% { transform: translateX(calc(var(--page-translate-x) * 0.2)) translateY(calc(var(--page-translate-y) * 0.1)) rotateX(calc(var(--page-rotate-x) * 0.2)) rotateY(calc(var(--page-rotate-y) * 0.3)) scale(1.004); }
   95% { transform: translateX(calc(var(--page-translate-x) * 0.1)) translateY(calc(var(--page-translate-y) * 0.05)) rotateX(calc(var(--page-rotate-x) * 0.1)) rotateY(calc(var(--page-rotate-y) * 0.15)) scale(1.001); }
+}
+/* --- Glass Video Movement --- */
+@keyframes glassVideo-naturalMovement {
+  /* Add a movement multiplier to control animation intensity (default is 1) */
+  
+  0%, 100% { transform: translateX(0) translateY(0) scale(1); }
+  5% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.004); }
+  15% { transform: translateX(calc(var(--page-translate-x) * 0.7 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.5 * var(--glass-movement-multiplier))) scale(0.997); }
+  25% { transform: translateX(calc(var(--page-translate-x) * 1.0 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.8 * var(--glass-movement-multiplier))) scale(0.993); }
+  32% { transform: translateX(calc(var(--page-translate-x) * 0.8 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.6 * var(--glass-movement-multiplier))) scale(1.002); }
+  40% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.005); }
+  48% { transform: translateX(calc(var(--page-translate-x) * -0.4 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.3 * var(--glass-movement-multiplier))) scale(1.003); }
+  55% { transform: translateX(calc(var(--page-translate-x) * -0.9 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.7 * var(--glass-movement-multiplier))) scale(0.996); }
+  65% { transform: translateX(calc(var(--page-translate-x) * -1.1 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.9 * var(--glass-movement-multiplier))) scale(0.992); }
+  73% { transform: translateX(calc(var(--page-translate-x) * -0.8 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.6 * var(--glass-movement-multiplier))) scale(0.997); }
+  82% { transform: translateX(calc(var(--page-translate-x) * -0.4 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.3 * var(--glass-movement-multiplier))) scale(1.003); }
+  90% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.006); }
+  95% { transform: translateX(calc(var(--page-translate-x) * 0.2 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.1 * var(--glass-movement-multiplier))) scale(1.002); }
 }
 
 /* --- Natural Depth Wrapper Movement --- */
@@ -1099,16 +1127,16 @@ html {
 
 @keyframes extrude-1 {
   0% {
-    transform: translateZ(0px);
-    opacity: 1;
+    transform: translateZ(-50px);
+    opacity: 0;
   }
   25% {
-    transform: translateZ(0px);
-    opacity: 1;
+    transform: translateZ(-50px);
+    opacity: 0;
   }
   100% {
-    transform: translateZ(50px);
-    opacity: 0;
+    transform: translateZ(0px);
+    opacity: 1;
   }
 }
 

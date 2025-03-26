@@ -497,7 +497,6 @@ function updateToggleUI(isOn) {
     soundToggleKnob.classList.add('off');
     soundToggle.classList.remove('on');
     soundToggleLight.classList.remove('on');
-    soundToggleLight.classList.add('off');
   }
 }
 
@@ -649,84 +648,6 @@ function toggleSound() {
 }
 
 // ----------------------------------------------------------------------------------------------------
-// SOUND CHOICE OVERLAY
-// ----------------------------------------------------------------------------------------------------
-
-/**
- * Creates the sound choice overlay.
- */
-function createSoundChoiceOverlay() {
-  // Only create if it doesn't exist
-  if (!document.getElementById('sound-choice-overlay')) {
-    const overlay = document.createElement('div');
-    overlay.id = 'sound-choice-overlay';
-    
-    // Style the overlay
-    const style = overlay.style;
-    style.position = 'fixed';
-    style.top = '0';
-    style.left = '0';
-    style.width = '100%';
-    style.height = '100%';
-    style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-    style.display = 'flex';
-    style.flexDirection = 'column';
-    style.alignItems = 'center';
-    style.justifyContent = 'center';
-    style.zIndex = '10000';
-    style.backdropFilter = 'blur(10px)';
-    
-    // Create the overlay content
-    overlay.innerHTML = `
-      <div style="text-align: center; max-width: 600px; padding: 20px;">
-        <h2 style="color: #9ce0a9; font-size: 28px; margin-bottom: 20px;">Enable Sound?</h2>
-        <p style="color: #fff; font-size: 16px; margin-bottom: 40px;">
-          This experience includes ambient sounds and interactive audio effects that respond to your movement.
-        </p>
-        <div style="display: flex; gap: 20px; justify-content: center;">
-          <button id="overlay-sound-on" style="
-            background-color: rgba(100, 180, 100, 0.4);
-            border: 1px solid rgba(156, 224, 169, 0.7);
-            color: #fff;
-            padding: 15px 30px;
-            border-radius: 4px;
-            font-size: 18px;
-            cursor: pointer;
-          ">Enable Sound</button>
-          <button id="overlay-sound-off" style="
-            background-color: rgba(50, 50, 50, 0.7);
-            border: 1px solid rgba(156, 224, 169, 0.3);
-            color: #fff;
-            padding: 15px 30px;
-            border-radius: 4px;
-            font-size: 18px;
-            cursor: pointer;
-          ">No Sound</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(overlay);
-  }
-}
-
-/**
- * Hides the sound choice overlay.
- */
-function hideSoundChoiceOverlay() {
-  const overlay = document.getElementById('sound-choice-overlay');
-  if (overlay) {
-    overlay.style.opacity = '0';
-    overlay.style.transition = 'opacity 0.5s ease';
-    setTimeout(() => {
-      if (overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
-    }, 500);
-  }
-}
-
-// ----------------------------------------------------------------------------------------------------
 // INITIALIZATION
 // ----------------------------------------------------------------------------------------------------
 
@@ -735,13 +656,9 @@ function hideSoundChoiceOverlay() {
  */
 export async function initSoundSystem() {
   try {
-    // Create and show the sound choice overlay
-    createSoundChoiceOverlay();
-    
-    // UI element initialization is now optional.
+    // UI element initialization for existing DOM elements
     const btnOn = document.querySelector('#button-sound-on');
     const btnOff = document.querySelector('#button-sound-off');
-    const overlayBtnOn = document.querySelector('#overlay-sound-on');
 
     if (btnOn) {
       btnOn.addEventListener('click', async () => {
@@ -755,28 +672,6 @@ export async function initSoundSystem() {
     
     if (btnOff) {
       btnOff.addEventListener('click', () => handleSoundChoice(false));
-    }
-    
-    // Add event listener for the overlay button
-    if (overlayBtnOn) {
-      overlayBtnOn.addEventListener('click', async () => {
-        audioContext = await createAudioContext();
-        if (audioContext && audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-        handleSoundChoice(true);
-        // Hide the overlay after choice is made
-        hideSoundChoiceOverlay();
-      });
-    }
-    
-    // "No Sound" button in the overlay
-    const overlayBtnOff = document.querySelector('#overlay-sound-off');
-    if (overlayBtnOff) {
-      overlayBtnOff.addEventListener('click', () => {
-        handleSoundChoice(false);
-        hideSoundChoiceOverlay();
-      });
     }
     
     // If a floating toggle exists, attach the listener.

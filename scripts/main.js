@@ -22,6 +22,7 @@
  * - processorAnimations.js: Handles the multiple processor visualization animations
  * - rumbleEffect.js: Creates physical rumble/shake effects based on scroll velocity
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
+ * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * 
  * The initialization process is divided into two phases:
  * 1. Immediate initialization: Components that need to be available immediately
@@ -76,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } = await import('./modules/processorAnimations.js');
                 const { initRumbleEffect } = await import('./modules/rumbleEffect.js');
                 const { initLampEffect } = await import('./modules/lampEffect.js');
+                const { initDiffusionText } = await import('./modules/diffusionText.js');
 
                 initLightGrids();
                 initDateDisplay();
@@ -90,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initProcessorAnimation4();
                 initRumbleEffect();
                 initLampEffect();
+                initDiffusionText();
 
                 console.log('All modules initialized');
 

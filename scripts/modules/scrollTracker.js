@@ -11,6 +11,7 @@
  * - Applies quadratic drag for realistic deceleration
  * - Handles both upward (accelerate) and downward (brake) scroll inputs
  * - Enforces maximum velocity limits with smooth damping
+ * - Rotates elements with class "turnstyle" based on scroll velocity
  */
 
 // scrollTracker.js
@@ -75,7 +76,8 @@ class ScrollTracker extends EventEmitter {
     scrollScalingFactor: 10,    // How scroll distance translates to impulse
     topSpeed: 400,               // km/h (absolute maximum)
     impulseDamping: 0.8,        // Increased damping
-    velocityScaleFactor: 1     // Reduced velocity scale
+    velocityScaleFactor: 1,     // Reduced velocity scale
+    turnstyleRotationFactor: 1.0  // Multiplier for turnstyle rotation speed
   };
 
   // Internal velocity in m/s.
@@ -85,6 +87,11 @@ class ScrollTracker extends EventEmitter {
     lastUpdateTime: performance.now(),
     totalDistance: 0
   };
+  
+  // Turnstyle elements tracking
+  #turnstyleElements = [];
+  #lastElementCheckTime = 0;
+  #elementCheckInterval = 5000; // Check for new elements every 5 seconds
 
   constructor() {
     super();
@@ -95,6 +102,51 @@ class ScrollTracker extends EventEmitter {
     window.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
     requestAnimationFrame(this.update.bind(this));
     initializeElements();
+    this.findTurnstyleElements();
+  }
+  
+  /**
+   * Find all elements with class "turnstyle"
+   */
+  findTurnstyleElements() {
+    this.#turnstyleElements = Array.from(document.querySelectorAll('.turnstyle'));
+    console.log(`Found ${this.#turnstyleElements.length} turnstyle elements`);
+  }
+  
+  /**
+   * Check for new turnstyle elements periodically
+   */
+  checkForNewTurnstyleElements() {
+    const now = performance.now();
+    if (now - this.#lastElementCheckTime > this.#elementCheckInterval) {
+      this.findTurnstyleElements();
+      this.#lastElementCheckTime = now;
+    }
+  }
+  
+  /**
+   * Apply rotation to turnstyle elements based on velocity
+   */
+  updateTurnstyleRotation() {
+    if (this.#turnstyleElements.length === 0) return;
+
+    // Calculate rotation increment based on velocity and rotation factor
+    const rotationIncrement = this.#state.velocityMS * this.#config.turnstyleRotationFactor;
+
+    // Apply rotation to each element
+    this.#turnstyleElements.forEach(element => {
+      // Get current rotation or default to 0 if not set
+      const currentRotation = parseFloat(element.dataset.rotation || 0);
+      
+      // Calculate new rotation value
+      const newRotation = currentRotation + rotationIncrement;
+      
+      // Store rotation value in dataset for next frame
+      element.dataset.rotation = newRotation;
+      
+      // Apply rotation using CSS transform
+      element.style.transform = `rotate(${newRotation}deg)`;
+    });
   }
 
   /**
@@ -179,6 +231,12 @@ class ScrollTracker extends EventEmitter {
     
     // Update DOM displays
     this.updateDisplayValues();
+    
+    // Check for new turnstyle elements periodically
+    this.checkForNewTurnstyleElements();
+    
+    // Update rotation for turnstyle elements
+    this.updateTurnstyleRotation();
 
     // Emit update event
     this.emit("update", { velocityKMH: this.getVelocityKMH(), impulse: 0 });
@@ -287,6 +345,14 @@ class ScrollTracker extends EventEmitter {
    */
   setVelocityScaleFactor(val) {
     this.#config.velocityScaleFactor = Math.max(0.1, Math.min(val, 5.0));
+  }
+  
+  /**
+   * Set turnstyle rotation speed factor
+   * Higher values = faster rotation for the same velocity
+   */
+  setTurnstyleRotationFactor(val) {
+    this.#config.turnstyleRotationFactor = Math.max(0.1, Math.min(val, 10.0));
   }
 }
 
