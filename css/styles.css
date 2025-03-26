@@ -590,30 +590,30 @@ body {
  ***************/
 
 
+
 .btn-3D__front,
-.btn-3d__sides {
-  background-color: green !important; 
-  border: 1px solid red;
+.btn-3D__sides {
+  background-color: var(--buttons) !important; 
 }
 
-.btn-3D{
+.btn-3D__button {
   opacity: 0.3;
 }
 
-
-.btn-3D__button.active .btn-3D__front,
-.btn-3D__button.active .btn-3D__sides {
-  background-color: red; 
+.btn-3D__button.btn--active .btn-3D__front,
+.btn-3D__button.btn--active .btn-3D__sides {
+  background-color: #00cc00 !important; 
 }
 
-/* .btn-3D.active .btn-3D__button {
+/* This should match the above pattern */
+.btn-3D__button.btn--active{
   animation: brightnessOscillate 2s infinite alternate ease-in-out;
 }
 
 @keyframes brightnessOscillate {
   0%   { filter: brightness(150%); }
   100% { filter: brightness(200%); }
-} */
+}
 
 
 
