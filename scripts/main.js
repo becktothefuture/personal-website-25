@@ -36,12 +36,13 @@ import { initSoundSystem, EVENTS } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
+import { initPerspectiveController } from './modules/perspectiveController.js';
 import './modules/scrollTracker.js'; 
 
 initBrowserTheme();
 initResizeOverlay(); 
 initStarfieldThruster();
-
+initPerspectiveController();
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
