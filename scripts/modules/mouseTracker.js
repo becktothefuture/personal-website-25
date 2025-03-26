@@ -61,6 +61,7 @@ let miniMap, cursorDot;
 let speedValueM, speedValueMiles, speedValuePx;
 let scrollValueM, scrollValueMiles, scrollValuePx;
 let clickCounterElement, distanceValueM, distanceValueMiles;
+let cursorValueElement; // Add reference for cursor value element
 
 // Initialize DOM elements
 function initializeElements() {
@@ -76,19 +77,38 @@ function initializeElements() {
   clickCounterElement = document.getElementById('click-counter');
   distanceValueM = document.getElementById('distance-value-m');
   distanceValueMiles = document.getElementById('distance-value-miles');
+  
+  // Get reference to cursor value element
+  cursorValueElement = document.getElementById('cursor-value');
 
   return true;
 }
 
 // Update cursor position
 function updateCursorPosition() {
-  if (!cursorDot || !miniMap) return;
+  if (!cursorDot) return;
 
-  cursorX += (targetCursorX - cursorX) * 0.1;
-  cursorY += (targetCursorY - cursorY) * 0.1;
-
-  // Use transform for better performance
-  cursorDot.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
+  // If within minimap context, use original pixel-based positioning
+  if (miniMap) {
+    cursorX += (targetCursorX - cursorX) * 0.1;
+    cursorY += (targetCursorY - cursorY) * 0.1;x
+    cursorDot.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
+  } 
+  // Use percentage positioning directly
+  else {
+    // Use percentages directly with smooth transition
+    const targetX = mouseXPercent * 100;
+    const targetY = mouseYPercent * 100;
+    
+    // Smooth transition between positions
+    cursorX += (targetX - cursorX) * 0.1;
+    cursorY += (targetY - cursorY) * 0.1;
+    
+    // Position with percentage units
+    cursorDot.style.left = `${cursorX}%`;
+    cursorDot.style.top = `${cursorY}%`;
+    cursorDot.style.transform = 'translate(-50%, -50%)'; // Center the dot on cursor
+  }
 }
 
 // Mouse speed calculations
@@ -149,6 +169,18 @@ function updateDebugDisplay() {
   if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
   if (distanceValueM) distanceValueM.textContent = smoothedDistanceMeters.toFixed(2);
   if (distanceValueMiles) distanceValueMiles.textContent = smoothedDistanceMiles.toFixed(4);
+}
+
+// Update cursor value display with formatted percentages
+function updateCursorValueDisplay() {
+  if (!cursorValueElement) return;
+  
+  // Format percentages to 2 decimal places
+  const xFormatted = (mouseXPercent * 100).toFixed(2);
+  const yFormatted = (mouseYPercent * 100).toFixed(2);
+  
+  // Update the element with formatted text
+  cursorValueElement.textContent = `X: ${xFormatted}%, Y: ${yFormatted}%`;
 }
 
 // **Mouse tracking – Event Handlers**
@@ -212,6 +244,7 @@ function animationLoop() {
   updateMouseSpeed();
   updateDistanceMetrics();
   updateDebugDisplay();
+  updateCursorValueDisplay(); // Add call to update cursor value display
   requestAnimationFrame(animationLoop);
 }
 

@@ -51,7 +51,7 @@ export function initProcessorAnimation1() {
     const elements = document.querySelectorAll(className);
     elements.forEach((element) => {
         setInterval(() => {
-            element.textContent = generateRandomString(20);
+            element.textContent = generateRandomString(10);
         }, 150);
     });
 }

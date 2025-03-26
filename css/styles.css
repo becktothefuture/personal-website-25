@@ -426,6 +426,7 @@ body {
 
 .cursor-dot {
   animation: cursor-dot-blink 1.5s infinite;
+  
 }
 
 @keyframes cursor-dot-blink {
