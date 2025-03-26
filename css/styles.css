@@ -590,14 +590,13 @@ body {
  ***************/
 
 
-
 .btn-3D__front,
-.btn-3D__sides {
+.btn-3d__sides {
   background-color: green !important; 
   border: 1px solid red;
 }
 
-.btn-3D__button.active {
+.btn-3D{
   opacity: 0.3;
 }
 
