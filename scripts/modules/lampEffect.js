@@ -66,58 +66,31 @@ class LampEffect {
    * Initialize the lamp effect
    */
   init() {
-    
     this.#createLampElements();
     
-    
     scrollTracker.on("update", (data) => {
-      
       const normalizedVelocity = Math.min(data.velocityKMH / lampConfig.speedThreshold, 1);
       const expCurve = Math.pow(normalizedVelocity, lampConfig.exponentialFactor);
       this.#targetBrightness = lampConfig.minBrightness + 
         (expCurve * (lampConfig.maxBrightness - lampConfig.minBrightness));
     });
     
-    
     scrollTracker.on("scroll", (data) => {
       if (lampConfig.pulseOnScroll) {
-        
         const impulseStrength = Math.min(Math.abs(data.impulse) / 200, 1);
         this.pulse(impulseStrength);
       }
     });
-    
     
     this.#isActive = true;
     this.#animate();
   }
   
   /**
-   * Create the lamp DOM elements (overlay and bulb)
+   * Get the existing thruster-lamp element and apply basic styling
    */
   #createLampElements() {
-    
-    if (!document.getElementById('lamp-overlay')) {
-      this.#lampElement = document.createElement('div');
-      this.#lampElement.id = 'lamp-overlay';
-      
-      
-      const style = this.#lampElement.style;
-      style.position = 'fixed';
-      style.top = '0';
-      style.left = '0';
-      style.width = '100%';
-      style.height = '100%';
-      style.pointerEvents = 'none';
-      style.zIndex = '998';
-      
-      
-      document.body.appendChild(this.#lampElement);
-    } else {
-      this.#lampElement = document.getElementById('lamp-overlay');
-    }
-    
-    // Use existing thruster-lamp element instead of creating a new one
+    // Use existing thruster-lamp element
     this.#bulbElement = document.getElementById('thruster-lamp');
     
     if (!this.#bulbElement) {
@@ -142,43 +115,35 @@ class LampEffect {
   }
   
   /**
-   * Update the visual style of the lamp
+   * Update the visual style of the thruster-lamp
    */
   #updateLampStyle() {
-    if (!this.#lampElement || !this.#bulbElement) return;
+    if (!this.#bulbElement) return;
     
     const color = lampConfig.color;
     const brightness = this.#currentBrightness;
-    const size = lampConfig.lampSize;
     const position = this.#getLampPosition();
     
-    
+    // Set position of the bulb
     this.#bulbElement.style.left = `${position.x}%`;
     this.#bulbElement.style.top = `${position.y}%`;
     this.#bulbElement.style.transform = 'translate(-50%, -50%)';
     
-    
+    // Set glow based on brightness
     const glowIntensity = brightness * lampConfig.glowIntensity;
     const bulbOpacity = 0.4 + (brightness * 0.6); 
     
-    
+    // Apply combined glow effect to bulb alone
     this.#bulbElement.style.boxShadow = `
       0 0 ${2 + (glowIntensity * 5)}px ${1 + (glowIntensity * 2)}px rgba(255, 253, 234, ${0.6 * brightness}),
       0 0 ${5 + (glowIntensity * 10)}px ${2 + (glowIntensity * 5)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.5 * brightness}),
       0 0 ${10 + (glowIntensity * 20)}px ${5 + (glowIntensity * 10)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.3 * brightness})
     `;
     
-    
+    // Set opacity based on brightness
     this.#bulbElement.style.opacity = bulbOpacity.toString();
     
-    
-    this.#lampElement.style.background = `radial-gradient(
-      circle at ${position.x}% ${position.y}%, 
-      rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${brightness * 0.4}), 
-      rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, 0) ${size}%
-    )`;
-    
-    
+    // Apply animation at higher brightness
     if (brightness > 0.5) {
       this.#bulbElement.style.animation = 'bulb-pulse 2s infinite alternate';
       if (!document.getElementById('bulb-pulse-style')) {
@@ -284,13 +249,12 @@ class LampEffect {
       cancelAnimationFrame(this.#animationFrameId);
     }
     
-    
-    if (this.#lampElement && this.#lampElement.parentNode) {
-      this.#lampElement.parentNode.removeChild(this.#lampElement);
-    }
-    
-    if (this.#bulbElement && this.#bulbElement.parentNode) {
-      this.#bulbElement.parentNode.removeChild(this.#bulbElement);
+    // Keep the thruster-lamp element since we didn't create it
+    // but reset its styling
+    if (this.#bulbElement) {
+      this.#bulbElement.style.boxShadow = '';
+      this.#bulbElement.style.opacity = '1';
+      this.#bulbElement.style.animation = 'none';
     }
   }
 }

@@ -23,6 +23,7 @@
  * - rumbleEffect.js: Creates physical rumble/shake effects based on scroll velocity
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
+ * - button3DToggle.js: Manages 3D button toggling with only one active at a time
  * 
  * The initialization process is divided into two phases:
  * 1. Immediate initialization: Components that need to be available immediately
@@ -39,6 +40,7 @@ import { initResizeOverlay } from './modules/resizeOverlay.js';
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initPerspectiveController } from './modules/perspectiveController.js';
 import './modules/scrollTracker.js'; 
+import './modules/button3DToggle.js';
 
 initBrowserTheme();
 initResizeOverlay(); 
@@ -99,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (error) {
                 console.error('Error loading modules:', error);
             }
-        }, 50); // Small delay to ensure intro sequence starts first
+        }, 500); // Small delay to ensure intro sequence starts first
 
         // Wait for intro to complete
         await introSequencePromise;

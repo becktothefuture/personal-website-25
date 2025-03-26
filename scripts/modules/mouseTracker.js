@@ -38,11 +38,8 @@ let prevMouseX = null,
 let speed = 0,
     displayedSpeed = 0,
     totalDistance = 0;
-let cursorX = 0,
-    cursorY = 0,
-    targetCursorX = 0,
-    targetCursorY = 0;
-let clickCount = 0;
+
+    let clickCount = 0;
 let speedDecayStart = null,
     initialSpeed = 0;
 let smoothedSpeedKmh = 0,
@@ -57,11 +54,9 @@ dpi_x *= 5 / 6.5; // Adjusted based on measurement
 
 // **DOM Elements**
 let miniMap, cursorDot;
-// DOM elements for displaying tracking values
 let speedValueM, speedValueMiles, speedValuePx;
-let scrollValueM, scrollValueMiles, scrollValuePx;
 let clickCounterElement, distanceValueM, distanceValueMiles;
-let cursorValueElement; // Add reference for cursor value element
+let cursorValueElement;
 
 // Initialize DOM elements
 function initializeElements() {
@@ -84,32 +79,33 @@ function initializeElements() {
   return true;
 }
 
-// Update cursor position
+/***********
+ * MINIMAP *
+ ***********/
+
 function updateCursorPosition() {
   if (!cursorDot) return;
-
-  // If within minimap context, use original pixel-based positioning
-  if (miniMap) {
-    cursorX += (targetCursorX - cursorX) * 0.1;
-    cursorY += (targetCursorY - cursorY) * 0.1;x
-    cursorDot.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
-  } 
-  // Use percentage positioning directly
-  else {
-    // Use percentages directly with smooth transition
-    const targetX = mouseXPercent * 100;
-    const targetY = mouseYPercent * 100;
-    
-    // Smooth transition between positions
-    cursorX += (targetX - cursorX) * 0.1;
-    cursorY += (targetY - cursorY) * 0.1;
-    
-    // Position with percentage units
-    cursorDot.style.left = `${cursorX}%`;
-    cursorDot.style.top = `${cursorY}%`;
-    cursorDot.style.transform = 'translate(-50%, -50%)'; // Center the dot on cursor
-  }
+  
+  // Map 0% to -50% and 100% to 50%
+  const xTranslate = mouseXPercent * 100 - 50;
+  const yTranslate = mouseYPercent * 100 - 50;
+  
+  cursorDot.style.transform = `translate(${xTranslate}%, ${yTranslate}%)`;
 }
+
+// Update cursor value display with formatted percentages
+function updateCursorValueDisplay() {
+  if (!cursorValueElement) return;
+  
+  // Format percentages to 2 decimal places
+  const xFormatted = (mouseXPercent * 100).toFixed(2);
+  const yFormatted = (mouseYPercent * 100).toFixed(2);
+  
+  // Update the element with formatted text
+  cursorValueElement.textContent = `X: ${xFormatted}%, Y: ${yFormatted}%`;
+}
+
+
 
 // Mouse speed calculations
 function updateMouseSpeed() {
@@ -163,25 +159,12 @@ function updateDebugDisplay() {
   if (speedValueMiles) speedValueMiles.textContent = smoothedSpeedMilesH.toFixed(2);
   if (speedValuePx) speedValuePx.textContent = displayedSpeed.toFixed(1);
   
-
-
   // Update click counter and distance values
   if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
   if (distanceValueM) distanceValueM.textContent = smoothedDistanceMeters.toFixed(2);
   if (distanceValueMiles) distanceValueMiles.textContent = smoothedDistanceMiles.toFixed(4);
 }
 
-// Update cursor value display with formatted percentages
-function updateCursorValueDisplay() {
-  if (!cursorValueElement) return;
-  
-  // Format percentages to 2 decimal places
-  const xFormatted = (mouseXPercent * 100).toFixed(2);
-  const yFormatted = (mouseYPercent * 100).toFixed(2);
-  
-  // Update the element with formatted text
-  cursorValueElement.textContent = `X: ${xFormatted}%, Y: ${yFormatted}%`;
-}
 
 // **Mouse tracking – Event Handlers**
 function setupEventHandlers() {
@@ -206,16 +189,8 @@ function setupEventHandlers() {
     const currentTime = performance.now();
 
     // Calculate percentages
-    const xPercent = mouseX / window.innerWidth;
-    const yPercent = mouseY / window.innerHeight;
-
-    // Update the exported variables
-    mouseXPercent = xPercent;
-    mouseYPercent = yPercent;
-
-    // Update cursor position targets for smooth animation
-    targetCursorX = mouseX;
-    targetCursorY = mouseY;
+    mouseXPercent = mouseX / window.innerWidth;
+    mouseYPercent = mouseY / window.innerHeight;
 
     updateMouseMetrics(mouseX, mouseY, currentTime);
 
