@@ -776,12 +776,12 @@ body {
     to bottom,
     transparent,
     transparent 1px,
-    rgba(0, 0, 0, 0.1) 1px,
+    rgba(0, 0, 0, 0.2) 1px,
     transparent 2px
   );
-  opacity: 0.2;
+  opacity: 0.4;
+  z-index: 100;
 }
-
 
 .scanline-layer-2 {
   position: absolute;
@@ -792,14 +792,14 @@ body {
   background: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    rgba(var(--color-1), 0.15) 1px,
+    rgba(156, 224, 169, 0.3) 1px, /* Using actual RGB values from --color-1 (#9ce0a9) */
     transparent 1.1px,
     transparent 4px
   );
-  opacity: 0.24;
+  opacity: 0.3;
   animation: scanlinesMove 4s linear infinite;
+  z-index: 101;
 }
-
 
 @keyframes scanlinesMove {
   0% {
