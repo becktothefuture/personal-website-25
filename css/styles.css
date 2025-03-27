@@ -83,8 +83,8 @@
   /* Effect Intensities */
   --scanline-opacity: 0.4; /* min: 0.2, max: 0.9 */
   --flicker-opacity: 0.9; /* min: 0.3, max: 1.0 */
-  --glow-strength: 1vh; /* min: 10px, max: 100px */
-  --glow-spread: 30vh; /* min: 30px, max: 200px */
+  --glow-strength: 5vh; /* min: 10px, max: 100px */
+  --glow-spread: 25vh; /* min: 30px, max: 200px */
 
   /* Derived Calculations */
   --glow-inner: calc(var(--glow-strength) * var(--crt-intensity));
