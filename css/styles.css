@@ -213,36 +213,38 @@ body {
  ******************/
 
 .widget--startup {
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
   transform-style: preserve-3d;
   backface-visibility: hidden;
 }
 
-@keyframes widgetStartup {
-  0% {
-    background-color: var(--robot-inactive);
-    transform: scale(0.98) translateZ(-100px);
-  }
-  50% {
-    background-color: var(--robot-idle);
-    transform: scale(1.02) translateZ(20px);
-  }
-  100% {
-    background-color: var(--robot-active);
-    transform: scale(1) translateZ(0);
-  }
-}
 
 @keyframes widgetIntro {
   0% {
-    opacity: 0;
     transform: translateZ(-100px);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: translateZ(0);
+    opacity: 1;
   }
 }
+
+@keyframes widgetOutro {
+  0% {
+    transform: translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateZ(-100px);
+    opacity: 0;
+  }
+}
+
+
+/********************
+ * ARROWS ANIMATION *
+ ********************/
 
 /* Arrows Widget Movement */
 .arrow--svg {
@@ -571,17 +573,6 @@ body {
   }
   100% {
     filter: brightness(1);
-  }
-}
-
-@keyframes widgetZoomIn {
-  0% {
-    transform: translateZ(-100px);
-    opacity: 0.3;
-  }
-  100% {
-    transform: translateZ(0);
-    opacity: 1;
   }
 }
 

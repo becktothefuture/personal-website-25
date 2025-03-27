@@ -34,8 +34,7 @@ console.log('Intro sequence module intialized');
 const ANIMATION_SPEED = {
   GLOBAL_MULTIPLIER: 1.0,
   TYPING_SPEED: 3.0,
-  PAUSE_BETWEEN_LINES: 0.75,
-  WIDGET_ANIMATION: 1.0
+  PAUSE_BETWEEN_LINES: 0.75
 };
 
 // Typing speeds + pauses
@@ -55,6 +54,7 @@ export async function initIntroSequence() {
     const safetyTimeout = setTimeout(() => {
       console.warn('Intro sequence safety timeout reached');
       document.body.style.visibility = 'visible';
+      document.dispatchEvent(new CustomEvent('intro:complete'));
       resolve();
     }, 15000 / ANIMATION_SPEED.GLOBAL_MULTIPLIER); // Scaled safety timeout
     
@@ -64,11 +64,11 @@ export async function initIntroSequence() {
     try {
       const overlay = document.querySelector('.intro-wrapper');
       const bootText = document.querySelector('.intro-wrapper__text');
-      const widgets = document.querySelectorAll('.widget');
   
-      if (!overlay || !bootText || !widgets.length) {
+      if (!overlay || !bootText) {
         console.error('Intro elements not found');
         document.body.style.visibility = 'visible';
+        document.dispatchEvent(new CustomEvent('intro:complete'));
         clearTimeout(safetyTimeout);
         resolve();
         return;
@@ -82,7 +82,6 @@ export async function initIntroSequence() {
       
       // Apply class styling instead of inline CSS
       overlay.className = 'intro-wrapper';
-      widgets.forEach(w => w.style.opacity = '0');
       
       const finishBootSequence = async () => {
         try {
@@ -93,7 +92,8 @@ export async function initIntroSequence() {
           document.body.style.visibility = 'visible';          
           overlay.remove();
           
-          animateWidgets();
+          // Dispatch event indicating intro is complete
+          document.dispatchEvent(new CustomEvent('intro:complete'));
           
           clearTimeout(safetyTimeout);
           resolve();
@@ -101,6 +101,7 @@ export async function initIntroSequence() {
           console.error('Error in finishBootSequence:', error);
           document.body.style.visibility = 'visible';
           document.removeEventListener('keydown', handleSkip); // Ensure cleanup even on error
+          document.dispatchEvent(new CustomEvent('intro:complete'));
           clearTimeout(safetyTimeout);
           resolve();
         }
@@ -206,47 +207,9 @@ export async function initIntroSequence() {
       console.error('Intro sequence error:', error);
       document.removeEventListener('keydown', handleSkip); // Ensure cleanup on general error
       document.body.style.visibility = 'visible';
+      document.dispatchEvent(new CustomEvent('intro:complete'));
       clearTimeout(safetyTimeout);
       resolve();
     }
   });
-}
-
-// Show widgets - removed delay, widgets appear immediately
-function animateWidgets() {
-  const widgets = document.querySelectorAll('.widget');
-  const startTimes = new Map();
-  
-  // Adjust widget animation speed based on global multiplier
-  const animationSpeedMultiplier = ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.WIDGET_ANIMATION;
-  const maxStartDelay = 2000 / animationSpeedMultiplier;
-  
-  widgets.forEach(w => {
-    w.style.opacity = '0';
-    w.style.animation = 'none';
-    // Reduced delay for widget appearance
-    startTimes.set(w, performance.now() + getRandom(100, maxStartDelay));
-  });
-  
-  function animateFrame(now) {
-    widgets.forEach(w => {
-      if (now >= startTimes.get(w) && !w.classList.contains('widget--startup')) {
-        w.classList.add('widget--startup');
-        
-        // Scale animation duration based on speed multiplier
-        const startupDuration = (0.3 / animationSpeedMultiplier).toFixed(2);
-        const flickerDuration = (0.5 / animationSpeedMultiplier).toFixed(2);
-        const zoomDuration = (0.8 / animationSpeedMultiplier).toFixed(2);
-        
-        w.style.animation = `
-          widgetStartup ${startupDuration}s cubic-bezier(0.19, 1, 0.22, 1),
-          fluorescentFlicker ${flickerDuration}s cubic-bezier(0.19, 1, 0.22, 1),
-          widgetZoomIn ${zoomDuration}s cubic-bezier(0.19, 1, 0.22, 1) forwards
-        `;
-        w.style.animationDelay = `0s, ${startupDuration}s, ${(parseFloat(startupDuration) + parseFloat(flickerDuration)).toFixed(2)}s`;
-      }
-    });
-    if ([...startTimes.values()].some(t => now < t)) requestAnimationFrame(animateFrame);
-  }
-  requestAnimationFrame(animateFrame);
 }
