@@ -35,6 +35,7 @@ class RumbleEffect {
     intensity: 0,         // 0-1 normalized intensity
     xPosition: 0,
     yPosition: 0,
+    zPosition: 0,         // New z-axis position
     rotation: 0,
     lastUpdateTime: 0,
     lastVelocity: 0,
@@ -118,9 +119,10 @@ class RumbleEffect {
     // Skip calculation entirely if intensity is very close to zero
     if (this.#state.intensity < 0.001) {
       // Only reset position if we're not already at zero
-      if (this.#state.xPosition !== 0 || this.#state.yPosition !== 0 || this.#state.rotation !== 0) {
+      if (this.#state.xPosition !== 0 || this.#state.yPosition !== 0 || this.#state.zPosition !== 0 || this.#state.rotation !== 0) {
         this.#state.xPosition = 0;
         this.#state.yPosition = 0;
+        this.#state.zPosition = 0;
         this.#state.rotation = 0;
         this.#wrapperElement.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
       }
@@ -128,8 +130,9 @@ class RumbleEffect {
       return;
     }
     
-    // Calculate maximum displacement based on intensity (max 2vw)
+    // Calculate maximum displacement based on intensity (max 2vw for x/y, 5vw for z)
     const maxDisplacement = this.#state.intensity * 2;
+    const maxZDisplacement = this.#state.intensity * 5; // Z can have larger movement range
     
     // Calculate maximum rotation based on intensity (max 1 degree)
     const maxRotation = this.#state.intensity;
@@ -158,6 +161,7 @@ class RumbleEffect {
     // Update positions with improved spring physics
     this.#state.xPosition = applySpringPhysics(this.#state.xPosition);
     this.#state.yPosition = applySpringPhysics(this.#state.yPosition);
+    this.#state.zPosition = applySpringPhysics(this.#state.zPosition);
     
     // Update rotation similarly but with tighter constraints
     this.#state.rotation = applySpringPhysics(this.#state.rotation) * 0.5; // Reduced rotation effect
@@ -165,11 +169,12 @@ class RumbleEffect {
     // Scale positions to respect max values
     const xScale = Math.min(Math.abs(this.#state.xPosition), maxDisplacement) * Math.sign(this.#state.xPosition);
     const yScale = Math.min(Math.abs(this.#state.yPosition), maxDisplacement) * Math.sign(this.#state.yPosition);
+    const zScale = Math.min(Math.abs(this.#state.zPosition), maxZDisplacement) * Math.sign(this.#state.zPosition);
     const rotScale = Math.min(Math.abs(this.#state.rotation), maxRotation) * Math.sign(this.#state.rotation);
     
     // Apply transform to the wrapper with vw units for viewport-relative sizing
     this.#wrapperElement.style.transform = `
-      translate3d(${xScale}vw, ${yScale}vw, 0)
+      translate3d(${xScale}vw, ${yScale}vw, ${zScale}vw)
       rotate(${rotScale}deg)
     `;
     

@@ -33,8 +33,8 @@ console.log('Intro sequence module intialized');
 
 const ANIMATION_SPEED = {
   GLOBAL_MULTIPLIER: 1.0,
-  TYPING_SPEED: 2.0,
-  PAUSE_BETWEEN_LINES: 0.5,
+  TYPING_SPEED: 3.0,
+  PAUSE_BETWEEN_LINES: 0.75,
   WIDGET_ANIMATION: 1.0
 };
 
@@ -239,8 +239,8 @@ function animateWidgets() {
         const zoomDuration = (0.8 / animationSpeedMultiplier).toFixed(2);
         
         w.style.animation = `
-          widgetStartup ${startupDuration}s ease-out,
-          fluorescentFlicker ${flickerDuration}s ease-in-out,
+          widgetStartup ${startupDuration}s cubic-bezier(0.19, 1, 0.22, 1),
+          fluorescentFlicker ${flickerDuration}s cubic-bezier(0.19, 1, 0.22, 1),
           widgetZoomIn ${zoomDuration}s cubic-bezier(0.19, 1, 0.22, 1) forwards
         `;
         w.style.animationDelay = `0s, ${startupDuration}s, ${(parseFloat(startupDuration) + parseFloat(flickerDuration)).toFixed(2)}s`;

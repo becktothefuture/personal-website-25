@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASCII Art Diffusion Animation</title>
+  <style>
+    body {
+      background: #111;
+      colour: #eee;
+      font-family: monospace;
+      padding: 20px;
+    }
+    #controls {
+      margin-bottom: 20px;
+    }
+    label {
+      margin-right: 20px;
+    }
+    input[type="range"] {
+      vertical-align: middle;
+    }
+    #ascii-art {
+      font-size: 14px;
+      line-height: 1.2;
+      white-space: pre;
+      margin: 0;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label>
+      Randomness:
+      <input type="range" id="randomness" min="0" max="1" step="0.01" value="0.5">
+    </label>
+    <label>
+      Duration (s):
+      <input type="range" id="duration" min="1" max="10" step="0.1" value="5">
+    </label>
+    <button id="restart">Restart Animation</button>
+  </div>
+  <pre id="ascii-art"></pre>
+
+  <script>
+    // Final ASCII art (each line must be exactly as you want it to appear)
+    const finalArt = [
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                     ██   ███                                        ",
+      "                       ░▒░░    ░                  ▒░                ",
+      "                 ▓▓▓▓▓░░   ░▒ ▓▓▒              ▒▒░▓▓▒               ",
+      "               ░▒▒▓▓▓▓  ░   ░ ▓▒▓▓▓▓░         ▓░▒▓▓                 ",
+      "              ▓▓▓▒▓░ ▓ ░    ░ ▓░ ▒▒           ▒█▓▓▓                 ",
+      "              ▒▓▒▒▒▒▓▓▓░░░░░░█▓▒▓▒▓▓▓▓        ▓▒▒▓░▓ ▓              ",
+      "             ▓░▓▓▒▒█▒░▒▓▓▓▓▓▒▓▒  ▒ ▓▒▓       ▒░▓▒▓▒▒▒▒▓▒░           ",
+      "             ▓▓█▓▓▒▓▒░▓▒▓▓▒█████████▒▓       ▒▒▒▒▓▓▓██▓▒▓▓          ",
+      "             ▓▒▒▒▓▓█▓█████████████▓▓▓       ▒█▓█████▓▓▓█▒░          ",
+      "              ▓█████████████████▓▒▒▒░        ▓█░█▓▓▓▓█▓             ",
+      "               ▒▒▒▓▒█████████▓ ▒▒▒▒▒         ▓█▓█▒█▓▒▓              ",
+      "                 ▒▓▓▒░    ░    ▒▓▒▓ ░▓  ▒▒▓█▓▓▓█▓▒▒█▓               ",
+      "                  ░▓███▓▓█▓▓▓██▓▒▒██▓█▓██▓▒▒▓▓▒▒█░▓ ▒░              ",
+      "                ▓▒▓█▓███▒▓▓███████▓█▒▒▒▓▒▓▒▓▒▒▒▒                    ",
+      "               ▒█▒▒▒▓▓▓██████▓▓▓▒▒░░▒ ▒                              ",
+      "               ░█▓█▓▓█▒▓▒▓▓▓▓▓▓▓▓                                    ",
+      "              ▒▒▒▒▓█▒▓█▓▓▒█▒▓▒▓▓▓                                    ",
+      "             ▒▓▓▒█▒▒▓▓░██▒▓█▓▒▒█▒▓▓                                 ",
+      "            ▒▒▒▓█▓██▒▓▓▒▒▓▒▒▒▒▒▓▒▓▒▓                                ",
+      "            ▓▒██▓▒▒▓▓▒▓▓▒▓▒▒▓█▒▒▒▒▓▓                                ",
+      "          ▒▓▓▓▓▓▒▒▒█▒▓▒▓▓▒▓█▒▓▓▓▒▓▒▓▓                               ",
+      "          ▒▒▒▒▒▒▒▒▓▒░▒▒░▒░▒▒░▒▒▒▒▒░▒                                "
+    ];
+
+    // Character set used for random noise (feel free to adjust)
+    const noiseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.<>/?";
+
+    // Global variables for animation control
+    let animationFrameId = null;
+    let startTime = null;
+    let timings = []; // 2D array matching finalArt: { reveal, finalize } for each character
+    const artElement = document.getElementById("ascii-art");
+
+    // Retrieve control elements
+    const randomnessSlider = document.getElementById("randomness");
+    const durationSlider = document.getElementById("duration");
+    const restartButton = document.getElementById("restart");
+
+    // Pre-calculate timings for each cell based on current controls.
+    function initTimings(totalTime, randomnessFactor) {
+      timings = [];
+      // Set up parameters for noise duration (in seconds)
+      const revealMax = totalTime * 0.3; // maximum time for reveal to start
+      const minDelay = 0.2, maxDelay = totalTime * 0.8; // additional delay after reveal
+
+      for (let row = 0; row < finalArt.length; row++) {
+        const lineTimings = [];
+        for (let col = 0; col < finalArt[row].length; col++) {
+          // Only animate non-space characters; spaces remain spaces.
+          const isAnimated = finalArt[row][col] !== " ";
+          let reveal = isAnimated ? Math.random() * revealMax : 0;
+          let delay = isAnimated ? minDelay + (maxDelay - minDelay) * randomnessFactor * Math.random() : 0;
+          let finalize = reveal + delay;
+          lineTimings.push({ reveal, finalize });
+        }
+        timings.push(lineTimings);
+      }
+    }
+
+    // Returns a random character from noiseChars
+    function getRandomChar() {
+      return noiseChars[Math.floor(Math.random() * noiseChars.length)];
+    }
+
+    // The animation function
+    function animate(timestamp, totalTime) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = (timestamp - startTime) / 1000; // in seconds
+
+      let output = "";
+      for (let row = 0; row < finalArt.length; row++) {
+        let line = "";
+        for (let col = 0; col < finalArt[row].length; col++) {
+          const { reveal, finalize } = timings[row][col];
+          if (elapsed < reveal) {
+            // Before reveal time: show space (hidden)
+            line += " ";
+          } else if (elapsed >= reveal && elapsed < finalize) {
+            // In noise phase: show a random char
+            line += getRandomChar();
+          } else {
+            // Final phase: show the actual character
+            line += finalArt[row][col];
+          }
+        }
+        output += line + "\n";
+      }
+      artElement.innerText = output;
+
+      if (elapsed < totalTime) {
+        // Use requestAnimationFrame for smooth, high-performance animation.
+        animationFrameId = requestAnimationFrame(ts => animate(ts, totalTime));
+      } else {
+        // Ensure final state is rendered
+        artElement.innerText = finalArt.join("\n");
+      }
+    }
+
+    // Starts or restarts the animation
+    function startAnimation() {
+      // Cancel any ongoing animation
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      startTime = null;
+
+      // Read current slider values
+      const randomnessFactor = parseFloat(randomnessSlider.value);
+      const totalTime = parseFloat(durationSlider.value);
+
+      // Precompute timings for each cell to avoid recalculating in each frame.
+      initTimings(totalTime, randomnessFactor);
+
+      // Start the animation on next frame
+      animationFrameId = requestAnimationFrame(ts => animate(ts, totalTime));
+    }
+
+    // Attach event listeners
+    restartButton.addEventListener("click", startAnimation);
+
+    // Trigger animation on page load
+    window.addEventListener("load", startAnimation);
+  </script>
+</body>
+</html>

@@ -23,13 +23,13 @@ import { scrollTracker } from './scrollTracker.js';
  */
 export const starConfig = {
   baseSpeed: 5,      
-  numStars: 400,
-  maxDepth: 2000,
-  perspective: 500,
+  numStars: 800,
+  maxDepth: 3000,
+  perspective: 400,
   fieldSize: 3000,
-  pointSizeFactor: 3.4,
+  pointSizeFactor: 4,
   starColor: [0.8, 1.0, 0.8],
-  adaptivePerformance: true 
+  adaptivePerformance: false 
 };
 
 class StarfieldThruster {
@@ -46,7 +46,7 @@ class StarfieldThruster {
   #starBuffer;
   #stars;
   #lastFrameTime = performance.now();
-  #resolution = [window.innerWidth, window.innerHeight];
+  #resolution = [0, 0]; // Initialize to zero, will be set in #resizeCanvas
   #frameSkipCounter = 0; 
 
   
@@ -64,9 +64,10 @@ class StarfieldThruster {
       console.error("WebGL not supported.");
       return;
     }
+    
+    this.#resizeCanvas(); // Set canvas size before initializing GL
     this.#initGL();
     this.#initStars();
-    this.#resizeCanvas();
     window.addEventListener('resize', () => this.#resizeCanvas());
 
     
@@ -175,12 +176,21 @@ class StarfieldThruster {
   
   #resizeCanvas() {
     const canvas = this.#canvas;
-    // Get dimensions from parent element instead of window
-    const rect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : canvas.getBoundingClientRect();
+    // Get dimensions from parent element
+    const parent = canvas.parentElement;
+    if (!parent) return;
+    
+    const rect = parent.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
-    this.#gl.viewport(0, 0, canvas.width, canvas.height);
+    
+    // Update resolution with canvas dimensions
     this.#resolution = [canvas.width, canvas.height];
+    
+    // Update viewport if GL is initialized
+    if (this.#gl) {
+      this.#gl.viewport(0, 0, canvas.width, canvas.height);
+    }
   }
   
   #animate(timestamp) {

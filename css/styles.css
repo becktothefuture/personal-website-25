@@ -146,8 +146,8 @@ body {
   will-change: transform;
 }
 
-.marquee-content .vertical {
-  animation: marquee-animation-vertical 15s steps(60) infinite;
+.marquee-content.vertical {
+  animation: marquee-animation-horizontal 40s steps(80) infinite;
 }
 
 .marquee-content::after {
@@ -170,7 +170,7 @@ body {
   }
 
   100% {
-    transform: translateY(-100%);
+    transform: translateY(-50%);
   }
 }
 
@@ -589,33 +589,29 @@ body {
  * 3D BUTTONS *
  ***************/
 
-
-
-.btn-3D__front,
-.btn-3D__sides {
-  background-color: var(--buttons) !important; 
-}
-
-.btn-3D__button {
-  opacity: 0.3;
-}
-
-.btn-3D__button.btn--active .btn-3D__front,
-.btn-3D__button.btn--active .btn-3D__sides {
-  background-color: #00cc00 !important; 
-}
-
-/* This should match the above pattern */
-.btn-3D__button.btn--active{
-  animation: brightnessOscillate 2s infinite alternate ease-in-out;
-}
-
-@keyframes brightnessOscillate {
-  0%   { filter: brightness(150%); }
-  100% { filter: brightness(200%); }
+ .btn-3d__button > .btn-3d__front,
+ .btn-3d__button > .btn-3d__sides {
+  background-color: var(--buttons); 
 }
 
 
+.btn-3d__button.btn-3d--active > .btn-3d__front,
+.btn-3d__button.btn-3d--active > .btn-3d__sides {
+  background-color: var(--light); 
+  animation: oscillateColor 3s infinite;
+}
+
+@keyframes oscillateColor {
+  0% {
+    background-color: var(--light-2);
+  }
+  50% {
+    background-color: var(--light);
+  }
+  100% {
+    background-color: var(--light-2);
+  }
+}
 
 /*****************
  * VIDEO OVERLAY *
@@ -706,39 +702,46 @@ body {
  * CRT CONTAINER *
  *****************/
 
-.flicker {
+ .flicker {
   position: fixed;
   inset: 0;
-  background-color: rgba(var(--crt-primary-color), 0.02);
+  background: rgba(var(--crt-primary-color), 0.02);
   mix-blend-mode: overlay;
-  animation: flicker var(--flicker-speed) infinite;
+  animation: flickerAnimation var(--flicker-speed) infinite;
   opacity: var(--flicker-opacity);
 }
 
-@keyframes flicker {
+@keyframes flickerAnimation {
   0% {
     opacity: calc(var(--flicker-opacity) * 0.3);
+    transform: translateX(0);
   }
   10% {
     opacity: calc(var(--flicker-opacity) * 0.75);
   }
   25% {
     opacity: calc(var(--flicker-opacity) * 1);
+    transform: translateX(0);
   }
   40% {
     opacity: calc(var(--flicker-opacity) * 0.2);
+    transform: translateX(-1px);
   }
   55% {
     opacity: calc(var(--flicker-opacity) * 0.9);
+    transform: translateX(1px);
   }
   70% {
     opacity: calc(var(--flicker-opacity) * 0.4);
+    transform: translateX(-1px);
   }
   85% {
     opacity: calc(var(--flicker-opacity) * 1);
+    transform: translateX(1px);
   }
   100% {
     opacity: calc(var(--flicker-opacity) * 0.5);
+    transform: translateX(0);
   }
 }
 
@@ -747,15 +750,14 @@ body {
   inset: -4px;
   background: transparent;
   box-shadow: inset 0 0 var(--glow-inner) rgba(var(--crt-primary-color), 0.9),
-    inset 0 0 var(--glow-outer) rgba(var(--crt-primary-color), 0.1);
+              inset 0 0 var(--glow-outer) rgba(var(--crt-primary-color), 0.1);
   pointer-events: none;
   border-radius: var(--border-radius);
   animation: glowJitter 0.1s infinite;
 }
 
 @keyframes glowJitter {
-  0%,
-  100% {
+  0%, 100% {
     transform: translate(0, 0);
     opacity: 0.9;
   }
@@ -773,29 +775,40 @@ body {
   }
 }
 
+
+/* Scanline Layers */
 .scanline-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 1px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 2px
+  );
+  opacity: 0.2;
 }
 
+
 .scanline-layer-2 {
-  content: "";
   position: absolute;
-  top: -100%; /* Corrected unit */
+  top: -100%;
   left: 0;
   width: 100%;
   height: 200%;
   background: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    var(--color-1) 1px,
+    rgba(var(--color-1), 0.15) 1px,
     transparent 1.1px,
     transparent 4px
   );
   opacity: 0.24;
   animation: scanlinesMove 4s linear infinite;
 }
+
 
 @keyframes scanlinesMove {
   0% {
@@ -988,7 +1001,6 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: black;
   pointer-events: none;
 }
 
