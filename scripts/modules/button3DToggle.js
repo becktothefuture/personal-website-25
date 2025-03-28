@@ -7,6 +7,8 @@
  * Manages staggered animation of widgets when switching views.
  */
 
+import { buttonSounds } from './sounds.js';
+
 export function init3DButtons() {
   // Make sure DOM is fully loaded
   if (document.readyState === 'loading') {
@@ -43,9 +45,20 @@ function initializeButtons() {
   // Initialize screen visibility based on active button
   updateScreenVisibility();
 
-  // Add click handlers to all button wrappers
+  // Add click and sound handlers to all button wrappers
   buttonWrappers.forEach(wrapper => {
+    // Click handler
     wrapper.addEventListener('click', handleButtonClick);
+    
+    // Add hover sound
+    wrapper.addEventListener('mouseenter', () => {
+      buttonSounds.play('hover');
+    });
+    
+    // Add press sound on mousedown
+    wrapper.addEventListener('mousedown', () => {
+      buttonSounds.play('press');
+    });
     
     // Enhance accessibility
     const button = wrapper.querySelector('.btn-3d__button');
@@ -146,6 +159,9 @@ function updateScreenVisibility(previousScreen = null) {
     
     // Show the target screen
     targetScreen.style.display = 'block';
+    
+    // Play confirm sound when view changes
+    buttonSounds.play('confirm', 0.8); // Slightly reduced volume for confirmation sound
     
     // Animate the screen and its widgets in
     animateScreenTransition(targetScreen);

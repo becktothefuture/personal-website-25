@@ -43,7 +43,7 @@ const CONFIG = {
   fadeDuration: 1,      // Increased for smoother transitions
   idleTimeout: 3000,      // 3 seconds idle timeout
   ambient: {
-    url: "https://becktothefuture.github.io/personal-website-25/assets/ambience.mp3",
+    url: "https://becktothefuture.github.io/personal-website-25/assets/sounds/ambience.mp3",
     targetVolume: 1,
     // Direct speed-based pitch shift only
     minPitch: 0.8,
@@ -84,6 +84,17 @@ const CONFIG = {
         dentals: new Set("TDtd"),
         pauses: new Set(",.;:!?-")
     }
+  },
+  // Button sounds configuration
+  buttonSounds: {
+    enabled: true,
+    volume: 0.5,
+    hoverCooldown: 150, // ms between hover sounds to prevent spamming
+    urls: {
+      hover: "https://becktothefuture.github.io/personal-website-25/assets/sounds/rollover.mp3",
+      press: "https://becktothefuture.github.io/personal-website-25/assets/sounds/press.mp3",
+      confirm: "https://becktothefuture.github.io/personal-website-25/assets/sounds/confirm.mp3"
+    }
   }
 };
 
@@ -96,6 +107,16 @@ let soundToggleLight = soundToggleKnob ? soundToggleKnob.querySelector('.knob-li
 let robotSpeechEnabled = CONFIG.robotSpeech.enabled;
 let robotToggleCallback = null;
 let audioInitialized = false;
+
+// Add these variables for button sounds
+let buttonSoundBuffers = {
+  hover: null,
+  press: null,
+  confirm: null
+};
+let lastHoverSound = 0; // Timestamp to throttle hover sounds
+let buttonSoundsLoaded = false;
+let buttonSoundsLoading = false;
 
 // ----------------------------------------------------------------------------------------------------
 // HELPER FUNCTIONS
@@ -694,6 +715,11 @@ export async function initSoundSystem() {
       }
     }
     
+    // Start preloading button sounds as early as possible
+    preloadButtonSounds().catch(err => {
+      console.warn("Button sound preload error:", err);
+    });
+    
     // UI element initialization for existing DOM elements
     const btnOn = document.querySelector('#button-sound-on');
     const btnOff = document.querySelector('#button-sound-off');
@@ -882,6 +908,117 @@ export const robotSpeech = {
     isEnabled: () => robotSpeechEnabled,
     init: initRobotSpeech,
     playTestSound
+};
+
+// ----------------------------------------------------------------------------------------------------
+// BUTTON SOUNDS FUNCTIONS
+// ----------------------------------------------------------------------------------------------------
+
+/**
+ * Preloads button sound effects
+ * @returns {Promise<boolean>} Success state of the preloading
+ */
+async function preloadButtonSounds() {
+  if (buttonSoundsLoaded || buttonSoundsLoading) return true;
+  if (!audioContext) await createAudioContext();
+  if (!audioContext) return false;
+  
+  buttonSoundsLoading = true;
+  
+  try {
+    console.log("Preloading button sounds...");
+    const loadPromises = [];
+    
+    // Function to load and decode a sound file
+    const loadSound = async (url, soundType) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${soundType} sound: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        buttonSoundBuffers[soundType] = decodedBuffer;
+        return true;
+      } catch (error) {
+        console.warn(`Error loading ${soundType} sound:`, error);
+        return false;
+      }
+    };
+    
+    // Load all button sounds in parallel
+    const urls = CONFIG.buttonSounds.urls;
+    loadPromises.push(loadSound(urls.hover, 'hover'));
+    loadPromises.push(loadSound(urls.press, 'press'));
+    loadPromises.push(loadSound(urls.confirm, 'confirm'));
+    
+    // Wait for all loads to complete
+    const results = await Promise.all(loadPromises);
+    buttonSoundsLoaded = results.some(result => result); // At least one success
+    buttonSoundsLoading = false;
+    
+    console.log(`Button sounds preloaded ${buttonSoundsLoaded ? 'successfully' : 'with some errors'}`);
+    return buttonSoundsLoaded;
+  } catch (error) {
+    console.error("Failed to preload button sounds:", error);
+    buttonSoundsLoading = false;
+    return false;
+  }
+}
+
+/**
+ * Plays a button sound effect
+ * @param {string} soundType - Type of button sound ('hover', 'press', or 'confirm')
+ * @param {number} [volumeMultiplier=1.0] - Optional volume multiplier for the sound
+ */
+function playButtonSound(soundType, volumeMultiplier = 1.0) {
+  if (!isSoundEnabled || !audioContext || !CONFIG.buttonSounds.enabled) return;
+  
+  // Apply hover sound throttling to prevent sound spam
+  if (soundType === 'hover') {
+    const now = performance.now();
+    if (now - lastHoverSound < CONFIG.buttonSounds.hoverCooldown) return;
+    lastHoverSound = now;
+  }
+  
+  // Try to use preloaded buffer
+  const buffer = buttonSoundBuffers[soundType];
+  if (!buffer) {
+    // If buffer not available and not currently loading, try to load it now
+    if (!buttonSoundsLoading) {
+      preloadButtonSounds();
+    }
+    return;
+  }
+  
+  try {
+    // Create sound source
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    
+    // Create gain node for volume control
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = CONFIG.buttonSounds.volume * volumeMultiplier;
+    
+    // Connect nodes
+    source.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Play the sound
+    source.start(0);
+    
+    // Clean up once playback is complete
+    source.onended = () => {
+      source.disconnect();
+      gainNode.disconnect();
+    };
+  } catch (error) {
+    console.warn(`Error playing ${soundType} button sound:`, error);
+  }
+}
+
+// Export button sound functionality
+export const buttonSounds = {
+  preload: preloadButtonSounds,
+  play: playButtonSound
 };
 
 // Export the custom event name

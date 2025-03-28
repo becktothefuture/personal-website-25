@@ -35,13 +35,16 @@
 
 // ===== IMMEDIATE INITIALISATION SEQUENCE =====
 import { initBrowserTheme } from './modules/browserTheme.js';
-import { initSoundSystem, EVENTS } from './modules/sounds.js';
+import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initPerspectiveController } from './modules/perspectiveController.js';
 import './modules/scrollTracker.js'; 
 import './modules/button3DToggle.js';
+
+// Start preloading button sounds immediately for instant availability
+buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
 
 initBrowserTheme();
 initResizeOverlay(); 
