@@ -907,7 +907,8 @@ export const robotSpeech = {
     onToggle: onRobotSpeechToggle,
     isEnabled: () => robotSpeechEnabled,
     init: initRobotSpeech,
-    playTestSound
+    playTestSound,
+    isAudioInitialized: () => audioInitialized // Export the audioInitialized state
 };
 
 // ----------------------------------------------------------------------------------------------------

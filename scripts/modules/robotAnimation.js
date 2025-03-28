@@ -366,7 +366,7 @@ export function initRobot() {
         
         audioTriggerEvents.forEach(eventType => {
             document.addEventListener(eventType, () => {
-                if (!audioInitialized) {
+                if (!robotSpeech.isAudioInitialized()) {
                     robotSpeech.init();
                     // Only play test sound on explicit interaction
                     if (eventType === 'click') {
@@ -392,7 +392,7 @@ export function initRobot() {
 
         // Set up event listener to initialize audio on first user interaction
         document.addEventListener('click', () => {
-            if (!audioInitialized) {
+            if (!robotSpeech.isAudioInitialized()) {
                 robotSpeech.init();
             }
         }, { once: true, passive: true });
