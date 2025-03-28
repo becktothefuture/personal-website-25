@@ -24,6 +24,7 @@
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * - button3DToggle.js: Manages 3D button toggling with only one active at a time
+ * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
  * 
  * The initialization process is divided into two phases:
  * 1. Immediate initialization: Components that need to be available immediately
@@ -62,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Intro sequence started');
 
         // Step 3: While intro is running, load all other modules in parallel
+        let robotController; // Add variable to store robot controller
+
         setTimeout(async () => {
             try {
                 const { initLightGrids } = await import('./modules/lightGrid.js');
@@ -80,13 +83,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { initRumbleEffect } = await import('./modules/rumbleEffect.js');
                 const { initLampEffect } = await import('./modules/lampEffect.js');
                 const { initDiffusionText } = await import('./modules/diffusionText.js');
+                const { scrollPattern } = await import('./modules/scrollPattern.js');
 
                 initLightGrids();
                 initDateDisplay();
                 initMarqueeContent();
                 initLondonClock();
                 initFlicker();
-                initRobot();
+                // Store the robot controller but don't start speaking yet
+                robotController = initRobot();
                 initMouseTracker();
                 initProcessorAnimation1();
                 initProcessorAnimation2();
@@ -106,6 +111,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Wait for intro to complete
         await introSequencePromise;
         console.log('Intro sequence completed');
+        
+        // Start robot speaking only after intro is complete
+        document.addEventListener('intro:complete', () => {
+            if (robotController && robotController.startSpeaking) {
+                // Add a small delay before starting the robot speech
+                setTimeout(() => {
+                    robotController.startSpeaking();
+                }, 500);
+            }
+        }, { once: true });
 
     } catch (error) {
         console.error('Error in main initialization sequence:', error);

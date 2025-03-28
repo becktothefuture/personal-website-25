@@ -51,13 +51,6 @@
   --stroke-width: 1px;
   --hand-stroke-width: 1px;
 
-  /* Robot */
-  --robot-size: 150px;
-  --button-pulse-duration: 1.7s;
-  --robot-active: var(--color-1);
-  --robot-idle: var(--color-3);
-  --robot-inactive: var(--color-4);
-
   /* Speech bubble colors */
   --speech-bg: var(--color-4);
   --speech-text: var(--color-1);
@@ -355,72 +348,6 @@ body {
   }
 }
 
-/*********
- * ROBOT *
- *********/
-
-#robot-face {
-  width: 50%;
-  height: 50%;
-  position: absolute;
-  transform: rotateX(4deg) rotateY(-2deg) rotateZ(-2.9deg) translate(12%, -22%);
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: calc(var(--robot-size) * 0.012);
-}
-
-#robot-button-1,
-#robot-button-2 {
-  will-change: fill, stroke;
-  animation: robot-buttonPulse var(--button-pulse-duration, 4s) steps(1)
-    infinite;
-  stroke: var(--color-2);
-}
-
-#robot-button-1 {
-  stroke-width: 1px;
-  animation-delay: 0s;
-}
-
-#robot-button-2 {
-  stroke-width: 1px;
-  animation-delay: calc(var(--button-pulse-duration, 4s) / 2);
-}
-
-@keyframes robot-buttonPulse {
-  0%,
-  100% {
-    fill: var(--color-1);
-    stroke: var(--color-1);
-  }
-  50% {
-    fill: var(--background);
-    stroke: var(--color-2);
-  }
-}
-
-.robot-dot {
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 1 / 1;
-  background-color: var(--robot-inactive);
-  transition: background-color 75ms ease;
-  will-change: background-color;
-}
-
-.robot-dot--eye,
-.robot-dot--mouth {
-  background-color: var(--robot-active);
-}
-
-.hidden {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.visible {
-  opacity: 1;
-}
 
 /************
  * MINI MAP *
@@ -524,12 +451,12 @@ body {
   display: inline-block;
   width: 0.6em;
   height: 1em;
-  background-color: var(--robot-active);
+  background-color: var(--color-1);
   position: absolute;
   margin-left: 0; /* Remove margin */
   transform: translateY(-0.1em);
   animation: cursor-blink 0.6s steps(1, start) infinite;
-  box-shadow: 0 0 4px var(--robot-active), 0 0 8px rgba(156, 224, 169, 0.4);
+  box-shadow: 0 0 4px var(--color-1), 0 0 8px rgba(156, 224, 169, 0.4);
   opacity: 0.8;
 }
 
@@ -965,11 +892,11 @@ body {
  **********************/
 
 .blink-1 {
-  animation: blink 1s steps(2) alternate infinite;
+  animation: blink 1s steps(2) forwards infinite;
 }
 
 .blink-2 {
-  animation: blink 1s steps(2) infinite;
+  animation: blink 1s steps(2) backwards infinite;
   animation-delay: 0.5s;
 }
 
@@ -1174,6 +1101,45 @@ html {
     transform: translateZ(0px);
     opacity: 1;
   }
+}
+
+/*************************
+ * ROBOT SVG STYLING    *
+ *************************/
+
+/* Robot body styles */
+#robot-body polygon {
+  stroke: var(--color-1);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: var(--background);
+}
+
+/* Robot lights */
+#light-1, #light-2 {
+  fill: var(--color-1);
+}
+
+/* Robot speaker */
+#speaker polyline {
+  fill: var(--color-2);
+}
+
+/* Robot display dots */
+#robot-display .robot-dot {
+  fill: var(--color-4);
+  transition: fill 35ms ease;
+  will-change: fill;
+}
+
+#robot-display .robot-dot--eye,
+#robot-display .robot-dot--mouth {
+  fill: var(--color-1);
+}
+
+/* Add additional classes for active states as needed */
+.robot-dot.active {
+  fill: var(--color-1) !important;
 }
 
 

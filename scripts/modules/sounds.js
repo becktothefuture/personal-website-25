@@ -68,6 +68,22 @@ const CONFIG = {
     maxSubGain: 160,       // Increased maximum sub gain
     rampTime: 0.02,       // Shortened ramp time for quicker response
     subQ: 100             // Increased Q for a more resonant rumble
+  },
+  robotSpeech: {
+    enabled: true,
+    volume: 0.15,
+    baseFrequency: 400,
+    vowelModifier: 1,
+    consonantModifier: 0.5,
+    soundDuration: 30, // ms
+    characterMappings: {
+        vowels: new Set("AEIOUaeiou"),
+        bilabial: new Set("MBPmbp"),
+        nasals: new Set("Nn"),
+        sibilants: new Set("SZszCcJj"),
+        dentals: new Set("TDtd"),
+        pauses: new Set(",.;:!?-")
+    }
   }
 };
 
@@ -75,6 +91,11 @@ const CONFIG = {
 let soundToggle = document.querySelector('.sound-toggle');
 let soundToggleKnob = soundToggle ? soundToggle.querySelector('.sound-toggle__knob') : null;
 let soundToggleLight = soundToggleKnob ? soundToggleKnob.querySelector('.knob-light') : null;
+
+// Add these variables for robot speech at the top with other global variables
+let robotSpeechEnabled = CONFIG.robotSpeech.enabled;
+let robotToggleCallback = null;
+let audioInitialized = false;
 
 // ----------------------------------------------------------------------------------------------------
 // HELPER FUNCTIONS
@@ -656,6 +677,23 @@ function toggleSound() {
  */
 export async function initSoundSystem() {
   try {
+    // Create audio context first to make it available for all sound systems
+    if (!audioContext) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          // Setup click handler to resume context
+          const resumeAudio = () => {
+            audioContext.resume().catch(e => console.warn("Could not resume audio context:", e));
+            document.removeEventListener('click', resumeAudio);
+          };
+          document.addEventListener('click', resumeAudio, { once: true });
+        }
+      } catch (error) {
+        console.error("Failed to create audio context:", error);
+      }
+    }
+    
     // UI element initialization for existing DOM elements
     const btnOn = document.querySelector('#button-sound-on');
     const btnOff = document.querySelector('#button-sound-off');
@@ -688,6 +726,7 @@ export async function initSoundSystem() {
     }
     
     window.addEventListener('beforeunload', cleanupAudioResources);
+    audioInitialized = true;
     return true;
   } catch (error) {
     console.error("Error during sound system initialization:", error);
@@ -696,8 +735,154 @@ export async function initSoundSystem() {
 }
 
 // ----------------------------------------------------------------------------------------------------
-// EXPORTS
+// ROBOT SPEECH FUNCTIONS
 // ----------------------------------------------------------------------------------------------------
+
+/**
+ * Plays a sound for a specific character in robot speech.
+ * @param {string} character - The character to generate sound for.
+ */
+function playRobotSpeechSound(character) {
+    if (!robotSpeechEnabled || !audioContext || audioContext.state !== 'running') return;
+    
+    try {
+        // Create oscillator and gain nodes
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // Connect the nodes
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Set frequency based on character type
+        let frequency = CONFIG.robotSpeech.baseFrequency;
+        const charMappings = CONFIG.robotSpeech.characterMappings;
+        
+        if (charMappings.vowels.has(character)) {
+            frequency *= CONFIG.robotSpeech.vowelModifier;
+            frequency += Math.random() * 50;
+        } else if (charMappings.bilabial.has(character)) {
+            frequency *= CONFIG.robotSpeech.consonantModifier * 0.8;
+        } else if (charMappings.nasals.has(character)) {
+            frequency *= CONFIG.robotSpeech.consonantModifier * 0.9;
+        } else if (charMappings.sibilants.has(character)) {
+            frequency *= CONFIG.robotSpeech.consonantModifier * 1.4;
+        } else if (charMappings.dentals.has(character)) {
+            frequency *= CONFIG.robotSpeech.consonantModifier * 1.2;
+        } else if (charMappings.pauses.has(character)) {
+            frequency *= 0.5;
+        } else if (character === ' ') {
+            return; // No sound for spaces
+        } else {
+            frequency *= (0.9 + Math.random() * 0.4);
+        }
+        
+        // Set oscillator properties
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        
+        // Set envelope
+        const now = audioContext.currentTime;
+        gainNode.gain.value = 0;
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(CONFIG.robotSpeech.volume, now + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, now + (CONFIG.robotSpeech.soundDuration / 1000));
+        
+        // Start and stop the oscillator with a slight buffer
+        oscillator.start(now);
+        oscillator.stop(now + (CONFIG.robotSpeech.soundDuration / 1000) + 0.01);
+        
+    } catch (error) {
+        console.warn("Error playing robot speech sound:", error);
+    }
+}
+
+/**
+ * Initializes the robot speech audio system.
+ * @returns {boolean} Whether initialization was successful.
+ */
+function initRobotSpeech() {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (error) {
+            console.error("Could not initialize audio context for robot speech:", error);
+            return false;
+        }
+    }
+    
+    if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(e => {
+            console.warn("Could not resume audio context:", e);
+        });
+    }
+    
+    return true;
+}
+
+/**
+ * Plays a test sound to verify audio is working.
+ */
+function playTestSound() {
+    if (!audioContext) {
+        if (!initRobotSpeech()) return;
+    }
+    
+    try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 440; // A note
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.5);
+        
+        console.log("Test sound played");
+    } catch (error) {
+        console.error("Error playing test sound:", error);
+    }
+}
+
+/**
+ * Toggles robot speech sounds on/off.
+ * @returns {boolean} The new state of robot speech (enabled/disabled).
+ */
+function toggleRobotSpeech() {
+    robotSpeechEnabled = !robotSpeechEnabled;
+    
+    // Notify any registered callback about the change (for UI updates)
+    if (robotToggleCallback) {
+        robotToggleCallback(robotSpeechEnabled);
+    }
+    
+    return robotSpeechEnabled;
+}
+
+/**
+ * Register a callback for robot speech toggle state changes.
+ * @param {Function} callback - The callback function to call when toggle state changes.
+ */
+function onRobotSpeechToggle(callback) {
+    robotToggleCallback = callback;
+}
+
+// Export robot speech functionality
+export const robotSpeech = {
+    play: playRobotSpeechSound,
+    toggle: toggleRobotSpeech,
+    onToggle: onRobotSpeechToggle,
+    isEnabled: () => robotSpeechEnabled,
+    init: initRobotSpeech,
+    playTestSound
+};
 
 // Export the custom event name
 export const EVENTS = {
