@@ -50,11 +50,6 @@ function initializeButtons() {
     // Click handler
     wrapper.addEventListener('click', handleButtonClick);
     
-    // Add hover sound
-    wrapper.addEventListener('mouseenter', () => {
-      buttonSounds.play('hover');
-    });
-    
     // Add press sound on mousedown
     wrapper.addEventListener('mousedown', () => {
       buttonSounds.play('press');
