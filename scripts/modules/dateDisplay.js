@@ -45,8 +45,8 @@ export function initDateDisplay() {
       const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" 
                                 : ["th", "st", "nd", "rd"][n % 10] || "th");
   
-      const greetingEl = document.getElementById("greeting");
-      const logbookEl = document.getElementById("logbook");
+      const greetingEl = document.getElementById("weekday");
+      const logbookEl = document.getElementById("date");
       if (greetingEl) greetingEl.textContent = `it's ${weekday}`;
       if (logbookEl) logbookEl.textContent = `Logbook ${ordinal(day)} ${month} ${year}`;
     };

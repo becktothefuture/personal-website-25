@@ -250,7 +250,7 @@ export function initRobot() {
     ["Why did the div cross the road?", "To style the chicken on the other side."],
     ["A no-code developer walked into a bar.", "The bar auto-saved."],
     ["What’s a computer’s favorite snack?", "Microchips."],
-    ["Why do 3D modelers make terrible baristas?", "Too meshy!"],
+    ["Why do 3D modelers make terrible baristas?", "They are too meshy!"],
     ["Why did the designer fail their driving test?", "They couldn’t stop aligning to the left."],
     ["Why do programmers prefer dark mode?", "Because light attracts bugs."],
     ["A Figma file, a no-code developer, and a UX designer walk into a bar.", "The bartender says, 'This joke has too many layers.'"],
@@ -269,7 +269,7 @@ export function initRobot() {
     ["UX designers don’t have impostor syndrome.", "They have edge case syndrome — what if someone scrolls upside down in incognito mode?"],
     ["UX designers don’t have impostor syndrome.", "They have edge case syndrome — what if someone scrolls backward on a smartwatch during a solar eclipse?"],
     ["UI design will break your heart.", "But printers will break your spirit."],
-    ["Graphic design jokes make me so x-heighted.", ""],
+    ["Typography jokes make me so x-heighted.", ""],
     ["Are you my Photoshop file?", "Because I forgot your name."],
     ["How many designers does it take to screw in a lightbulb?", "Does it have to be a lightbulb?"],
     ["I don’t need glasses.", "I just prefer to view the world in a constant Gaussian blur."],
@@ -390,8 +390,8 @@ export function initRobot() {
             clearTimeout(blinkTimeout);
         }, { passive: true });
 
-        // Set up event listener to initialize audio on first user interaction
-        document.addEventListener('click', () => {
+        // Listen for intro completion to initialize audio
+        document.addEventListener('intro:complete', () => {
             if (!robotSpeech.isAudioInitialized()) {
                 robotSpeech.init();
             }
@@ -405,16 +405,23 @@ export function initRobot() {
         document.addEventListener("DOMContentLoaded", init, { once: true });
     }
     
-    // Return a function to start the animation when called
+    // Return a more robust controller with better init status tracking
     return {
         startSpeaking: () => {
+            // Ensure audio is initialized before starting
+            if (!robotSpeech.isAudioInitialized()) {
+                robotSpeech.init();
+            }
+            
             if (!animationStarted) {
                 animationStarted = true;
                 bubble.style.display = "block";
                 typeWriter().catch(err => console.error('Animation error:', err));
                 console.log("Robot animation started");
             }
-        }
+        },
+        // Add ability to check status
+        isActive: () => animationStarted
     };
 }
 

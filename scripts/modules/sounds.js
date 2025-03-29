@@ -34,6 +34,12 @@ let isSoundEnabled = false;
 let animationFrameId = null;
 let activityEventListeners = [];
 
+// Add visibility tracking variables
+let isPageVisible = true;
+let visibilityTimeout = null;
+let visibilityFadeNode = null;
+let masterGainNode = null; // Master gain node for all sounds
+
 // Global scroll speed (in km/h) updated by scrollTracker; used to adjust sound parameters
 let scrollSpeed = 0;
 let engineStarted = false; // Flag to track if engine has properly started
@@ -42,6 +48,8 @@ let engineStarted = false; // Flag to track if engine has properly started
 const CONFIG = {
   fadeDuration: 1,      // Increased for smoother transitions
   idleTimeout: 3000,      // 3 seconds idle timeout
+  visibilityTimeout: 2000, // 2 seconds before fading on visibility change
+  visibilityFadeDuration: 1.5, // Longer for smoother page visibility fades
   ambient: {
     url: "https://becktothefuture.github.io/personal-website-25/assets/sounds/ambience.mp3",
     targetVolume: 1,
@@ -85,6 +93,24 @@ const CONFIG = {
         pauses: new Set(",.;:!?-")
     }
   },
+  // Add intro typing sound configuration
+  introTyping: {
+    enabled: true,
+    volume: 0.04,
+    baseFrequency: 700, // Higher frequency than robot speech
+    vowelModifier: 1,
+    consonantModifier: 1,
+    soundDuration: 25, // ms - slightly shorter than robot speech
+    characterMappings: {
+      // Reuse the same mappings as robot speech
+      vowels: new Set("AEIOUaeiou"),
+      bilabial: new Set("MBPmbp"),
+      nasals: new Set("Nn"),
+      sibilants: new Set("SZszCcJj"),
+      dentals: new Set("TDtd"),
+      pauses: new Set(",.;:!?-")
+    }
+  },
   // Button sounds configuration
   buttonSounds: {
     enabled: true,
@@ -95,7 +121,18 @@ const CONFIG = {
       press: "https://becktothefuture.github.io/personal-website-25/assets/sounds/press.mp3",
       confirm: "https://becktothefuture.github.io/personal-website-25/assets/sounds/confirm.mp3"
     }
-  }
+  },
+  // Enhanced fade control to prevent clicks and pops
+  fadeCurve: 'exponential', // 'linear' or 'exponential'
+  antiPopFilterFreq: 30,    // Very low filter to remove DC offsets
+  fadeInStages: [
+    { target: 0.01, duration: 0.1 }, // Quick linear ramp to small value
+    { target: 1.0, duration: 0.9 }   // Then exponential ramp to full value
+  ],
+  fadeOutStages: [
+    { target: 0.1, duration: 0.8 },  // Exponential ramp down to low value
+    { target: 0.001, duration: 0.2 } // Linear ramp to near zero
+  ]
 };
 
 // UI elements are now optional since we removed the controls from the DOM.
@@ -118,32 +155,83 @@ let lastHoverSound = 0; // Timestamp to throttle hover sounds
 let buttonSoundsLoaded = false;
 let buttonSoundsLoading = false;
 
+// Add this to the global variables
+let introTypingEnabled = CONFIG.introTyping.enabled;
+
+// Global flag for all sound types to check before playing
+let allSoundsActive = true;
+
 // ----------------------------------------------------------------------------------------------------
 // HELPER FUNCTIONS
 // ----------------------------------------------------------------------------------------------------
 
 /**
- * Creates a fade node for smooth volume transitions.
+ * Creates an enhanced fade for smoother transitions without pops.
  * @param {AudioNode} node - The audio node to apply the fade to.
  * @param {number} targetValue - The target volume value.
  * @param {number} duration - The duration of the fade in seconds.
+ * @param {string} type - Type of fade ('in' or 'out')
  */
-function createFadeNode(node, targetValue, duration = CONFIG.fadeDuration) {
+function createEnhancedFade(node, targetValue, duration = CONFIG.fadeDuration, type = 'in') {
   if (!node || !audioContext) return;
+  
   const now = audioContext.currentTime;
   node.gain.cancelScheduledValues(now);
   
-  // Avoid setting value to exactly zero (causes clicks)
+  // Get current value, avoiding zero
   const currentValue = node.gain.value || 0.001;
   node.gain.setValueAtTime(currentValue, now);
   
-  // Use exponential ramp for natural sound fade if possible
-  if (currentValue > 0.01 && targetValue > 0.01) {
-    node.gain.exponentialRampToValueAtTime(targetValue, now + duration);
+  if (type === 'in' && targetValue > currentValue) {
+    // Fade in: Two-stage approach for smoother start
+    // First a quick linear ramp to a small value
+    const smallValue = 0.01;
+    const initialRamp = duration * 0.1; // First 10% of the duration
+    
+    node.gain.linearRampToValueAtTime(smallValue, now + initialRamp);
+    
+    // Then exponential ramp to target
+    if (targetValue >= 0.01) {
+      node.gain.exponentialRampToValueAtTime(targetValue, now + duration);
+    } else {
+      node.gain.linearRampToValueAtTime(targetValue, now + duration);
+    }
+  } else if (type === 'out' && targetValue < currentValue) {
+    // Fade out: Also two-stage but weighted differently
+    // First exponential down to a small value
+    const smallValue = 0.01;
+    const mainRamp = duration * 0.8; // First 80% of the duration
+    
+    if (currentValue >= 0.01) {
+      node.gain.exponentialRampToValueAtTime(smallValue, now + mainRamp);
+    } else {
+      node.gain.linearRampToValueAtTime(smallValue, now + mainRamp);
+    }
+    
+    // Then linear to target (near zero)
+    const actualTarget = Math.max(targetValue, 0.0001); // Never exactly zero
+    node.gain.linearRampToValueAtTime(actualTarget, now + duration);
+    
+    // If truly silent is needed, schedule a direct set after ramp completes
+    if (targetValue === 0) {
+      node.gain.setValueAtTime(0, now + duration + 0.02);
+    }
   } else {
-    // Fall back to linear ramp near zero
-    node.gain.linearRampToValueAtTime(targetValue, now + duration);
+    // Simple case when direction doesn't match expected or values are equal
+    if (currentValue > 0.01 && targetValue > 0.01) {
+      // Both values non-zero, safe to use exponential
+      node.gain.exponentialRampToValueAtTime(targetValue, now + duration);
+    } else {
+      // Near zero involved, use linear
+      node.gain.linearRampToValueAtTime(targetValue, now + duration);
+    }
   }
+}
+
+// Replace createFadeNode with the enhanced version
+function createFadeNode(node, targetValue, duration = CONFIG.fadeDuration) {
+  const type = targetValue > node.gain.value ? 'in' : 'out';
+  createEnhancedFade(node, targetValue, duration, type);
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -159,11 +247,192 @@ async function createAudioContext() {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       audioContext.suspend();
+      
+      // Create master gain node for all sounds
+      masterGainNode = audioContext.createGain();
+      masterGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+      masterGainNode.connect(audioContext.destination);
     }
     return audioContext;
   } catch (error) {
     console.error("Failed to create audio context:", error);
     return null;
+  }
+}
+
+// ----------------------------------------------------------------------------------------------------
+// VISIBILITY CHANGE HANDLING
+// ----------------------------------------------------------------------------------------------------
+
+/**
+ * Sets up page visibility tracking to fade sounds when window is inactive
+ */
+function setupVisibilityTracking() {
+  // Create a dedicated gain node for visibility-based fading
+  if (audioContext && !visibilityFadeNode) {
+    visibilityFadeNode = audioContext.createGain();
+    visibilityFadeNode.gain.setValueAtTime(1, audioContext.currentTime);
+    
+    // Insert between master gain and destination
+    if (masterGainNode) {
+      masterGainNode.disconnect();
+      masterGainNode.connect(visibilityFadeNode);
+      visibilityFadeNode.connect(audioContext.destination);
+    }
+  }
+
+  // Use the Page Visibility API to detect when the page is hidden/visible
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // Strengthen window blur/focus detection for cross-browser compatibility
+  window.addEventListener('blur', () => {
+    console.log("Window blur detected - preparing to fade out sounds");
+    handlePageHidden();
+  });
+  
+  window.addEventListener('focus', () => {
+    console.log("Window focus detected - restoring sounds");
+    handlePageVisible();
+  });
+  
+  // Additional event for tab visibility
+  document.addEventListener('pagehide', handlePageHidden);
+  document.addEventListener('pageshow', handlePageVisible);
+}
+
+/**
+ * Handles visibility change events
+ */
+function handleVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    console.log("Visibility API reports page hidden");
+    handlePageHidden();
+  } else if (document.visibilityState === 'visible') {
+    console.log("Visibility API reports page visible");
+    handlePageVisible();
+  }
+}
+
+/**
+ * Handles page becoming hidden - fade out after delay
+ */
+function handlePageHidden() {
+    // Clear any existing timeout to prevent race conditions
+    clearTimeout(visibilityTimeout);
+    
+    // Wait 2 seconds before fading out
+    visibilityTimeout = setTimeout(() => {
+        isPageVisible = false;
+        allSoundsActive = false; // Disable ALL sounds when page hidden
+        console.log("Fading out all audio due to page inactivity");
+        
+        if (visibilityFadeNode && audioContext) {
+            // Enhanced super-smooth fade out to eliminate clicks
+            const now = audioContext.currentTime;
+            const currentGain = visibilityFadeNode.gain.value;
+            
+            // Cancel any scheduled values first
+            visibilityFadeNode.gain.cancelScheduledValues(now);
+            
+            // Start from current value
+            visibilityFadeNode.gain.setValueAtTime(currentGain, now);
+            
+            // Very gradual multi-stage fade out to prevent clicks
+            if (currentGain > 0.1) {
+                // First stage - exponential ramp to medium-low value
+                visibilityFadeNode.gain.exponentialRampToValueAtTime(0.1, now + CONFIG.visibilityFadeDuration * 0.7);
+                
+                // Second stage - linear ramp to very low but non-zero value
+                visibilityFadeNode.gain.linearRampToValueAtTime(0.001, now + CONFIG.visibilityFadeDuration);
+                
+                // Final stage - explicitly set to zero after the fade is complete
+                visibilityFadeNode.gain.setValueAtTime(0, now + CONFIG.visibilityFadeDuration + 0.1);
+            } else {
+                // Already low, just do a simple linear ramp to zero
+                visibilityFadeNode.gain.linearRampToValueAtTime(0.001, now + CONFIG.visibilityFadeDuration * 0.5);
+                visibilityFadeNode.gain.setValueAtTime(0, now + CONFIG.visibilityFadeDuration * 0.5 + 0.1);
+            }
+            
+            // After fade complete, suspend the audio context to save resources
+            setTimeout(() => {
+                if (!isPageVisible && audioContext && audioContext.state === 'running') {
+                    audioContext.suspend().catch(err => console.warn("Could not suspend audio context:", err));
+                }
+            }, CONFIG.visibilityFadeDuration * 1000);
+        }
+
+        // Save previous sound states for restoration
+        if (visibilityFadeNode) {
+            visibilityFadeNode._robotSpeechWasEnabled = robotSpeechEnabled;
+            visibilityFadeNode._introTypingWasEnabled = introTypingEnabled;
+            
+            // Disable all specific sound types
+            robotSpeechEnabled = false;
+            introTypingEnabled = false;
+        }
+    }, CONFIG.visibilityTimeout);
+}
+
+/**
+ * Handles page becoming visible - fade in immediately
+ */
+function handlePageVisible() {
+    clearTimeout(visibilityTimeout);
+    isPageVisible = true;
+    allSoundsActive = true; // Re-enable ALL sounds when page visible
+  
+    // Restore sound states if they were enabled before
+    if (visibilityFadeNode) {
+        if (visibilityFadeNode._robotSpeechWasEnabled) {
+            robotSpeechEnabled = visibilityFadeNode._robotSpeechWasEnabled;
+            delete visibilityFadeNode._robotSpeechWasEnabled;
+        }
+        
+        if (visibilityFadeNode._introTypingWasEnabled) {
+            introTypingEnabled = visibilityFadeNode._introTypingWasEnabled;
+            delete visibilityFadeNode._introTypingWasEnabled;
+        }
+    }
+  
+    if (visibilityFadeNode && audioContext) {
+    // Resume the audio context first if needed
+    if (audioContext.state === 'suspended' && isSoundEnabled) {
+      audioContext.resume().catch(err => console.warn("Could not resume audio context:", err));
+    }
+    
+    // Enhanced smooth fade in with multi-stage approach
+    const now = audioContext.currentTime;
+    
+    // Cancel any scheduled values first
+    visibilityFadeNode.gain.cancelScheduledValues(now);
+    
+    // Start from current value (which may be 0)
+    const currentGain = visibilityFadeNode.gain.value || 0;
+    visibilityFadeNode.gain.setValueAtTime(currentGain, now);
+    
+    if (currentGain === 0) {
+      // If starting from zero, use a multi-stage approach
+      
+      // Step 1: First a tiny non-zero value to avoid clicks
+      visibilityFadeNode.gain.setValueAtTime(0.0001, now);
+      
+      // Step 2: Linear ramp to small value
+      visibilityFadeNode.gain.linearRampToValueAtTime(0.01, now + 0.1);
+      
+      // Step 3: Exponential ramp to full value
+      visibilityFadeNode.gain.exponentialRampToValueAtTime(1.0, now + CONFIG.visibilityFadeDuration * 0.5);
+    } else if (currentGain < 0.01) {
+      // Starting from very low (but non-zero)
+      
+      // Step 1: Linear ramp to small, safe value for exponential
+      visibilityFadeNode.gain.linearRampToValueAtTime(0.01, now + 0.1);
+      
+      // Step 2: Exponential ramp to full
+      visibilityFadeNode.gain.exponentialRampToValueAtTime(1.0, now + CONFIG.visibilityFadeDuration * 0.5);
+    } else {
+      // Starting from high enough to use exponential directly
+      visibilityFadeNode.gain.exponentialRampToValueAtTime(1.0, now + CONFIG.visibilityFadeDuration * 0.3);
+    }
   }
 }
 
@@ -205,25 +474,46 @@ async function setupAmbient() {
     smoothingFilter.frequency.value = 18000; // Just below Nyquist
     smoothingFilter.Q.value = 0.5; // Gentle slope
     
+    // Add a DC filter to remove ultra-low frequencies that can cause pops
+    const dcFilter = audioContext.createBiquadFilter();
+    dcFilter.type = 'highpass';
+    dcFilter.frequency.value = CONFIG.antiPopFilterFreq;
+    dcFilter.Q.value = 0.7;
+    
     // Create source and connect nodes
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
     
-    // Connection chain with anti-pop measures
+    // Modified connection chain
     source.connect(antiPopNode);
-    antiPopNode.connect(smoothingFilter);
+    antiPopNode.connect(dcFilter);  // Add DC filter before smoothing filter
+    dcFilter.connect(smoothingFilter);
     smoothingFilter.connect(gainNode);
     gainNode.connect(compressor);
-    compressor.connect(audioContext.destination);
     
-    // Fade in very gradually from silence using exponential ramp
+    // Connect to master gain instead of directly to destination
+    compressor.connect(masterGainNode || audioContext.destination);
+    
+    // More gradual startup sequence
     source.start(0);
+    
+    // Multi-stage start for smoother beginning
     const now = audioContext.currentTime;
-    antiPopNode.gain.setValueAtTime(0.001, now); // Start with near-zero (can't be zero for exponential)
+    
+    // Start with silence
+    antiPopNode.gain.setValueAtTime(0, now);
+    
+    // Very tiny linear ramp to near-zero (prevents initial click)
+    antiPopNode.gain.linearRampToValueAtTime(0.001, now + 0.05);
+    
+    // Small linear ramp to minimal value
+    antiPopNode.gain.linearRampToValueAtTime(0.01, now + 0.1);
+    
+    // Finally exponential ramp to full volume
     antiPopNode.gain.exponentialRampToValueAtTime(1.0, now + CONFIG.ambient.initialFade);
 
-    return { source, gainNode, antiPopNode, compressor, smoothingFilter };
+    return { source, gainNode, antiPopNode, compressor, smoothingFilter, dcFilter };
   } catch (error) {
     console.error("Ambient setup failed:", error);
     const errorMsg = document.createElement('div');
@@ -309,19 +599,26 @@ function setupEngineSound() {
     const panner = audioContext.createStereoPanner();
     panner.pan.value = 0;
     
+    // Add a DC filter to remove ultra-low frequencies that can cause pops
+    const dcFilter = audioContext.createBiquadFilter();
+    dcFilter.type = 'highpass';
+    dcFilter.frequency.value = CONFIG.antiPopFilterFreq;
+    dcFilter.Q.value = 0.7;
+    
     // Connect the processing chain
     source.buffer = noiseBuffer;
     source.loop = true;
     
-    // Connection path focused on deeper, punchier engine sound
+    // Modified connection path
     source.connect(antiPopNode);
-    antiPopNode.connect(lowpassFilter);
+    antiPopNode.connect(dcFilter);  // Add DC filter
+    dcFilter.connect(lowpassFilter);
     lowpassFilter.connect(bandpassFilter);    
     bandpassFilter.connect(subBassFilter);
     subBassFilter.connect(gainNode);
     gainNode.connect(compressor);
     compressor.connect(panner);
-    panner.connect(audioContext.destination);
+    panner.connect(masterGainNode || audioContext.destination);
     
     // Initialize all gains to near-zero (not exact zero to avoid clicks)
     gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
@@ -331,10 +628,16 @@ function setupEngineSound() {
     const now = audioContext.currentTime;
     source.start(0);
     
-    // Very gradual fade-in to prevent any pops
+    // More gradual and controlled startup sequence
     const startDelay = 0.5; // Wait a moment before any sound
     antiPopNode.gain.setValueAtTime(0.001, now);
-    antiPopNode.gain.exponentialRampToValueAtTime(0.01, now + startDelay);
+    
+    // First a tiny step up (prevents the click from absolute zero)
+    antiPopNode.gain.linearRampToValueAtTime(0.0001, now + 0.05);
+    
+    // Multi-stage ramp for smoother startup
+    antiPopNode.gain.linearRampToValueAtTime(0.001, now + 0.2);
+    antiPopNode.gain.linearRampToValueAtTime(0.01, now + startDelay);
     antiPopNode.gain.exponentialRampToValueAtTime(1.0, now + startDelay + 1.0);
     
     // Wait for proper engine startup before allowing modulation
@@ -350,7 +653,8 @@ function setupEngineSound() {
       gainNode,
       antiPopNode,
       compressor,
-      panner
+      panner,
+      dcFilter
     };
   } catch (error) {
     console.error("Engine sound setup failed:", error);
@@ -702,6 +1006,15 @@ export async function initSoundSystem() {
     if (!audioContext) {
       try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create the master gain node
+        masterGainNode = audioContext.createGain();
+        masterGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+        masterGainNode.connect(audioContext.destination);
+        
+        // Set up visibility tracking
+        setupVisibilityTracking();
+        
         if (audioContext.state === 'suspended') {
           // Setup click handler to resume context
           const resumeAudio = () => {
@@ -765,36 +1078,55 @@ export async function initSoundSystem() {
 // ----------------------------------------------------------------------------------------------------
 
 /**
- * Plays a sound for a specific character in robot speech.
- * @param {string} character - The character to generate sound for.
+ * Generic character sound player that can be used for both robot speech and intro typing.
+ * 
+ * @param {string} character - The character to generate sound for
+ * @param {Object} config - Configuration for the sound (robotSpeech or introTyping)
+ * @param {boolean} enabled - Whether this particular sound type is enabled
+ * @returns {void}
  */
-function playRobotSpeechSound(character) {
-    if (!robotSpeechEnabled || !audioContext || audioContext.state !== 'running') return;
+function playCharacterSound(character, config, enabled) {
+    // Combined check: specific sound enabled, global sounds enabled, sound system enabled, page visible
+    if (!enabled || !allSoundsActive || !isSoundEnabled || !audioContext || audioContext.state !== 'running') return;
+    if (!isPageVisible) return; // Explicit check for page visibility
+    
+    // Check that visibility fade node isn't muted
+    if (visibilityFadeNode && visibilityFadeNode.gain.value <= 0.01) return;
     
     try {
         // Create oscillator and gain nodes
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
+        const antiPopNode = audioContext.createGain(); // Add anti-pop
         
-        // Connect the nodes
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        // Create a DC filter to eliminate pops
+        const dcFilter = audioContext.createBiquadFilter();
+        dcFilter.type = 'highpass';
+        dcFilter.frequency.value = CONFIG.antiPopFilterFreq;
+        dcFilter.Q.value = 0.7;
+        
+        // Connect the nodes with anti-pop measures
+        oscillator.connect(antiPopNode);
+        antiPopNode.connect(dcFilter);
+        dcFilter.connect(gainNode);
+        // Connect to the visibilityFadeNode to ensure it follows visibility state
+        gainNode.connect(visibilityFadeNode || masterGainNode || audioContext.destination);
         
         // Set frequency based on character type
-        let frequency = CONFIG.robotSpeech.baseFrequency;
-        const charMappings = CONFIG.robotSpeech.characterMappings;
+        let frequency = config.baseFrequency;
+        const charMappings = config.characterMappings;
         
         if (charMappings.vowels.has(character)) {
-            frequency *= CONFIG.robotSpeech.vowelModifier;
+            frequency *= config.vowelModifier;
             frequency += Math.random() * 50;
         } else if (charMappings.bilabial.has(character)) {
-            frequency *= CONFIG.robotSpeech.consonantModifier * 0.8;
+            frequency *= config.consonantModifier * 0.8;
         } else if (charMappings.nasals.has(character)) {
-            frequency *= CONFIG.robotSpeech.consonantModifier * 0.9;
+            frequency *= config.consonantModifier * 0.9;
         } else if (charMappings.sibilants.has(character)) {
-            frequency *= CONFIG.robotSpeech.consonantModifier * 1.4;
+            frequency *= config.consonantModifier * 1.4;
         } else if (charMappings.dentals.has(character)) {
-            frequency *= CONFIG.robotSpeech.consonantModifier * 1.2;
+            frequency *= config.consonantModifier * 1.2;
         } else if (charMappings.pauses.has(character)) {
             frequency *= 0.5;
         } else if (character === ' ') {
@@ -807,20 +1139,45 @@ function playRobotSpeechSound(character) {
         oscillator.type = 'sine';
         oscillator.frequency.value = frequency;
         
-        // Set envelope
+        // Set envelope with smoother fade in/out
         const now = audioContext.currentTime;
-        gainNode.gain.value = 0;
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(CONFIG.robotSpeech.volume, now + 0.01);
-        gainNode.gain.linearRampToValueAtTime(0, now + (CONFIG.robotSpeech.soundDuration / 1000));
+        const duration = config.soundDuration / 1000;
         
-        // Start and stop the oscillator with a slight buffer
+        // Use multi-stage envelope for smoother sound
+        antiPopNode.gain.setValueAtTime(0, now);
+        antiPopNode.gain.linearRampToValueAtTime(1, now + 0.002);
+        
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(config.volume, now + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, now + duration);
+        
+        antiPopNode.gain.linearRampToValueAtTime(0, now + duration + 0.002);
+        
+        // Start and stop with buffer to prevent clicks
         oscillator.start(now);
-        oscillator.stop(now + (CONFIG.robotSpeech.soundDuration / 1000) + 0.01);
+        oscillator.stop(now + duration + 0.01);
         
     } catch (error) {
-        console.warn("Error playing robot speech sound:", error);
+        console.warn(`Error playing character sound: ${error}`);
     }
+}
+
+/**
+ * Plays a sound for a specific character in robot speech.
+ * @param {string} character - The character to generate sound for.
+ */
+function playRobotSpeechSound(character) {
+    // The combined check in playCharacterSound will handle all conditions
+    playCharacterSound(character, CONFIG.robotSpeech, robotSpeechEnabled);
+}
+
+/**
+ * Plays a sound for the intro typing effect.
+ * @param {string} character - The character being typed.
+ */
+function playIntroTypeSound(character) {
+    // The combined check in playCharacterSound will handle all conditions
+    playCharacterSound(character, CONFIG.introTyping, introTypingEnabled && isSoundEnabled);
 }
 
 /**
@@ -859,7 +1216,7 @@ function playTestSound() {
         const gainNode = audioContext.createGain();
         
         oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        gainNode.connect(masterGainNode || audioContext.destination);
         
         oscillator.type = 'sine';
         oscillator.frequency.value = 440; // A note
@@ -971,7 +1328,9 @@ async function preloadButtonSounds() {
  * @param {number} [volumeMultiplier=1.0] - Optional volume multiplier for the sound
  */
 function playButtonSound(soundType, volumeMultiplier = 1.0) {
-  if (!isSoundEnabled || !audioContext || !CONFIG.buttonSounds.enabled) return;
+  // Add allSoundsActive check along with other conditions
+  if (!isSoundEnabled || !allSoundsActive || !audioContext || !CONFIG.buttonSounds.enabled) return;
+  if (!isPageVisible) return; // Don't play button sounds when page is hidden
   
   // Apply hover sound throttling to prevent sound spam
   if (soundType === 'hover') {
@@ -1001,7 +1360,7 @@ function playButtonSound(soundType, volumeMultiplier = 1.0) {
     
     // Connect nodes
     source.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    gainNode.connect(masterGainNode || audioContext.destination);
     
     // Play the sound
     source.start(0);
@@ -1021,6 +1380,9 @@ export const buttonSounds = {
   preload: preloadButtonSounds,
   play: playButtonSound
 };
+
+// Export the new function
+export { playIntroTypeSound };
 
 // Export the custom event name
 export const EVENTS = {

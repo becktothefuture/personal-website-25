@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         console.log('Sound system initialized');
 
-        // Step 2: Start intro sequence
+        // Step 2: Start intro sequence with the delay from intro.js
         const introSequencePromise = initIntroSequence();
         console.log('Intro sequence started');
 
@@ -115,16 +115,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         await introSequencePromise;
         console.log('Intro sequence completed');
         
-        // Start robot speaking only after intro is complete
-        document.addEventListener('intro:complete', () => {
-            if (robotController && robotController.startSpeaking) {
-                // Add a small delay before starting the robot speech
-                setTimeout(() => {
-                    robotController.startSpeaking();
-                }, 500);
-            }
-        }, { once: true });
-
+        // Dispatch the intro complete event
+        document.dispatchEvent(new CustomEvent('intro:complete'));
+        
+        // Start robot speaking immediately after intro is complete
+        // Slight rework to ensure reliable startup
+        if (robotController && robotController.startSpeaking) {
+            console.log('Starting robot speech after intro completion');
+            
+            // Short delay to ensure everything is ready
+            setTimeout(() => {
+                robotController.startSpeaking();
+            }, 300);
+        }
     } catch (error) {
         console.error('Error in main initialization sequence:', error);
     }

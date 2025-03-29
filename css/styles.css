@@ -205,35 +205,92 @@ body {
  * WIDGET EFFECTS *
  ******************/
 
-.widget--startup {
-  will-change: transform, opacity;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-
-
 @keyframes widgetIntro {
   0% {
-    transform: translateZ(-100px);
     opacity: 0;
+    filter: brightness(0.5);
+  }
+  10% {
+    opacity: 0.6;
+    filter: brightness(1.2);
+  }
+  15% {
+    opacity: 0.2;
+    filter: brightness(0.8);
+  }
+  30% {
+    opacity: 0.8;
+    filter: brightness(1.3);
+  }
+  35% {
+    opacity: 0.5;
+    filter: brightness(0.9);
+  }
+  55% {
+    opacity: 0.9;
+    filter: brightness(1.2);
+  }
+  70% {
+    opacity: 0.7;
+    filter: brightness(1);
+  }
+  85% {
+    opacity: 0.95;
+    filter: brightness(1.05);
   }
   100% {
-    transform: translateZ(0);
     opacity: 1;
+    filter: brightness(1);
   }
 }
 
 @keyframes widgetOutro {
   0% {
-    transform: translateZ(0);
     opacity: 1;
+    filter: brightness(1);
+  }
+  15% {
+    opacity: 0.9;
+    filter: brightness(1.2);
+  }
+  25% {
+    opacity: 0.7;
+    filter: brightness(0.9);
+  }
+  40% {
+    opacity: 0.5;
+    filter: brightness(1.1);
+  }
+  50% {
+    opacity: 0.3;
+    filter: brightness(0.8);
+  }
+  65% {
+    opacity: 0.2;
+    filter: brightness(0.7);
+  }
+  85% {
+    opacity: 0.1;
+    filter: brightness(0.6);
   }
   100% {
-    transform: translateZ(-100px);
     opacity: 0;
+    filter: brightness(0.5);
   }
 }
 
+/* Widget animation classes */
+.widget {
+  will-change: opacity, filter;
+}
+
+.widget-intro {
+  animation: widgetIntro var(--widget-animation-duration, 1s) cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.widget-outro {
+  animation: widgetOutro var(--widget-animation-duration, 0.8s) cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
 
 /********************
  * ARROWS ANIMATION *
@@ -323,9 +380,9 @@ body {
 }
 
 .light-grid__circle {
-  width: var(--circle-size);
-  height: var(--circle-size);
-  background-color: var(--color-1); /* Use off color initially */
+  width: 0.65em;
+  height: 0.65em;
+  background-color: var(--color-3); /* Use off color initially */
   border-radius: 10em;
   animation: flicker 12s steps(2) infinite;
   aspect-ratio: 1 / 1;
@@ -374,27 +431,20 @@ body {
  * ROTATING CUBE ANIMATION *
  ***************************/
 
-.wireframe-cube {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  perspective: 400px;
-}
 
 .cube {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  top: 30%;
-  left: 30%;
+  width: 10em;
+  height: 10em;
   transform-style: preserve-3d;
   animation: rotate-cube 5s infinite linear;
 }
 
+
 .cube-face {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: 10em;
+  height: 10em;
   border: 1px solid var(--color-2);
 }
 .cube-face:nth-child(1) {
@@ -1104,7 +1154,7 @@ html {
 }
 
 /*************************
- * ROBOT SVG STYLING    *
+ * ROBOT STYLING (SVG)    *
  *************************/
 
 /* Robot body styles */
@@ -1130,6 +1180,7 @@ html {
   fill: var(--color-4);
   transition: fill 35ms ease;
   will-change: fill;
+  stroke: none;
 }
 
 #robot-display .robot-dot--eye,

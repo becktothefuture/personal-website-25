@@ -36,7 +36,7 @@ function initializeButtons() {
   }
 
   // Verify all screens exist at initialization
-  const screens = ['home-view', 'portfolio-view', 'contact-view', 'about-view'];
+  const screens = ['home-view', 'portfolio-view', 'contact-view']; // Removed about-view
   const missingScreens = screens.filter(id => !document.getElementById(id));
   if (missingScreens.length > 0) {
     console.warn('Missing screen elements:', missingScreens.join(', '));
@@ -122,8 +122,8 @@ function updateScreenVisibility(previousScreen = null) {
   const screens = {
     home: document.getElementById('home-view'),
     portfolio: document.getElementById('portfolio-view'),
-    contact: document.getElementById('contact-view'),
-    about: document.getElementById('about-view')
+    contact: document.getElementById('contact-view')
+    // Removed about-view
   };
   
   // Get the target screen
@@ -197,8 +197,9 @@ function resetWidgetAnimations(screenElement) {
   widgets.forEach(w => {
     if (w) {
       w.style.opacity = '0';
-      w.style.animation = 'none';
-      w.classList.remove('widget--startup');
+      w.classList.remove('widget-intro', 'widget-outro');
+      // Force browser to recognize the change
+      void w.offsetWidth;
     }
   });
 }
@@ -207,58 +208,55 @@ function resetWidgetAnimations(screenElement) {
 function animateWidgets(screenElement) {
   if (!screenElement) return;
   
-  const widgets = screenElement.querySelectorAll('.widget');
+  const widgets = Array.from(screenElement.querySelectorAll('.widget'));
   if (widgets.length === 0) return;
-  
-  const startTimes = new Map();
   
   // Animation speed settings
   const ANIMATION_SPEED = {
     GLOBAL_MULTIPLIER: 2.0,
-    WIDGET_ANIMATION: 1.0
+    WIDGET_ANIMATION: 1.0,
+    BASE_DELAY: 80, // ms between each widget
+    MIN_RANDOM_DELAY: 20, // min additional random delay
+    MAX_RANDOM_DELAY: 150  // max additional random delay
   };
   
   // Adjust widget animation speed based on global multiplier
   const animationSpeedMultiplier = ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.WIDGET_ANIMATION;
-  const maxStartDelay = 2000 / animationSpeedMultiplier;
+  const animationDuration = (1.2 / animationSpeedMultiplier).toFixed(2);
   
-  widgets.forEach(w => {
-    if (w) {
-      w.style.opacity = '0';
-      w.style.animation = 'none';
-      w.classList.remove('widget--startup');
-      // Staggered delay for widget appearance
-      startTimes.set(w, performance.now() + getRandom(100, maxStartDelay));
-    }
+  // Set animation duration CSS variable for widgets
+  document.documentElement.style.setProperty('--widget-animation-duration', `${animationDuration}s`);
+  
+  // Sort widgets by position (top to bottom, left to right)
+  widgets.sort((a, b) => {
+    const aRect = a.getBoundingClientRect();
+    const bRect = b.getBoundingClientRect();
+    return aRect.top - bRect.top || aRect.left - bRect.left;
   });
   
-  function animateFrame(now) {
-    let needsAnotherFrame = false;
+  // Apply animations with staggered delays
+  widgets.forEach((widget, index) => {
+    // Remove any existing animation classes
+    widget.classList.remove('widget-intro', 'widget-outro');
     
-    widgets.forEach(w => {
-      if (!w) return;
-      
-      if (now >= startTimes.get(w) && !w.classList.contains('widget--startup')) {
-        w.classList.add('widget--startup');
-        
-        // Simplified single animation with duration calculation
-        const animationDuration = (1.2 / animationSpeedMultiplier).toFixed(2);
-        
-        w.style.animation = `widgetIntro ${animationDuration}s cubic-bezier(0.19, 1, 0.22, 1) forwards`;
-      } else if (now < startTimes.get(w)) {
-        needsAnotherFrame = true;
-      }
-    });
+    // Calculate a progressive delay (earlier widgets appear sooner)
+    const baseDelay = index * (ANIMATION_SPEED.BASE_DELAY / animationSpeedMultiplier);
+    const randomDelay = getRandom(
+      ANIMATION_SPEED.MIN_RANDOM_DELAY, 
+      ANIMATION_SPEED.MAX_RANDOM_DELAY
+    ) / animationSpeedMultiplier;
     
-    if (needsAnotherFrame) {
-      requestAnimationFrame(animateFrame);
-    }
-  }
-  
-  // Start the animation frame loop
-  if (widgets.length > 0) {
-    requestAnimationFrame(animateFrame);
-  }
+    const totalDelay = baseDelay + randomDelay;
+    
+    // First set the widget to be invisible
+    widget.style.opacity = '0';
+    
+    // Apply animation with delay
+    setTimeout(() => {
+      // Add the intro animation class
+      widget.classList.add('widget-intro');
+    }, totalDelay);
+  });
 }
 
 // Animate widgets out with staggered animation
@@ -269,7 +267,7 @@ function animateWidgetsOut(screenElement) {
       return;
     }
     
-    const widgets = screenElement.querySelectorAll('.widget');
+    const widgets = Array.from(screenElement.querySelectorAll('.widget'));
     if (widgets.length === 0) {
       resolve();
       return;
@@ -279,75 +277,57 @@ function animateWidgetsOut(screenElement) {
     const ANIMATION_SPEED = {
       GLOBAL_MULTIPLIER: 2.0,
       WIDGET_ANIMATION: 1.0,
-      EXIT_SPEED_MULTIPLIER: 2.0 // Make exit animations twice as fast
+      EXIT_SPEED_MULTIPLIER: 1.5, // Faster exit
+      BASE_DELAY: 50, // ms between each widget for exit
+      MIN_RANDOM_DELAY: 10, // min additional random delay
+      MAX_RANDOM_DELAY: 100 // max additional random delay
     };
-    
-    // Track when widgets finish animating
-    const startTimes = new Map();
-    const animatingWidgets = new Set(widgets);
     
     // Adjust widget animation speed based on global multiplier
     const animationSpeedMultiplier = ANIMATION_SPEED.GLOBAL_MULTIPLIER * 
                                      ANIMATION_SPEED.WIDGET_ANIMATION * 
                                      ANIMATION_SPEED.EXIT_SPEED_MULTIPLIER;
     
-    // Faster max delay for exit animations
-    const maxExitDelay = 1000 / animationSpeedMultiplier;
+    const animationDuration = (0.8 / animationSpeedMultiplier).toFixed(2);
     
-    // Animation duration calculation - shorter for exits
-    const animationDuration = (0.5 / animationSpeedMultiplier);
+    // Set animation duration CSS variable for widgets
+    document.documentElement.style.setProperty('--widget-animation-duration', `${animationDuration}s`);
     
-    // Calculate total animation time - with enough buffer to ensure all animations complete
-    const totalAnimationTime = animationDuration * 1000 + maxExitDelay + 100;
-    
-    // Set up staggered start times
-    widgets.forEach(w => {
-      if (w) {
-        // Use random delays for staggered effect but ensure they're shorter
-        startTimes.set(w, performance.now() + getRandom(50, maxExitDelay));
-      }
+    // Sort widgets in reverse order (compared to entrance animation)
+    // This creates a natural "last in, first out" effect
+    widgets.sort((a, b) => {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      return bRect.top - aRect.top || bRect.left - aRect.left;
     });
     
-    // Safety timeout - resolve after max expected duration
-    const safetyTimeout = setTimeout(() => {
-      resolve();
-    }, totalAnimationTime);
+    // Keep track of max delay for promise resolution
+    let maxDelay = 0;
     
-    function animateExitFrame(now) {
-      let needsAnotherFrame = false;
+    // Apply animations with staggered delays
+    widgets.forEach((widget, index) => {
+      // Remove any existing intro animation
+      widget.classList.remove('widget-intro');
       
-      // Process each widget that should start animating at this frame
-      widgets.forEach(w => {
-        if (!w || !animatingWidgets.has(w)) return;
-        
-        if (now >= startTimes.get(w)) {
-          // Apply exit animation
-          w.style.animation = `widgetOutro ${animationDuration.toFixed(2)}s cubic-bezier(0.19, 1, 0.22, 1) forwards`;
-          animatingWidgets.delete(w);
-        } else {
-          needsAnotherFrame = true;
-        }
-      });
+      // Calculate a progressive delay
+      const baseDelay = index * (ANIMATION_SPEED.BASE_DELAY / animationSpeedMultiplier);
+      const randomDelay = getRandom(
+        ANIMATION_SPEED.MIN_RANDOM_DELAY, 
+        ANIMATION_SPEED.MAX_RANDOM_DELAY
+      ) / animationSpeedMultiplier;
       
-      // Continue animation frame loop if needed
-      if (needsAnotherFrame) {
-        requestAnimationFrame(animateExitFrame);
-      } else {
-        // All widgets have started their exit animation
-        // Wait for the longest animation to complete
-        setTimeout(() => {
-          clearTimeout(safetyTimeout);
-          resolve();
-        }, animationDuration * 1000 + 50);
-      }
-    }
+      const totalDelay = baseDelay + randomDelay;
+      maxDelay = Math.max(maxDelay, totalDelay);
+      
+      // Apply exit animation with delay
+      setTimeout(() => {
+        widget.classList.add('widget-outro');
+      }, totalDelay);
+    });
     
-    // Start the animation frame loop
-    if (widgets.length > 0) {
-      requestAnimationFrame(animateExitFrame);
-    } else {
-      resolve();
-    }
+    // Resolve the promise after all animations complete (with a small buffer)
+    const totalDuration = maxDelay + (parseFloat(animationDuration) * 1000) + 50;
+    setTimeout(resolve, totalDuration);
   });
 }
 

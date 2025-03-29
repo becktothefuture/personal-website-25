@@ -8,7 +8,6 @@
  * 
  * Features:
  * - Typewriter text animation with realistic typing speed variations
- * - Ability to skip the intro by pressing ENTER
  * - Safety timeout to ensure website visibility if animation fails
  * - Sequential widget animations after intro completes
  * - Configurable animation speeds via the ANIMATION_SPEED object
@@ -27,19 +26,24 @@
  * ```
  */
 
+console.log('Intro sequence module initialized');
 
-console.log('Intro sequence module intialized');
+import { playIntroTypeSound } from './sounds.js';
 
+// Configurable delay before the intro animation starts
+export const INTRO_DELAY = 1000; // ms
 
+// Speed configuration for intro animation
 const ANIMATION_SPEED = {
-  GLOBAL_MULTIPLIER: 1.0,
-  TYPING_SPEED: 3.0,
-  PAUSE_BETWEEN_LINES: 0.75
+  GLOBAL_MULTIPLIER: 3.0, // Higher multiplier = faster animation
+  TYPING_SPEED: 3.3,      // How fast each character types
+  PAUSE_BETWEEN_LINES: 0.2 // How long to pause between lines
 };
 
-// Typing speeds + pauses
+
+// Function to add natural typing lag
 function addTypingLag(speed) {
-  return speed * (Math.random() * 1.5 + 0.5) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.TYPING_SPEED);
+  return speed * (Math.random() * 0.5 + 0.75) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.TYPING_SPEED);
 }
 
 // Generate random number in a range
@@ -56,11 +60,8 @@ export async function initIntroSequence() {
       document.body.style.visibility = 'visible';
       document.dispatchEvent(new CustomEvent('intro:complete'));
       resolve();
-    }, 15000 / ANIMATION_SPEED.GLOBAL_MULTIPLIER); // Scaled safety timeout
+    }, 10000 / ANIMATION_SPEED.GLOBAL_MULTIPLIER); // Scaled safety timeout
     
-    // Declare handleSkip at higher scope so it's accessible in catch block
-    let handleSkip;
-      
     try {
       const overlay = document.querySelector('.intro-wrapper');
       const bootText = document.querySelector('.intro-wrapper__text');
@@ -78,17 +79,11 @@ export async function initIntroSequence() {
       const originalContent = bootText.textContent.trim();
       const contentLines = originalContent.split('\n');
       
-      let isSkipped = false;
-      
       // Apply class styling instead of inline CSS
       overlay.className = 'intro-wrapper';
       
       const finishBootSequence = async () => {
         try {
-          // Ensure the skip flag is set and event listener is removed
-          isSkipped = true;
-          document.removeEventListener('keydown', handleSkip);
-          
           document.body.style.visibility = 'visible';          
           overlay.remove();
           
@@ -100,31 +95,14 @@ export async function initIntroSequence() {
         } catch (error) {
           console.error('Error in finishBootSequence:', error);
           document.body.style.visibility = 'visible';
-          document.removeEventListener('keydown', handleSkip); // Ensure cleanup even on error
           document.dispatchEvent(new CustomEvent('intro:complete'));
           clearTimeout(safetyTimeout);
           resolve();
         }
       };
   
-      // Skip by pressing Enter
-      handleSkip = async (e) => {
-        if (e.key === 'Enter' && !isSkipped) {
-          isSkipped = true;
-          document.removeEventListener('keydown', handleSkip);
-          await finishBootSequence();
-        }
-      };
-      document.addEventListener('keydown', handleSkip);
-  
       // Clear the element and create a pre element for the text
       bootText.innerHTML = '';
-      
-      // Create skip instruction line with proper class
-      const skipInstruction = document.createElement('div');
-      skipInstruction.textContent = 'Press ENTER to skip intro';
-      skipInstruction.className = 'intro-skip-instruction';
-      bootText.appendChild(skipInstruction);
       
       // Create pre element to contain typed text with proper class
       const preElement = document.createElement('pre');
@@ -141,18 +119,16 @@ export async function initIntroSequence() {
 
       async function typeNextLine() {
         try {
-          if (isSkipped) return;
-          
           if (currentLine >= contentLines.length) {
-              await finishBootSequence(); // This will now properly clean up the event listener
+              await finishBootSequence();
               return;
           }
       
           const line = contentLines[currentLine];
-          // Scale speed based on animation multiplier
-          const baseSpeed = getRandom(5, 15);
-          // Scale pause based on animation multiplier
-          const pause = getRandom(0, 200) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.PAUSE_BETWEEN_LINES);
+          // Base typing speed, lower value = faster typing
+          const baseSpeed = getRandom(3, 10); 
+          // Shorter pause between lines
+          const pause = getRandom(10, 100) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.PAUSE_BETWEEN_LINES);
           
           // Ensure we always have a line to work with, even for blank lines
           while (displayedLines.length <= currentLine) {
@@ -161,8 +137,6 @@ export async function initIntroSequence() {
           
           // Type each character with a delay
           for (let i = 0; i < line.length; i++) {
-            if (isSkipped) break;
-            
             // Update the current line being typed
             displayedLines[currentLine] = line.substring(0, i + 1);
             
@@ -175,6 +149,9 @@ export async function initIntroSequence() {
             } else {
               preElement.appendChild(cursor);
             }
+
+            // Play typing sound for this character
+            playIntroTypeSound(line[i]);
             
             await new Promise(resolve => setTimeout(resolve, addTypingLag(baseSpeed)));
           }
@@ -189,23 +166,21 @@ export async function initIntroSequence() {
           requestAnimationFrame(() => typeNextLine());
         } catch (error) {
           console.error('Error in typeNextLine:', error);
-          document.removeEventListener('keydown', handleSkip); // Ensure cleanup on error
           document.body.style.visibility = 'visible';
           clearTimeout(safetyTimeout);
           resolve();
         }
       }
 
-      // Start the typing sequence when DOM is fully loaded
+      // Start the typing sequence after the configured delay
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => typeNextLine());
+        document.addEventListener('DOMContentLoaded', () => setTimeout(typeNextLine, INTRO_DELAY));
       } else {
-        typeNextLine();
+        setTimeout(typeNextLine, INTRO_DELAY);
       }
       
     } catch (error) {
       console.error('Intro sequence error:', error);
-      document.removeEventListener('keydown', handleSkip); // Ensure cleanup on general error
       document.body.style.visibility = 'visible';
       document.dispatchEvent(new CustomEvent('intro:complete'));
       clearTimeout(safetyTimeout);
