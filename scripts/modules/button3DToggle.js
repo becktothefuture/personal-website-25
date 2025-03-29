@@ -200,6 +200,7 @@ function resetWidgetAnimations(screenElement) {
       w.classList.remove('widget-intro', 'widget-outro');
       // Force browser to recognize the change
       void w.offsetWidth;
+      w.style.transform = ''; // Add this line to reset the transform
     }
   });
 }
@@ -248,12 +249,13 @@ function animateWidgets(screenElement) {
     
     const totalDelay = baseDelay + randomDelay;
     
-    // First set the widget to be invisible
+    // Use opacity CSS property directly instead of a class to avoid affecting transforms
     widget.style.opacity = '0';
     
     // Apply animation with delay
     setTimeout(() => {
-      // Add the intro animation class
+      // Remove the inline opacity style and add the intro animation class
+      widget.style.removeProperty('opacity');
       widget.classList.add('widget-intro');
     }, totalDelay);
   });

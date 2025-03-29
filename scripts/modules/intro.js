@@ -30,37 +30,88 @@ console.log('Intro sequence module initialized');
 
 import { playIntroTypeSound } from './sounds.js';
 
-// Configurable delay before the intro animation starts
-export const INTRO_DELAY = 1000; // ms
+// Animation timing configuration
+export const ANIMATION_TIMING = {
+  // Delay before the intro animation starts (ms)
+  INTRO_DELAY: 500,
+  
+  // Safety timeout duration (ms)
+  SAFETY_TIMEOUT: 20000,
+  
+  // Duration of the wall animation (ms)
+  WALL_ANIMATION_DURATION: 1000, // Reduced from 10000ms to 1000ms
+  
+  // Delay before widgets appear after wall animation starts (ms)
+  WIDGETS_DELAY: 1100, // Slightly longer than wall animation to ensure proper sequence
+};
 
 // Speed configuration for intro animation
 const ANIMATION_SPEED = {
-  GLOBAL_MULTIPLIER: 3.0, // Higher multiplier = faster animation
-  TYPING_SPEED: 3.3,      // How fast each character types
-  PAUSE_BETWEEN_LINES: 0.2 // How long to pause between lines
+  // Characters per second
+  CHARS_PER_SECOND: 30,
+  // Characters to batch together per update
+  CHARS_PER_BATCH: 20,
+  // Only play sound every N characters
+  SOUND_FREQUENCY: 3
 };
-
-
-// Function to add natural typing lag
-function addTypingLag(speed) {
-  return speed * (Math.random() * 0.5 + 0.75) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.TYPING_SPEED);
-}
 
 // Generate random number in a range
 function getRandom(min, max) {
   return Math.random() * (max - min) + min;
 }
 
+// Modified function: flashScreen to flash the intro-wrapper element
+// Now using animation events instead of timeout
+async function flashScreen(element) {
+  return new Promise(resolve => {
+    // Event handler for when the animation ends
+    const handleAnimationEnd = () => {
+      element.classList.remove('intro-flash-effect');
+      element.removeEventListener('animationend', handleAnimationEnd);
+      resolve();
+    };
+    
+    // Listen for the animation end event
+    element.addEventListener('animationend', handleAnimationEnd);
+    
+    // Add the flash animation class to the element
+    element.classList.add('intro-flash-effect');
+  });
+}
+
 // Single unified intro sequence
 export async function initIntroSequence() {
   return new Promise((resolve) => {
-    // Safety timeout scaled by animation speed
+    // Initialize wall container position
+    const wallContainer = document.querySelector('.wall');
+    if (wallContainer) {
+      // Ensure the wall starts at position 0 with no transition
+      wallContainer.classList.add('no-transition');
+      // Explicitly set the initial transform to translateZ(0)
+      wallContainer.style.transform = 'translateZ(0)';
+      // Force a reflow to apply the no-transition and transform immediately
+      void wallContainer.offsetWidth;
+    }
+    
+    // Hide main-wrapper and all widgets at the start of intro sequence
+    const mainWrapper = document.querySelector('.main-wrapper');
+    if (mainWrapper) {
+      mainWrapper.classList.add('main-wrapper-hidden');
+      
+      // Hide all widgets explicitly at the start of intro sequence
+      const widgets = document.querySelectorAll('.widget');
+      widgets.forEach(widget => {
+        widget.classList.add('widget-hidden');
+      });
+    }
+    
+    // Safety timeout - use configurable timing
     const safetyTimeout = setTimeout(() => {
       console.warn('Intro sequence safety timeout reached');
       document.body.style.visibility = 'visible';
       document.dispatchEvent(new CustomEvent('intro:complete'));
       resolve();
-    }, 10000 / ANIMATION_SPEED.GLOBAL_MULTIPLIER); // Scaled safety timeout
+    }, ANIMATION_TIMING.SAFETY_TIMEOUT);
     
     try {
       const overlay = document.querySelector('.intro-wrapper');
@@ -84,11 +135,56 @@ export async function initIntroSequence() {
       
       const finishBootSequence = async () => {
         try {
+          // Flash the intro-wrapper element before concluding
+          await flashScreen(overlay);
           document.body.style.visibility = 'visible';          
           overlay.remove();
           
-          // Dispatch event indicating intro is complete
-          document.dispatchEvent(new CustomEvent('intro:complete'));
+          // Show and animate the main-wrapper first
+          if (mainWrapper) {
+            mainWrapper.classList.remove('main-wrapper-hidden');
+            mainWrapper.classList.add('main-wrapper-intro');
+            
+            // Animate the wall container after a tiny delay
+            if (wallContainer) {
+              // Remove the no-transition class and add the animation class
+              wallContainer.classList.remove('no-transition');
+              // Remove the inline style to let the CSS class take effect
+              wallContainer.style.transform = '';
+              // Force reflow to ensure the transition is applied properly
+              void wallContainer.offsetWidth;
+              // Start the animation
+              wallContainer.classList.add('wall-intro-animation');
+              
+              // Wait for wall animation to complete before animating widgets
+              // This duration now comes from our configuration
+              const wallAnimationDuration = ANIMATION_TIMING.WALL_ANIMATION_DURATION;
+              
+              // Set a timeout to match the wall animation duration
+              setTimeout(() => {
+                console.log('Wall animation completed, now animating widgets');
+                
+                // Remove the widget-hidden class - widgets will be animated by the button3DToggle.js
+                document.querySelectorAll('.widget-hidden').forEach(widget => {
+                  widget.classList.remove('widget-hidden');
+                });
+                
+                // Dispatch event indicating intro is complete (widgets will animate on this event)
+                document.dispatchEvent(new CustomEvent('intro:complete'));
+              }, ANIMATION_TIMING.WIDGETS_DELAY);
+            } else {
+              // If wall container doesn't exist, animate widgets immediately
+              document.querySelectorAll('.widget-hidden').forEach(widget => {
+                widget.classList.remove('widget-hidden');
+              });
+              
+              // Dispatch event indicating intro is complete
+              document.dispatchEvent(new CustomEvent('intro:complete'));
+            }
+          } else {
+            // If main-wrapper doesn't exist, just dispatch the event
+            document.dispatchEvent(new CustomEvent('intro:complete'));
+          }
           
           clearTimeout(safetyTimeout);
           resolve();
@@ -114,70 +210,94 @@ export async function initIntroSequence() {
       cursor.className = 'typing-cursor';
       cursor.innerHTML = '&#9608;'; // Block character
 
+      // Optimized typing animation using requestAnimationFrame
       let currentLine = 0;
-      let displayedLines = [];
-
-      async function typeNextLine() {
-        try {
-          if (currentLine >= contentLines.length) {
-              await finishBootSequence();
-              return;
-          }
+      let currentChar = 0;
+      let displayedText = '';
+      let lastTimestamp = 0;
+      let charDelay = 1000 / ANIMATION_SPEED.CHARS_PER_SECOND;
+      let lineCompleted = false;
       
-          const line = contentLines[currentLine];
-          // Base typing speed, lower value = faster typing
-          const baseSpeed = getRandom(3, 10); 
-          // Shorter pause between lines
-          const pause = getRandom(10, 100) / (ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.PAUSE_BETWEEN_LINES);
-          
-          // Ensure we always have a line to work with, even for blank lines
-          while (displayedLines.length <= currentLine) {
-            displayedLines.push('');
-          }
-          
-          // Type each character with a delay
-          for (let i = 0; i < line.length; i++) {
-            // Update the current line being typed
-            displayedLines[currentLine] = line.substring(0, i + 1);
-            
-            // Preserve all whitespace exactly as it appears in the original text
-            preElement.textContent = displayedLines.join('\n');
-            
-            // Make sure cursor is properly positioned at the end of current text
-            if (preElement.lastChild) {
-              preElement.appendChild(cursor);
-            } else {
-              preElement.appendChild(cursor);
-            }
-
-            // Play typing sound for this character
-            playIntroTypeSound(line[i]);
-            
-            await new Promise(resolve => setTimeout(resolve, addTypingLag(baseSpeed)));
-          }
-      
-          currentLine++;
-          
-          // Add pause between lines (now scaled by speed multiplier)
-          if (currentLine < contentLines.length) {
-            await new Promise(resolve => setTimeout(resolve, pause));
-          }
-          
-          requestAnimationFrame(() => typeNextLine());
-        } catch (error) {
-          console.error('Error in typeNextLine:', error);
-          document.body.style.visibility = 'visible';
-          clearTimeout(safetyTimeout);
-          resolve();
+      // Smooth animation frame handler
+      function typeAnimationFrame(timestamp) {
+        // First frame initialization
+        if (!lastTimestamp) {
+          lastTimestamp = timestamp;
         }
+        
+        // Calculate elapsed time
+        const elapsed = timestamp - lastTimestamp;
+        
+        // If we've completed all lines, finish
+        if (currentLine >= contentLines.length) {
+          finishBootSequence();
+          return;
+        }
+        
+        // Process multiple characters per frame if enough time has passed
+        if (elapsed >= charDelay) {
+          const currentLineText = contentLines[currentLine];
+          const charsToAdd = Math.min(
+            Math.floor(elapsed / charDelay) * ANIMATION_SPEED.CHARS_PER_BATCH,
+            currentLineText.length - currentChar
+          );
+          
+          // If we have characters to add in this frame
+          if (charsToAdd > 0) {
+            // Add a batch of characters
+            const newChars = currentLineText.substring(currentChar, currentChar + charsToAdd);
+            displayedText += newChars;
+            
+            // Only play sound occasionally for performance
+            if (currentChar % ANIMATION_SPEED.SOUND_FREQUENCY === 0) {
+              const soundChar = currentLineText[currentChar];
+              if (soundChar && soundChar !== ' ' && soundChar !== '\t') {
+                playIntroTypeSound(soundChar);
+              }
+            }
+            
+            // Update display with all text so far
+            preElement.textContent = displayedText;
+            preElement.appendChild(cursor);
+            
+            // Update character position
+            currentChar += charsToAdd;
+            
+            // Reset timestamp
+            lastTimestamp = timestamp;
+          }
+          
+          // If we've reached the end of the current line
+          if (currentChar >= currentLineText.length && !lineCompleted) {
+            lineCompleted = true;
+            currentChar = 0;
+            currentLine++;
+            displayedText += '\n';
+            
+            // If we've completed all lines, finish in the next frame
+            if (currentLine >= contentLines.length) {
+              requestAnimationFrame(() => finishBootSequence());
+              return;
+            }
+            
+            // Reset line completion flag
+            lineCompleted = false;
+          }
+        }
+        
+        // Continue animation
+        requestAnimationFrame(typeAnimationFrame);
       }
-
-      // Start the typing sequence after the configured delay
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(typeNextLine, INTRO_DELAY));
-      } else {
-        setTimeout(typeNextLine, INTRO_DELAY);
-      }
+      
+      // Start the typing sequence after a short delay
+      setTimeout(() => {
+        // Initial empty display
+        preElement.textContent = '';
+        preElement.appendChild(cursor);
+        
+        // Start animation using requestAnimationFrame
+        requestAnimationFrame(typeAnimationFrame);
+      }, ANIMATION_TIMING.INTRO_DELAY);
       
     } catch (error) {
       console.error('Intro sequence error:', error);

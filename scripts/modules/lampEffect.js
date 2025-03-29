@@ -27,7 +27,7 @@
  */
 
 import { scrollTracker } from './scrollTracker.js';
-console.log('Lamp Effect module intialized');
+console.log('Lamp Effect module initialized');
 
 
 /**
@@ -90,28 +90,29 @@ class LampEffect {
    * Get the existing thruster-lamp element and apply basic styling
    */
   #createLampElements() {
-    // Use existing thruster-lamp element
+    // Use existing thruster-lamp element (lowercase)
     this.#bulbElement = document.getElementById('thruster-lamp');
     
     if (!this.#bulbElement) {
       console.warn('Element with id "thruster-lamp" not found. Lamp effect may not work correctly.');
-      return;
+      return; // Don't create a new element, just return and let the effect be disabled
     }
     
     // Ensure the bulb element has the necessary styling
     const style = this.#bulbElement.style;
-    style.position = 'fixed';
+    // DO NOT change the position of the element - only enhance visibility and glow
     style.width = `${lampConfig.bulbSize}px`;
     style.height = `${lampConfig.bulbSize}px`;
     style.background = lampConfig.bulbColor;
     style.borderRadius = '50%';
-    style.boxShadow = '0 0 10px 2px rgba(255, 253, 234, 0.7)';
+    style.boxShadow = '0 0 15px 5px rgba(255, 253, 234, 0.9)';
     style.pointerEvents = 'none';
-    style.zIndex = '999';
+    style.zIndex = '99999'; // Very high z-index to ensure visibility
     style.transition = 'box-shadow 0.1s ease';
     
-    // Set position
-    this.setPosition(this.#position);
+    // Set initial brightness to make it visible immediately
+    this.#currentBrightness = 0.5;
+    this.#updateLampStyle();
   }
   
   /**
@@ -122,37 +123,33 @@ class LampEffect {
     
     const color = lampConfig.color;
     const brightness = this.#currentBrightness;
-    const position = this.#getLampPosition();
     
-    // Set position of the bulb
-    this.#bulbElement.style.left = `${position.x}%`;
-    this.#bulbElement.style.top = `${position.y}%`;
-    this.#bulbElement.style.transform = 'translate(-50%, -50%)';
+    // DO NOT modify position here - keep original position
     
-    // Set glow based on brightness
-    const glowIntensity = brightness * lampConfig.glowIntensity;
-    const bulbOpacity = 0.4 + (brightness * 0.6); 
+    // Enhanced glow based on brightness
+    const glowIntensity = brightness * lampConfig.glowIntensity * 1.5; // Increased intensity
+    const bulbOpacity = 0.7 + (brightness * 0.3); // Higher base opacity
     
-    // Apply combined glow effect to bulb alone
+    // Apply enhanced glow effect to bulb
     this.#bulbElement.style.boxShadow = `
-      0 0 ${2 + (glowIntensity * 5)}px ${1 + (glowIntensity * 2)}px rgba(255, 253, 234, ${0.6 * brightness}),
-      0 0 ${5 + (glowIntensity * 10)}px ${2 + (glowIntensity * 5)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.5 * brightness}),
-      0 0 ${10 + (glowIntensity * 20)}px ${5 + (glowIntensity * 10)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.3 * brightness})
+      0 0 ${5 + (glowIntensity * 8)}px ${3 + (glowIntensity * 4)}px rgba(255, 253, 234, ${0.8 * brightness}),
+      0 0 ${10 + (glowIntensity * 15)}px ${5 + (glowIntensity * 8)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.7 * brightness}),
+      0 0 ${20 + (glowIntensity * 30)}px ${10 + (glowIntensity * 15)}px rgba(${color[0]*255}, ${color[1]*255}, ${color[2]*255}, ${0.5 * brightness})
     `;
     
-    // Set opacity based on brightness
+    // Set opacity based on brightness with higher minimum
     this.#bulbElement.style.opacity = bulbOpacity.toString();
     
     // Apply animation at higher brightness
-    if (brightness > 0.5) {
+    if (brightness > 0.3) { // Lower threshold for animation
       this.#bulbElement.style.animation = 'bulb-pulse 2s infinite alternate';
       if (!document.getElementById('bulb-pulse-style')) {
         const style = document.createElement('style');
         style.id = 'bulb-pulse-style';
         style.textContent = `
           @keyframes bulb-pulse {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            100% { transform: translate(-50%, -50%) scale(1.05); }
+            0% { transform: scale(1); filter: brightness(0.9); }
+            100% { transform: scale(1.15); filter: brightness(1.2); }
           }
         `;
         document.head.appendChild(style);
@@ -179,8 +176,7 @@ class LampEffect {
    * Animation loop to smoothly update lamp brightness
    */
   #animate() {
-    if (!this.#isActive) return;
-    
+    if (!this.#isActive || !this.#bulbElement) return;
     
     const diff = this.#targetBrightness - this.#currentBrightness;
     if (Math.abs(diff) > 0.001) {
@@ -195,6 +191,7 @@ class LampEffect {
    * Create a quick pulse effect (e.g. on scroll)
    */
   pulse(intensity = 1.0) {
+    if (!this.#bulbElement) return;
     
     const boostAmount = intensity * (lampConfig.maxBrightness - this.#targetBrightness);
     this.#currentBrightness = Math.min(this.#targetBrightness + boostAmount, lampConfig.maxBrightness);

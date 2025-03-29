@@ -22,8 +22,8 @@ import { scrollTracker } from './scrollTracker.js';
 export const rumbleConfig = {
   speedThreshold: 10,     // Speed (km/h) below which NO rumble occurs
   rampUpRange: 300,        // Speed range (km/h) over which rumble exponentially increases
-  springStiffness: 700,  // Spring stiffness constant for oscillation
-  dampingFactor: 0.85,    // Damping for more controlled motion
+  springStiffness: 1900,  // SprinEnhance stiffness constant for oscillation
+  dampingFactor: 0.95,    // Damping for more controlled motion
 };
 
 class RumbleEffect {

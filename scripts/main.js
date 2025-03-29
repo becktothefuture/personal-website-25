@@ -49,7 +49,7 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 initBrowserTheme();
 initResizeOverlay(); 
 initStarfieldThruster();
-initPerspectiveController();
+// initPerspectiveController();
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initProcessorAnimation2();
                 initProcessorAnimation3();
                 initProcessorAnimation4();
-                initRumbleEffect();
+                // initRumbleEffect();
                 initLampEffect();
                 initDiffusionText();
 
@@ -119,7 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.dispatchEvent(new CustomEvent('intro:complete'));
         
         // Start robot speaking immediately after intro is complete
-        // Slight rework to ensure reliable startup
         if (robotController && robotController.startSpeaking) {
             console.log('Starting robot speech after intro completion');
             

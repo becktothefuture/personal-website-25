@@ -77,7 +77,7 @@ class ScrollTracker extends EventEmitter {
     topSpeed: 400,               // km/h (absolute maximum)
     impulseDamping: 0.8,        // Increased damping
     velocityScaleFactor: 1,     // Reduced velocity scale
-    turnstyleRotationFactor: 1.0  // Multiplier for turnstyle rotation speed
+    turnstyleRotationFactor: 0.2  // Multiplier for turnstyle rotation speed
   };
 
   // Internal velocity in m/s.

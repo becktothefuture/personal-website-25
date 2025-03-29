@@ -58,7 +58,7 @@
 
   /* Perspective settings */
   --perspective-depth: 1200px;
-  --wall-depth: 450px;
+  --wall-depth: 1600px;
 
   /* Base Intensity Controls (min: 0.1, max: 5.0, default: 2.0) */
   --crt-intensity: 3;
@@ -171,16 +171,13 @@ body {
  * PATTERN MOVEMENTS *
  *********************/
 
-.horizontal-movement {
-  animation: scroll-horizontal 15s steps(50) infinite;
-}
 
 .vertical-movement {
   animation: scroll-vertical 15s steps(50) infinite;
 }
 
-.pattern {
-  animation: scroll-horizontal 5s steps(20) infinite;
+.pattern-wrapper > .pattern {
+  animation: scroll-horizontal 10s steps(200) infinite;
 }
 
 @keyframes scroll-horizontal {
@@ -281,7 +278,14 @@ body {
 
 /* Widget animation classes */
 .widget {
-  will-change: opacity, filter;
+  will-change: opacity, filter; /* Removed transform to avoid affecting 3D transforms */
+  /* No default opacity here so widgets aren't hidden by default */
+}
+
+/* Hidden widget class that ONLY affects opacity, not transforms */
+.widget-hidden {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .widget-intro {
@@ -431,39 +435,38 @@ body {
  * ROTATING CUBE ANIMATION *
  ***************************/
 
-
 .cube {
+  --cube-size: 9em;
   position: absolute;
-  width: 10em;
-  height: 10em;
+  width: var(--cube-size);
+  height: var(--cube-size);
   transform-style: preserve-3d;
   animation: rotate-cube 5s infinite linear;
 }
 
-
 .cube-face {
   position: absolute;
-  width: 10em;
-  height: 10em;
+  width: var(--cube-size);
+  height: var(--cube-size);
   border: 1px solid var(--color-2);
 }
 .cube-face:nth-child(1) {
-  transform: rotateY(0deg) translateZ(20px);
+  transform: rotateY(0deg) translateZ(calc(var(--cube-size) / 2));
 }
 .cube-face:nth-child(2) {
-  transform: rotateY(90deg) translateZ(20px);
+  transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2));
 }
 .cube-face:nth-child(3) {
-  transform: rotateY(180deg) translateZ(20px);
+  transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2));
 }
 .cube-face:nth-child(4) {
-  transform: rotateY(-90deg) translateZ(20px);
+  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
 }
 .cube-face:nth-child(5) {
-  transform: rotateX(90deg) translateZ(20px);
+  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
 }
 .cube-face:nth-child(6) {
-  transform: rotateX(-90deg) translateZ(20px);
+  transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2));
 }
 @keyframes rotate-cube {
   from {
@@ -491,6 +494,26 @@ body {
   min-height: 100vh; /* Ensure full height */
   display: block;
   letter-spacing: 0.5px;
+}
+
+/* Add the new intro flash animation */
+@keyframes intro-flash {
+  0%, 100% {
+    background-color: var(--color-2);
+  }
+  25% {
+    background-color: var(--background); /* Brighter green for better visibility */
+  }
+  50% {
+    background-color: var(--color-4); /* Darker green for contrast */
+  }
+  75% {
+    background-color: var(--color-1); /* Back to brighter green */
+  }
+}
+
+.intro-flash-effect {
+  animation: intro-flash 1s steps(4) forwards; 
 }
 
 .intro-wrapper__text::after {
@@ -636,6 +659,43 @@ body {
   animation: verticalJitter 0.1s infinite,
     distortionEffect 0.05s infinite alternate;
   transform-style: preserve-3d;
+}
+
+/* Add main wrapper visibility control and animation */
+.main-wrapper-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.main-wrapper-intro {
+  animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards,
+             verticalJitter 0.1s infinite,
+             distortionEffect 0.05s infinite alternate;
+}
+
+@keyframes mainWrapperIntro {
+  0% {
+    opacity: 0;
+    filter: brightness(0.5);
+    visibility: visible;
+  }
+  10% {
+    opacity: 0.7;
+    filter: brightness(1.3);
+  }
+  20% {
+    opacity: 0.4;
+    filter: brightness(0.9);
+  }
+  40% {
+    opacity: 0.9;
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    visibility: visible;
+  }
 }
 
 @keyframes distortionEffect {
@@ -808,132 +868,118 @@ body {
  * STARSHIP MOVEMENT *
  *****************/
 /* Global Variables for starship movement */
-
 :root {
   /* Overall animation settings */
-  --starship-movement-duration: 80s;
+  --starship-movement-duration: 20s;
+  --z-movement-duration: 15s; /* Separate duration for z-movement */
   
-  /* Page-wrapper movement values (outer container) */
+  /* Movement values */
   --page-translate-x: 1%;
-  --page-translate-y: 0.5%;
-  --page-rotate-x: 1deg;
-  --page-rotate-y: 1deg;
+  --page-translate-y: 1%;
+  --page-translate-z: 50px; /* Z-axis translation amount */
+  --page-rotate-x: 10deg;
+  --page-rotate-y: 10deg;
   
   /* Correlation factors for depth-wrapper perspective shift */
-  --perspective-shift-factor-x: -5;
-  --perspective-shift-factor-y: -5;
+  --perspective-shift-factor-x: -10;
+  --perspective-shift-factor-y: -10;
   
-  /* Rotation multiplier */
-  --rotation-multiplier: 1  ;
-  --glass-movement-multiplier: -6;
-
-}
-
+  /* Perspective values */
+  --perspective-base: 1200px;
+  --perspective-min: 800px; /* Closer/smaller perspective when camera moves forward */
+  
+  /* Multipliers */
 /* Setup for 3D animations with improved will-change properties */
 .page-wrapper,
 .depth-wrapper,
 .depth-wrapper-bottom,
 .glass-video {
-  will-change: transform, perspective-origin;
+  will-change: transform;
   transform-style: preserve-3d;
-    transform-origin: center center;
+  transform-origin: center center;
 }
 
 /* Outer container (the entire scene) */
 .page-wrapper {
-  animation: pageWrapper-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  animation: 
+    pageWrapper-movement var(--starship-movement-duration) infinite ease-in-out,
+    pageWrapper-z-movement var(--z-movement-duration) infinite ease-in-out; /* Separate z-movement */
 }
 
 /* Inner container (the screen with depth) */
 .depth-wrapper {
   perspective: var(--perspective-depth);
-  perspective-origin: 50% 50%;
-  animation: depthWrapper-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  animation: depthWrapper-movement var(--starship-movement-duration) infinite ease-in-out;
 }
 
 /* Glass video animation */
 .glass-video {
   -webkit-mask: radial-gradient(circle, black 40%, transparent 100%);
   mask: radial-gradient(circle, black 40%, transparent 100%);
-  animation: glassVideo-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  animation: glassVideo-movement var(--starship-movement-duration) infinite ease-in-out;
 }
 
 /* Additional bottom element */
 .depth-wrapper-bottom {
-  animation: depthWrapperBottom-naturalMovement var(--starship-movement-duration) infinite;
-  transition: all 1s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  animation: depthWrapperBottom-movement var(--starship-movement-duration) infinite ease-in-out;
 }
 
-/* --- Natural Page Wrapper Movement --- */
-@keyframes pageWrapper-naturalMovement {
-  0%, 100% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0) scale(1); }
-  5% { transform: translateX(calc(var(--page-translate-x) * 0.2)) translateY(calc(var(--page-translate-y) * 0.1)) rotateX(calc(var(--page-rotate-x) * 0.2)) rotateY(calc(var(--page-rotate-y) * 0.3)) scale(1.002); }
-  15% { transform: translateX(calc(var(--page-translate-x) * 0.6)) translateY(calc(var(--page-translate-y) * 0.4)) rotateX(calc(var(--page-rotate-x) * 0.7)) rotateY(calc(var(--page-rotate-y) * 0.8)) scale(0.998); }
-  25% { transform: translateX(calc(var(--page-translate-x) * 0.9)) translateY(calc(var(--page-translate-y) * 0.7)) rotateX(calc(var(--page-rotate-x) * 1.0)) rotateY(calc(var(--page-rotate-y) * 1.0)) scale(0.995); }
-  32% { transform: translateX(calc(var(--page-translate-x) * 0.7)) translateY(calc(var(--page-translate-y) * 0.5)) rotateX(calc(var(--page-rotate-x) * 0.8)) rotateY(calc(var(--page-rotate-y) * 0.6)) scale(1.001); }
-  40% { transform: translateX(calc(var(--page-translate-x) * 0.2)) translateY(calc(var(--page-translate-y) * 0.1)) rotateX(calc(var(--page-rotate-x) * 0.3)) rotateY(calc(var(--page-rotate-y) * 0.2)) scale(1.003); }
-  48% { transform: translateX(calc(var(--page-translate-x) * -0.3)) translateY(calc(var(--page-translate-y) * -0.2)) rotateX(calc(var(--page-rotate-x) * -0.4)) rotateY(calc(var(--page-rotate-y) * -0.5)) scale(1.001); }
-  55% { transform: translateX(calc(var(--page-translate-x) * -0.8)) translateY(calc(var(--page-translate-y) * -0.6)) rotateX(calc(var(--page-rotate-x) * -0.9)) rotateY(calc(var(--page-rotate-y) * -1.1)) scale(0.997); }
-  65% { transform: translateX(calc(var(--page-translate-x) * -1.0)) translateY(calc(var(--page-translate-y) * -0.8)) rotateX(calc(var(--page-rotate-x) * -1.0)) rotateY(calc(var(--page-rotate-y) * -1.2)) scale(0.994); }
-  73% { transform: translateX(calc(var(--page-translate-x) * -0.7)) translateY(calc(var(--page-translate-y) * -0.5)) rotateX(calc(var(--page-rotate-x) * -0.7)) rotateY(calc(var(--page-rotate-y) * -0.9)) scale(0.998); }
-  82% { transform: translateX(calc(var(--page-translate-x) * -0.3)) translateY(calc(var(--page-translate-y) * -0.2)) rotateX(calc(var(--page-rotate-x) * -0.3)) rotateY(calc(var(--page-rotate-y) * -0.4)) scale(1.002); }
-  90% { transform: translateX(calc(var(--page-translate-x) * 0.2)) translateY(calc(var(--page-translate-y) * 0.1)) rotateX(calc(var(--page-rotate-x) * 0.2)) rotateY(calc(var(--page-rotate-y) * 0.3)) scale(1.004); }
-  95% { transform: translateX(calc(var(--page-translate-x) * 0.1)) translateY(calc(var(--page-translate-y) * 0.05)) rotateX(calc(var(--page-rotate-x) * 0.1)) rotateY(calc(var(--page-rotate-y) * 0.15)) scale(1.001); }
-}
-/* --- Glass Video Movement --- */
-@keyframes glassVideo-naturalMovement {
-  /* Add a movement multiplier to control animation intensity (default is 1) */
-  
-  0%, 100% { transform: translateX(0) translateY(0) scale(1); }
-  5% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.004); }
-  15% { transform: translateX(calc(var(--page-translate-x) * 0.7 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.5 * var(--glass-movement-multiplier))) scale(0.997); }
-  25% { transform: translateX(calc(var(--page-translate-x) * 1.0 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.8 * var(--glass-movement-multiplier))) scale(0.993); }
-  32% { transform: translateX(calc(var(--page-translate-x) * 0.8 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.6 * var(--glass-movement-multiplier))) scale(1.002); }
-  40% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.005); }
-  48% { transform: translateX(calc(var(--page-translate-x) * -0.4 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.3 * var(--glass-movement-multiplier))) scale(1.003); }
-  55% { transform: translateX(calc(var(--page-translate-x) * -0.9 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.7 * var(--glass-movement-multiplier))) scale(0.996); }
-  65% { transform: translateX(calc(var(--page-translate-x) * -1.1 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.9 * var(--glass-movement-multiplier))) scale(0.992); }
-  73% { transform: translateX(calc(var(--page-translate-x) * -0.8 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.6 * var(--glass-movement-multiplier))) scale(0.997); }
-  82% { transform: translateX(calc(var(--page-translate-x) * -0.4 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * -0.3 * var(--glass-movement-multiplier))) scale(1.003); }
-  90% { transform: translateX(calc(var(--page-translate-x) * 0.3 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.2 * var(--glass-movement-multiplier))) scale(1.006); }
-  95% { transform: translateX(calc(var(--page-translate-x) * 0.2 * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * 0.1 * var(--glass-movement-multiplier))) scale(1.002); }
+/* Page wrapper XY/rotation movement (removed Z translation) */
+@keyframes pageWrapper-movement {
+  0% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
+  25% { transform: translateX(var(--page-translate-x)) translateY(var(--page-translate-y)) rotateX(var(--page-rotate-x)) rotateY(var(--page-rotate-y)); }
+  50% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
+  75% { transform: translateX(calc(-1 * var(--page-translate-x))) translateY(calc(-1 * var(--page-translate-y))) rotateX(calc(-1 * var(--page-rotate-x))) rotateY(calc(-1 * var(--page-rotate-y))); }
+  100% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
 }
 
-/* --- Natural Depth Wrapper Movement --- */
-@keyframes depthWrapper-naturalMovement {
-  0%, 100% { transform: rotateX(0) rotateY(0); perspective-origin: 50% 50%; }
-  5% { transform: rotateX(calc(var(--page-rotate-x) * 0.2 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.3 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  15% { transform: rotateX(calc(var(--page-rotate-x) * 0.7 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.8 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.6 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.4 * var(--perspective-shift-factor-y))); }
-  25% { transform: rotateX(calc(var(--page-rotate-x) * 1.0 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 1.0 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.9 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.7 * var(--perspective-shift-factor-y))); }
-  32% { transform: rotateX(calc(var(--page-rotate-x) * 0.8 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.6 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.7 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.5 * var(--perspective-shift-factor-y))); }
-  40% { transform: rotateX(calc(var(--page-rotate-x) * 0.3 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.2 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  48% { transform: rotateX(calc(var(--page-rotate-x) * -0.4 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * -0.5 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * -0.3 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * -0.2 * var(--perspective-shift-factor-y))); }
-  55% { transform: rotateX(calc(var(--page-rotate-x) * -0.9 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * -1.1 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * -0.8 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * -0.6 * var(--perspective-shift-factor-y))); }
-  65% { transform: rotateX(calc(var(--page-rotate-x) * -1.0 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * -1.2 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * -1.0 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * -0.8 * var(--perspective-shift-factor-y))); }
-  73% { transform: rotateX(calc(var(--page-rotate-x) * -0.7 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * -0.9 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * -0.7 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * -0.5 * var(--perspective-shift-factor-y))); }
-  82% { transform: rotateX(calc(var(--page-rotate-x) * -0.3 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * -0.4 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * -0.3 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * -0.2 * var(--perspective-shift-factor-y))); }
-  90% { transform: rotateX(calc(var(--page-rotate-x) * 0.2 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.3 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  95% { transform: rotateX(calc(var(--page-rotate-x) * 0.1 * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * 0.15 * var(--rotation-multiplier) / 3)); perspective-origin: calc(50% + (var(--page-translate-x) * 0.1 * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * 0.05 * var(--perspective-shift-factor-y))); }
+/* Separate Z-movement animation for page wrapper */
+@keyframes pageWrapper-z-movement {
+  0% { transform: translateZ(0); }
+  50% { transform: translateZ(var(--page-translate-z)); }
+  100% { transform: translateZ(0); }
 }
 
-/* --- Natural Depth Wrapper Bottom Movement --- */
-@keyframes depthWrapperBottom-naturalMovement {
-  0%, 100% { transform: rotateX(0) rotateY(0); perspective-origin: 50% -500%; }
-  5% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  15% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.6 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.4 * var(--perspective-shift-factor-y))); }
-  25% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.9 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.7 * var(--perspective-shift-factor-y))); }
-  32% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.7 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.5 * var(--perspective-shift-factor-y))); }
-  40% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  48% { perspective-origin: calc(50% + (var(--page-translate-x) * -0.3 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * -0.2 * var(--perspective-shift-factor-y))); }
-  55% { perspective-origin: calc(50% + (var(--page-translate-x) * -0.8 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * -0.6 * var(--perspective-shift-factor-y))); }
-  65% { perspective-origin: calc(50% + (var(--page-translate-x) * -1.0 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * -0.8 * var(--perspective-shift-factor-y))); }
-  73% { perspective-origin: calc(50% + (var(--page-translate-x) * -0.7 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * -0.5 * var(--perspective-shift-factor-y))); }
-  82% { perspective-origin: calc(50% + (var(--page-translate-x) * -0.3 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * -0.2 * var(--perspective-shift-factor-y))); }
-  90% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.2 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.1 * var(--perspective-shift-factor-y))); }
-  95% { perspective-origin: calc(50% + (var(--page-translate-x) * 0.1 * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * 0.05 * var(--perspective-shift-factor-y))); }
+/* Perspective adjustment based on Z position */
+@keyframes depthWrapper-perspective {
+  0% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(calc(var(--page-translate-x) * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * var(--glass-movement-multiplier))); }
+  50% { transform: translateX(0) translateY(0); }
+  75% { transform: translateX(calc(-1 * var(--page-translate-x) * var(--glass-movement-multiplier))) translateY(calc(-1 * var(--page-translate-y) * var(--glass-movement-multiplier))); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+/* Simplified depth wrapper movement */
+@keyframes depthWrapper-movement {
+  0% { 
+    transform: rotateX(0) rotateY(0); 
+    perspective-origin: 50% 50%; 
+  }
+  25% { 
+    transform: rotateX(calc(var(--page-rotate-x) * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * var(--rotation-multiplier) / 3)); 
+    perspective-origin: calc(50% + (var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * var(--perspective-shift-factor-y))); 
+  }
+  50% { 
+    transform: rotateX(0) rotateY(0); 
+    perspective-origin: 50% 50%; 
+  }
+  75% { 
+    transform: rotateX(calc(-1 * var(--page-rotate-x) * var(--rotation-multiplier) / 3)) rotateY(calc(-1 * var(--page-rotate-y) * var(--rotation-multiplier) / 3)); 
+    perspective-origin: calc(50% + (-1 * var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(50% + (-1 * var(--page-translate-y) * var(--perspective-shift-factor-y))); 
+  }
+  100% { 
+    transform: rotateX(0) rotateY(0); 
+    perspective-origin: 50% 50%; 
+  }
+}
+
+/* Simplified depth wrapper bottom movement */
+@keyframes depthWrapperBottom-movement {
+  0% { perspective-origin: 50% -500%; }
+  25% { perspective-origin: calc(50% + (var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * var(--perspective-shift-factor-y))); }
+  50% { perspective-origin: 50% -500%; }
+  75% { perspective-origin: calc(50% + (-1 * var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(-500% + (-1 * var(--page-translate-y) * var(--perspective-shift-factor-y))); }
+  100% { perspective-origin: 50% -500%; }
 }
 
 
@@ -1193,4 +1239,30 @@ html {
   fill: var(--color-1) !important;
 }
 
+/* Wall animation styles */
+.wall {
+  /* Default state is managed by inline style in JavaScript */
+  transition: transform 0s;
+}
 
+.wall-intro-animation {
+  transform: translateZ(calc(-1 * var(--wall-depth))); /* End position */
+  transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1); /* Animation with ease-out */
+}
+
+/* Add a class to force no transition for initial setup */
+.no-transition {
+  transition: none !important;
+}
+
+/* Wall animation styles */
+
+.wall-intro-animation {
+  transform: translateZ(calc(-1 * var(--wall-depth))); /* End position */
+  transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1); /* Animation with ease-out */
+}
+
+/* Add a class to force no transition for initial setup */
+.no-transition {
+  transition: none !important;
+}
