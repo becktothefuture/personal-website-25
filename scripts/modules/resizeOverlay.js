@@ -10,9 +10,7 @@
  * - Provides clean DOM management by setting display:none after transitions complete
  */
 
-
 console.log('Resize Overlay Module Initialized');
-
 
 function setupResizeOverlay() {
   const overlay = document.getElementById('resize-overlay');
@@ -24,10 +22,12 @@ function setupResizeOverlay() {
   // Force the overlay to be hidden initially by setting style directly
   overlay.style.opacity = '0';
   overlay.style.display = 'none';
-  overlay.classList.remove('resize-overlay--visible');
   overlay.classList.add('resize-overlay--hidden');
   
   console.log('Resize overlay initialized and hidden');
+  
+  const TRANSITION_DURATION = 300; // Duration in ms for fade transition
+  const RESIZE_DELAY = 1000; // Keep overlay visible for 1 second after resize
   
   let resizeTimer;
   let isResizing = false;
@@ -35,26 +35,33 @@ function setupResizeOverlay() {
   window.addEventListener('resize', () => {
     if (!isResizing) {
       isResizing = true;
-      // Make visible during resize
+      // Make visible during resize with fade in
       overlay.style.display = 'block';
+      
+      // Force a reflow before setting opacity to ensure transition works
+      overlay.offsetHeight;
+      
+      overlay.style.opacity = '1';
       overlay.classList.remove('resize-overlay--hidden');
       overlay.classList.add('resize-overlay--visible');
     }
     
     if (resizeTimer) clearTimeout(resizeTimer);
+    
     resizeTimer = setTimeout(() => {
-      // Hide after resize completes
+      // Fade out after resize completes + 1s delay
+      overlay.style.opacity = '0';
       overlay.classList.remove('resize-overlay--visible');
       overlay.classList.add('resize-overlay--hidden');
       
       // After transition completes, set display none
       setTimeout(() => {
-        if (!overlay.classList.contains('resize-overlay--visible')) {
+        if (overlay.style.opacity === '0') {
           overlay.style.display = 'none';
         }
         isResizing = false;
-      }, 150); // Match transition time
-    }, 150);
+      }, TRANSITION_DURATION);
+    }, RESIZE_DELAY);
   });
 }
 

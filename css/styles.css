@@ -655,19 +655,19 @@ body {
  * MAIN WRAPPER *
  ****************/
 
-.main-wrapper {
+.page {
   animation: verticalJitter 0.1s infinite,
     distortionEffect 0.05s infinite alternate;
   transform-style: preserve-3d;
 }
 
 /* Add main wrapper visibility control and animation */
-.main-wrapper-hidden {
+.page-hidden {
   opacity: 0;
   visibility: hidden;
 }
 
-.main-wrapper-intro {
+.page-intro {
   animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards,
              verticalJitter 0.1s infinite,
              distortionEffect 0.05s infinite alternate;
@@ -890,7 +890,7 @@ body {
   
   /* Multipliers */
 /* Setup for 3D animations with improved will-change properties */
-.page-wrapper,
+.page,
 .depth-wrapper,
 .depth-wrapper-bottom,
 .glass-video {
@@ -900,7 +900,7 @@ body {
 }
 
 /* Outer container (the entire scene) */
-.page-wrapper {
+.page {
   animation: 
     pageWrapper-movement var(--starship-movement-duration) infinite ease-in-out,
     pageWrapper-z-movement var(--z-movement-duration) infinite ease-in-out; /* Separate z-movement */
@@ -1265,4 +1265,28 @@ html {
 /* Add a class to force no transition for initial setup */
 .no-transition {
   transition: none !important;
+}
+
+/***********************
+ * PULSATING LIGHT    *
+ ***********************/
+
+.light {
+  animation: pulsateLight 4s ease-in-out infinite;
+  will-change: filter; /* Optimize animation performance */
+}
+
+@keyframes pulsateLight {
+  0% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.5);
+  }
+  60% {
+    filter: brightness(1.5);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }

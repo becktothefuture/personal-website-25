@@ -93,10 +93,10 @@ export async function initIntroSequence() {
       void wallContainer.offsetWidth;
     }
     
-    // Hide main-wrapper and all widgets at the start of intro sequence
-    const mainWrapper = document.querySelector('.main-wrapper');
+    // Hide page and all widgets at the start of intro sequence
+    const mainWrapper = document.querySelector('.page');
     if (mainWrapper) {
-      mainWrapper.classList.add('main-wrapper-hidden');
+      mainWrapper.classList.add('page-hidden');
       
       // Hide all widgets explicitly at the start of intro sequence
       const widgets = document.querySelectorAll('.widget');
@@ -140,10 +140,10 @@ export async function initIntroSequence() {
           document.body.style.visibility = 'visible';          
           overlay.remove();
           
-          // Show and animate the main-wrapper first
+          // Show and animate the page first
           if (mainWrapper) {
-            mainWrapper.classList.remove('main-wrapper-hidden');
-            mainWrapper.classList.add('main-wrapper-intro');
+            mainWrapper.classList.remove('page-hidden');
+            mainWrapper.classList.add('page-intro');
             
             // Animate the wall container after a tiny delay
             if (wallContainer) {
@@ -182,7 +182,7 @@ export async function initIntroSequence() {
               document.dispatchEvent(new CustomEvent('intro:complete'));
             }
           } else {
-            // If main-wrapper doesn't exist, just dispatch the event
+            // If page doesn't exist, just dispatch the event
             document.dispatchEvent(new CustomEvent('intro:complete'));
           }
           

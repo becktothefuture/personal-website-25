@@ -61,7 +61,7 @@ class PerspectiveController {
     if (this.#isInitialized) return;
     
     // Find required DOM elements
-    this.#pageWrapper = document.querySelector('.page-wrapper');
+    this.#pageWrapper = document.querySelector('.page');
     this.#depthWrapper = document.querySelector('.depth-wrapper');
     this.#depthWrapperBottom = document.querySelector('.depth-wrapper-bottom');
     
