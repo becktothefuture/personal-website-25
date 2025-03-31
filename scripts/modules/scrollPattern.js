@@ -4,15 +4,28 @@
  * This version uses the pattern element already inside the wrapper.
  * The element is assumed to be styled with 200% width so that moving it by half its width (the wrapper's width)
  * creates a seamless loop.
+ * 
+ * Now responds to both:
+ * - Constant speed (gradual scrolling effect)
+ * - Rubber band impulses (elastic, immediate response)
  */
 
 import { scrollTracker } from './scrollTracker.js';
 
 class ScrollPattern {
   constructor() {
-    this.speedFactor = 5.5; // Control how fast the pattern moves relative to scroll velocity
-    this.patternWrappers = []; // Cache for performance
+    this.speedFactor = 3.0;         // Base speed factor (reduced since we add rubber band effect)
+    this.rubberBandFactor = 200;    // How strongly patterns respond to rubber band effect
+    this.patternWrappers = [];      // Cache for performance
+    this.rubberBandOffset = 0;      // Current rubber band state
+    
     setTimeout(() => this.safeInit(), 500); // Delay initialisation to allow the DOM to settle
+    
+    // Listen for rubber band effect updates
+    document.addEventListener('rubberband:update', (event) => {
+      // Use the normalized offset (0-1) for pattern movement
+      this.rubberBandOffset = event.detail.normalizedOffset;
+    });
   }
 
   safeInit() {
@@ -75,9 +88,16 @@ class ScrollPattern {
           if (!wrapper._patternData) return;
           const data = wrapper._patternData;
 
-          // Calculate movement (move left as scroll velocity increases)
-          const movement = velocity * this.speedFactor * deltaTime;
-          data.position -= movement;
+          // Calculate movement combining:
+          // 1. Base movement from constant velocity (car-like speed)
+          const baseMovement = velocity * this.speedFactor * deltaTime;
+          
+          // 2. Rubber band movement from acceleration impulses
+          const rubberBandMovement = this.rubberBandOffset * this.rubberBandFactor * deltaTime;
+          
+          // Combine movements (move left as values increase)
+          const totalMovement = baseMovement + rubberBandMovement;
+          data.position -= totalMovement;
 
           // When the movement reaches half the pattern width, reset position to 0
           if (data.position <= -data.initialWidth) {

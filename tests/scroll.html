@@ -307,14 +307,14 @@
     import { initStarfieldThruster, starConfig } from '../scripts/modules/starfieldThruster.js';
     import { initLampEffect, lampConfig } from '../scripts/modules/lampEffect.js';
     import { initSoundSystem, EVENTS } from '../scripts/modules/sounds.js';
-    import { initRumbleEffect, rumbleConfig } from '../scripts/modules/rumbleEffect.js';
+    import { initscrollEffect, scrollyConfig } from '../scripts/modules/scrollEffect.js';
     import { initMouseMonitors } from '../scripts/modules/mousemonitors.js';
 
     // Initialize modules
     const starfieldThruster = initStarfieldThruster();
     const lampEffect = initLampEffect();
     const soundSystem = initSoundSystem();
-    const rumbleEffect = initRumbleEffect();
+    const scrollEffect = initscrollEffect();
     initMouseMonitors(); // Initialize mouse monitors
 
     // Start background scaling effect
@@ -360,10 +360,10 @@
     function updateDebug() {
       const sState = scrollTracker.getState();
       const sConfig = scrollTracker.getConfig();
-      const rState = rumbleEffect.getState();
+      const rState = scrollEffect.getState();
       const velocityKMH = scrollTracker.getVelocityKMH ? scrollTracker.getVelocityKMH() : (sState.velocityMS * 3.6);
       
-      // Update with rumble state
+      // Update with scrolly state
       debugScroll.innerHTML = `
         <strong>ScrollTracker Module</strong><br>
         Velocity: ${velocityKMH ? velocityKMH.toFixed(2) : "N/A"} km/h<br>
@@ -372,7 +372,7 @@
         Stroke Impulse: ${sConfig.strokeImpulse !== undefined ? sConfig.strokeImpulse.toFixed(2) : "N/A"}<br>
         Top Speed: ${sConfig.topSpeed !== undefined ? sConfig.topSpeed.toFixed(2) : "N/A"} km/h<br>
         <span style="color: ${rState.active ? '#ff9' : '#999'}">
-          Rumble: ${(rState.intensity * 100).toFixed(1)}%
+          scrolly: ${(rState.intensity * 100).toFixed(1)}%
         </span>
       `;
       

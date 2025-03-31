@@ -1,21 +1,21 @@
 /**
- * Mouse Tracker Module
+ * Cursor Tracker Module
  * --------------------
- * Tracks mouse movements, speed, position, clicks and distance traveled.
+ * Tracks cursor movements, speed, position, clicks and distance traveled.
  * 
  * This module:
- * - Calculates mouse speed in multiple units (px/s, km/h, mph)
- * - Tracks total mouse travel distance with unit conversion
+ * - Calculates cursor speed in multiple units (px/s, km/h, mph)
+ * - Tracks total cursor travel distance with unit conversion
  * - Maintains click count statistics
  * - Applies smooth animation to cursor positioning
  * - Uses requestAnimationFrame for optimized performance
  * - Provides minimap cursor visualization
- * - Exports mouse position data for use by other modules
+ * - Exports cursor position data for use by other modules
  */
 
 // ------------------------------------------------------------
 // Annotations:
-// This code tracks mouse movements, click counts and distance traveled.
+// This code tracks cursor movements, click counts and distance traveled.
 // It uses requestAnimationFrame for continuous updates, performance.now() 
 // for precise timing, and precomputed DPI for distance calculations.
 // ------------------------------------------------------------
@@ -25,12 +25,12 @@ const MPS_TO_KMH = 3.6;
 const MPS_TO_MILES_H = 2.23694;
 const CM_PER_INCH = 2.54;
 const INCHES_PER_MILE = 63360;
-const SMOOTH_FACTOR = 0.1; // Exponential smoothing factor
+const SMOOTH_FACTOR = 0.1; 
 const SPEED_EASE_DURATION = 1; // seconds
 
 // **DYNAMIC VARIABLES**
-let mouseXPercent = 0;
-let mouseYPercent = 0;
+let cursorXPercent = 0;
+let cursorYPercent = 0;
 
 let prevMouseX = null,
     prevMouseY = null,
@@ -87,8 +87,8 @@ function updateCursorPosition() {
   if (!cursorDot) return;
   
   // Map 0% to -50% and 100% to 50%
-  const xTranslate = mouseXPercent * 100 - 50;
-  const yTranslate = mouseYPercent * 100 - 50;
+  const xTranslate = cursorXPercent * 100 - 50;
+  const yTranslate = cursorYPercent * 100 - 50;
   
   cursorDot.style.transform = `translate(${xTranslate}%, ${yTranslate}%)`;
 }
@@ -98,8 +98,8 @@ function updateCursorValueDisplay() {
   if (!cursorValueElement) return;
   
   // Format percentages to 2 decimal places
-  const xFormatted = (mouseXPercent * 100).toFixed(2);
-  const yFormatted = (mouseYPercent * 100).toFixed(2);
+  const xFormatted = (cursorXPercent * 100).toFixed(2);
+  const yFormatted = (cursorYPercent * 100).toFixed(2);
   
   // Update the element with formatted text
   cursorValueElement.textContent = `X: ${xFormatted}%, Y: ${yFormatted}%`;
@@ -189,8 +189,8 @@ function setupEventHandlers() {
     const currentTime = performance.now();
 
     // Calculate percentages
-    mouseXPercent = mouseX / window.innerWidth;
-    mouseYPercent = mouseY / window.innerHeight;
+    cursorXPercent = mouseX / window.innerWidth;
+    cursorYPercent = mouseY / window.innerHeight;
 
     updateMouseMetrics(mouseX, mouseY, currentTime);
 
@@ -224,7 +224,7 @@ function animationLoop() {
 }
 
 // **Initialization**
-export function initMouseTracker() {
+export function initcursorTracker() {
   console.log("Initializing mouse tracker...");
 
   if (!initializeElements()) {
@@ -238,4 +238,4 @@ export function initMouseTracker() {
   console.log("Mouse tracker initialized successfully");
 }
 
-export { mouseXPercent, mouseYPercent };
+export { cursorXPercent, cursorYPercent };

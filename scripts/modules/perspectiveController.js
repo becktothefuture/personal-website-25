@@ -9,10 +9,10 @@
  * to create a cohesive 3D effect that responds to user input or animates
  * automatically on touch devices.
  * 
- * @requires ./mouseTracker.js
+ * @requires ./cursorTracker.js
  */
 
-import { mouseXPercent, mouseYPercent } from './mouseTracker.js';
+import { cursorXPercent, cursorYPercent } from './cursorTracker.js';
 
 // Configuration for perspective movement
 export const perspectiveConfig = {
@@ -143,7 +143,7 @@ class PerspectiveController {
       if (!this.#isInitialized || !this.#isMouseDevice) return;
       
       // Update transformations based on current mouse position
-      this.#updateFromMousePosition(mouseXPercent, mouseYPercent);
+      this.#updateFromMousePosition(cursorXPercent, cursorYPercent);
       
       // Continue the loop
       this.#animationFrameId = requestAnimationFrame(updateTransforms);

@@ -46,7 +46,10 @@ export const lampConfig = {
   bulbSize: 20,             
   bulbColor: "#c6ffcd",     
   glowIntensity: 0.8,       
-  glowSpread: 30            
+  glowSpread: 30,
+  // Rubber band effect configuration
+  rubberBandFactor: 0.7,    // How much the rubber band effect influences brightness
+  rubberBandPulseScale: 2.0 // Scale factor for pulse intensity during rubber band
 };
 
 class LampEffect {
@@ -57,6 +60,7 @@ class LampEffect {
   #isActive = false;
   #animationFrameId = null;
   #position = 'bottom-right';
+  #rubberBandEffect = 0; // Track rubber band intensity
   
   constructor() {
     this.init();
@@ -68,6 +72,7 @@ class LampEffect {
   init() {
     this.#createLampElements();
     
+    // Speed-based brightness (gradual car-like effect)
     scrollTracker.on("update", (data) => {
       const normalizedVelocity = Math.min(data.velocityKMH / lampConfig.speedThreshold, 1);
       const expCurve = Math.pow(normalizedVelocity, lampConfig.exponentialFactor);
@@ -75,10 +80,23 @@ class LampEffect {
         (expCurve * (lampConfig.maxBrightness - lampConfig.minBrightness));
     });
     
+    // Impulse-based pulse (immediate response)
     scrollTracker.on("scroll", (data) => {
       if (lampConfig.pulseOnScroll) {
         const impulseStrength = Math.min(Math.abs(data.impulse) / 200, 1);
         this.pulse(impulseStrength);
+      }
+    });
+    
+    // Listen for rubber band effect updates (acceleration-based response)
+    document.addEventListener('rubberband:update', (event) => {
+      // Store current rubber band effect for brightness boost
+      this.#rubberBandEffect = event.detail.normalizedOffset * lampConfig.rubberBandFactor;
+      
+      // Create immediate pulse for significant rubber band movements
+      if (event.detail.normalizedOffset > 0.1) {
+        const pulseIntensity = event.detail.normalizedOffset * lampConfig.rubberBandPulseScale;
+        this.pulse(pulseIntensity);
       }
     });
     
@@ -178,7 +196,13 @@ class LampEffect {
   #animate() {
     if (!this.#isActive || !this.#bulbElement) return;
     
-    const diff = this.#targetBrightness - this.#currentBrightness;
+    // Combine standard target brightness with rubber band effect boost
+    const effectiveBrightness = Math.min(
+      this.#targetBrightness + this.#rubberBandEffect, 
+      lampConfig.maxBrightness
+    );
+    
+    const diff = effectiveBrightness - this.#currentBrightness;
     if (Math.abs(diff) > 0.001) {
       this.#currentBrightness += diff * lampConfig.fadeSpeed;
       this.#updateLampStyle();

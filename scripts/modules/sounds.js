@@ -4,7 +4,7 @@
  * This module manages an interactive sound system with ambient background audio and
  * a dynamic engine sound that responds to user scrolling behavior. It includes:
  * - Ambient sound with speed-based pitch modulation
- * - Engine/rumble sounds with frequency and volume tied to scroll speed
+ * - Engine/scrolly sounds with frequency and volume tied to scroll speed
  * - Auto-fade on user inactivity
  * - Sound toggle controls with UI interaction
  * 
@@ -12,7 +12,7 @@
  */
 
 // sounds.js
-// This script sets up a sound system that plays ambient noise and a low-frequency rumble effect.
+// This script sets up a sound system that plays ambient noise and a low-frequency scrolly effect.
 // The modulation previously tied to mouse position has been replaced with defaults and scroll-based modulation.
 // Both sounds fade in when the user is active and fade out after inactivity.
 
@@ -71,11 +71,11 @@ const CONFIG = {
     q: 30,               
     
     // Sub-bass settings - directly tied to speed
-    subFreq: 160,         // Rumble frequency - lowered for deeper sound
+    subFreq: 160,         // scrolly frequency - lowered for deeper sound
     minSubGain: 10,        // Increased minimum sub gain
     maxSubGain: 160,       // Increased maximum sub gain
     rampTime: 0.02,       // Shortened ramp time for quicker response
-    subQ: 100             // Increased Q for a more resonant rumble
+    subQ: 100             // Increased Q for a more resonant scrolly
   },
   robotSpeech: {
     enabled: true,
@@ -772,7 +772,7 @@ function updateSoundParameters() {
     // Filter frequency - directly proportional to speed
     const filterFreq = CONFIG.engine.minFreq + (speedRatio * (CONFIG.engine.maxFreq - CONFIG.engine.minFreq));
 
-    // Sub bass gain - directly proportional to speed (Rumble)
+    // Sub bass gain - directly proportional to speed (scrolly)
     const subGain = CONFIG.engine.minSubGain + (speedRatio * (CONFIG.engine.maxSubGain - CONFIG.engine.minSubGain));
 
     // Apply all parameters with minimal smoothing - direct reflection of speed

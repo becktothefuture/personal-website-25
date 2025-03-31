@@ -30,7 +30,7 @@
 
   /* Grid settings */
   --columns: 10;
-  --rows: 10;
+  --rows: 12;
   --gap: 15px;
 
   /* Carousel settings */
@@ -55,10 +55,6 @@
   --speech-bg: var(--color-4);
   --speech-text: var(--color-1);
   --speech-border: var(--color-2);
-
-  /* Perspective settings */
-  --perspective-depth: 1200px;
-  --wall-depth: 1600px;
 
   /* Base Intensity Controls (min: 0.1, max: 5.0, default: 2.0) */
   --crt-intensity: 3;
@@ -97,6 +93,28 @@
   --cockpit-translate-max: 1px;
   --cockpit-rotate-min: -0.1deg;
   --cockpit-rotate-max: 0.3deg;
+
+  /* Perspective settings */
+  --perspective-depth: 1500px;
+  --wall-depth: 750px;
+
+  /* Overall animation settings */
+  --starship-movement-duration: 30s;
+  --z-movement-duration: 20s; /* Separate duration for z-movement */
+
+  /* Page – Translate */
+  --default-page-translate-z: -30px;
+  --page-translate-z: -70px;
+  --page-rotate-x: 6deg;
+  --page-rotate-y: 4deg;
+
+  /* Depth wrapper – Perspective shift */
+  --top-perspective-shift-factor-x: 12;
+  --top-perspective-shift-factor-y: 4;
+
+  /* Glass video – Translation  */
+  --video-translate-x: 2%;
+  --video-translate-y: 1%;
 }
 
 * {
@@ -171,20 +189,20 @@ body {
  * PATTERN MOVEMENTS *
  *********************/
 
-
-.vertical-movement {
-  animation: scroll-vertical 15s steps(50) infinite;
+.pattern-wrapper > .pattern-vertical {
+  animation: scroll-vertical 1s steps(5) infinite;
 }
 
 .pattern-wrapper > .pattern {
-  animation: scroll-horizontal 10s steps(200) infinite;
+  animation: scroll-horizontal 5s steps(5) infinite;
 }
 
 @keyframes scroll-horizontal {
-  0% {
+  0%,
+  100% {
     transform: translateX(0%);
   }
-  100% {
+  50% {
     transform: translateX(-50%);
   }
 }
@@ -278,8 +296,6 @@ body {
 
 /* Widget animation classes */
 .widget {
-  will-change: opacity, filter; /* Removed transform to avoid affecting 3D transforms */
-  /* No default opacity here so widgets aren't hidden by default */
 }
 
 /* Hidden widget class that ONLY affects opacity, not transforms */
@@ -289,11 +305,13 @@ body {
 }
 
 .widget-intro {
-  animation: widgetIntro var(--widget-animation-duration, 1s) cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  animation: widgetIntro var(--widget-animation-duration, 1s)
+    cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .widget-outro {
-  animation: widgetOutro var(--widget-animation-duration, 0.8s) cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  animation: widgetOutro var(--widget-animation-duration, 0.8s)
+    cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 /********************
@@ -409,14 +427,12 @@ body {
   }
 }
 
-
 /************
  * MINI MAP *
  ************/
 
 .cursor-dot {
   animation: cursor-dot-blink 1.5s infinite;
-  
 }
 
 @keyframes cursor-dot-blink {
@@ -498,11 +514,14 @@ body {
 
 /* Add the new intro flash animation */
 @keyframes intro-flash {
-  0%, 100% {
+  0%,
+  100% {
     background-color: var(--color-2);
   }
   25% {
-    background-color: var(--background); /* Brighter green for better visibility */
+    background-color: var(
+      --background
+    ); /* Brighter green for better visibility */
   }
   50% {
     background-color: var(--color-4); /* Darker green for contrast */
@@ -513,7 +532,7 @@ body {
 }
 
 .intro-flash-effect {
-  animation: intro-flash 1s steps(4) forwards; 
+  animation: intro-flash 1s steps(3) forwards;
 }
 
 .intro-wrapper__text::after {
@@ -580,15 +599,14 @@ body {
  * 3D BUTTONS *
  ***************/
 
- .btn-3d__button > .btn-3d__front,
- .btn-3d__button > .btn-3d__sides {
-  background-color: var(--buttons); 
+.btn-3d__button > .btn-3d__front,
+.btn-3d__button > .btn-3d__sides {
+  background-color: var(--buttons);
 }
-
 
 .btn-3d__button.btn-3d--active > .btn-3d__front,
 .btn-3d__button.btn-3d--active > .btn-3d__sides {
-  background-color: var(--light); 
+  background-color: var(--light);
   animation: oscillateColor 3s infinite;
 }
 
@@ -602,15 +620,6 @@ body {
   100% {
     background-color: var(--light-2);
   }
-}
-
-/*****************
- * VIDEO OVERLAY *
- *****************/
-
-.glass-video {
-  -webkit-mask: radial-gradient(circle, black 40%, transparent 100%);
-  mask: radial-gradient(circle, black 40%, transparent 100%);
 }
 
 /*********
@@ -655,7 +664,7 @@ body {
  * MAIN WRAPPER *
  ****************/
 
-.page {
+.display {
   animation: verticalJitter 0.1s infinite,
     distortionEffect 0.05s infinite alternate;
   transform-style: preserve-3d;
@@ -669,8 +678,7 @@ body {
 
 .page-intro {
   animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards,
-             verticalJitter 0.1s infinite,
-             distortionEffect 0.05s infinite alternate;
+    verticalJitter 0.1s infinite, distortionEffect 0.05s infinite alternate;
 }
 
 @keyframes mainWrapperIntro {
@@ -730,7 +738,7 @@ body {
  * CRT CONTAINER *
  *****************/
 
- .flicker {
+.flicker {
   position: fixed;
   inset: 0;
   background: rgba(var(--crt-primary-color), 0.02);
@@ -778,14 +786,15 @@ body {
   inset: -4px;
   background: transparent;
   box-shadow: inset 0 0 var(--glow-inner) rgba(var(--crt-primary-color), 0.9),
-              inset 0 0 var(--glow-outer) rgba(var(--crt-primary-color), 0.1);
+    inset 0 0 var(--glow-outer) rgba(var(--crt-primary-color), 0.1);
   pointer-events: none;
   border-radius: var(--border-radius);
   animation: glowJitter 0.1s infinite;
 }
 
 @keyframes glowJitter {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0);
     opacity: 0.9;
   }
@@ -802,7 +811,6 @@ body {
     opacity: 0.87;
   }
 }
-
 
 /* Scanline Layers */
 .scanline-layer {
@@ -829,8 +837,8 @@ body {
   background: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    rgba(156, 224, 169, 0.3) 1px, /* Using actual RGB values from --color-1 (#9ce0a9) */
-    transparent 1.1px,
+    rgba(156, 224, 169, 0.3) 1px,
+    /* Using actual RGB values from --color-1 (#9ce0a9) */ transparent 1.1px,
     transparent 4px
   );
   opacity: 0.3;
@@ -867,121 +875,91 @@ body {
 /*****************
  * STARSHIP MOVEMENT *
  *****************/
-/* Global Variables for starship movement */
-:root {
-  /* Overall animation settings */
-  --starship-movement-duration: 20s;
-  --z-movement-duration: 15s; /* Separate duration for z-movement */
-  
-  /* Movement values */
-  --page-translate-x: 1%;
-  --page-translate-y: 1%;
-  --page-translate-z: 50px; /* Z-axis translation amount */
-  --page-rotate-x: 10deg;
-  --page-rotate-y: 10deg;
-  
-  /* Correlation factors for depth-wrapper perspective shift */
-  --perspective-shift-factor-x: -10;
-  --perspective-shift-factor-y: -10;
-  
-  /* Perspective values */
-  --perspective-base: 1200px;
-  --perspective-min: 800px; /* Closer/smaller perspective when camera moves forward */
-  
-  /* Multipliers */
-/* Setup for 3D animations with improved will-change properties */
-.page,
-.depth-wrapper,
-.depth-wrapper-bottom,
-.glass-video {
+
+/* Page rotation */
+.page__inner {
+  /* animation: 
+    page-rotation var(--starship-movement-duration) infinite ease-in-out;  transform-origin: center center;  */
+  backface-visibility: hidden;
+}
+
+/* Z-axis movement */
+.panel-wrapper {
+  animation: page-z-movement var(--z-movement-duration) infinite ease-in-out;
   will-change: transform;
-  transform-style: preserve-3d;
-  transform-origin: center center;
 }
 
-/* Outer container (the entire scene) */
-.page {
-  animation: 
-    pageWrapper-movement var(--starship-movement-duration) infinite ease-in-out,
-    pageWrapper-z-movement var(--z-movement-duration) infinite ease-in-out; /* Separate z-movement */
-}
-
-/* Inner container (the screen with depth) */
+/* Perspective wrapper */
 .depth-wrapper {
+  will-change: perspective-origin, transform;
   perspective: var(--perspective-depth);
-  animation: depthWrapper-movement var(--starship-movement-duration) infinite ease-in-out;
+  /* animation: depth-wrapper-perspective var(--starship-movement-duration) infinite ease-in-out; */
 }
 
-/* Glass video animation */
+/* Glass video */
 .glass-video {
-  -webkit-mask: radial-gradient(circle, black 40%, transparent 100%);
-  mask: radial-gradient(circle, black 40%, transparent 100%);
-  animation: glassVideo-movement var(--starship-movement-duration) infinite ease-in-out;
+  /* -webkit-mask: radial-gradient(circle, black 70%, transparent 0%);
+  mask: radial-gradient(circle, black 70%, transparent 0%); */
+  /* animation: glass-video-movement var(--starship-movement-duration) infinite ease-in-out, pulsateLight-Video 5s ease-in-out infinite; */
 }
-
-/* Additional bottom element */
-.depth-wrapper-bottom {
-  animation: depthWrapperBottom-movement var(--starship-movement-duration) infinite ease-in-out;
-}
-
-/* Page wrapper XY/rotation movement (removed Z translation) */
-@keyframes pageWrapper-movement {
-  0% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
-  25% { transform: translateX(var(--page-translate-x)) translateY(var(--page-translate-y)) rotateX(var(--page-rotate-x)) rotateY(var(--page-rotate-y)); }
-  50% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
-  75% { transform: translateX(calc(-1 * var(--page-translate-x))) translateY(calc(-1 * var(--page-translate-y))) rotateX(calc(-1 * var(--page-rotate-x))) rotateY(calc(-1 * var(--page-rotate-y))); }
-  100% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0); }
-}
-
-/* Separate Z-movement animation for page wrapper */
-@keyframes pageWrapper-z-movement {
-  0% { transform: translateZ(0); }
-  50% { transform: translateZ(var(--page-translate-z)); }
-  100% { transform: translateZ(0); }
-}
-
-/* Perspective adjustment based on Z position */
-@keyframes depthWrapper-perspective {
-  0% { transform: translateX(0) translateY(0); }
-  25% { transform: translateX(calc(var(--page-translate-x) * var(--glass-movement-multiplier))) translateY(calc(var(--page-translate-y) * var(--glass-movement-multiplier))); }
-  50% { transform: translateX(0) translateY(0); }
-  75% { transform: translateX(calc(-1 * var(--page-translate-x) * var(--glass-movement-multiplier))) translateY(calc(-1 * var(--page-translate-y) * var(--glass-movement-multiplier))); }
-  100% { transform: translateX(0) translateY(0); }
-}
-
-/* Simplified depth wrapper movement */
-@keyframes depthWrapper-movement {
-  0% { 
-    transform: rotateX(0) rotateY(0); 
-    perspective-origin: 50% 50%; 
+/* Keyframe definitions with direct rotation values */
+@keyframes page-rotation {
+  0%,
+  50%,
+  100% {
+    transform: rotateX(0deg) rotateY(0deg);
   }
-  25% { 
-    transform: rotateX(calc(var(--page-rotate-x) * var(--rotation-multiplier) / 3)) rotateY(calc(var(--page-rotate-y) * var(--rotation-multiplier) / 3)); 
-    perspective-origin: calc(50% + (var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(50% + (var(--page-translate-y) * var(--perspective-shift-factor-y))); 
+  25% {
+    transform: rotateX(calc(-1 * var(--page-rotate-x)))
+      rotateY(calc(-1 * var(--page-rotate-y)));
   }
-  50% { 
-    transform: rotateX(0) rotateY(0); 
-    perspective-origin: 50% 50%; 
-  }
-  75% { 
-    transform: rotateX(calc(-1 * var(--page-rotate-x) * var(--rotation-multiplier) / 3)) rotateY(calc(-1 * var(--page-rotate-y) * var(--rotation-multiplier) / 3)); 
-    perspective-origin: calc(50% + (-1 * var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(50% + (-1 * var(--page-translate-y) * var(--perspective-shift-factor-y))); 
-  }
-  100% { 
-    transform: rotateX(0) rotateY(0); 
-    perspective-origin: 50% 50%; 
+  75% {
+    transform: rotateX(var(--page-rotate-x)) rotateY(var(--page-rotate-y));
   }
 }
 
-/* Simplified depth wrapper bottom movement */
-@keyframes depthWrapperBottom-movement {
-  0% { perspective-origin: 50% -500%; }
-  25% { perspective-origin: calc(50% + (var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(-500% + (var(--page-translate-y) * var(--perspective-shift-factor-y))); }
-  50% { perspective-origin: 50% -500%; }
-  75% { perspective-origin: calc(50% + (-1 * var(--page-translate-x) * var(--perspective-shift-factor-x))) calc(-500% + (-1 * var(--page-translate-y) * var(--perspective-shift-factor-y))); }
-  100% { perspective-origin: 50% -500%; }
+@keyframes page-z-movement {
+  0%,
+  100% {
+    transform: translateZ(var(--default-page-translate-z));
+  }
+  50% {
+    transform: translateZ(var(--page-translate-z));
+  }
 }
 
+@keyframes glass-video-movement {
+  0%,
+  50%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(
+      calc(-1 * var(--video-translate-x)),
+      calc(-1 * var(--video-translate-y))
+    );
+  }
+  75% {
+    transform: translate(var(--video-translate-x), var(--video-translate-y));
+  }
+}
+
+@keyframes depth-wrapper-perspective {
+  0%,
+  50%,
+  100% {
+    perspective-origin: 50% 50%;
+  }
+  25% {
+    perspective-origin: calc(50% + var(--top-perspective-shift-factor-x) * 1%)
+      calc(50% - var(--top-perspective-shift-factor-y) * 1%);
+  }
+  75% {
+    perspective-origin: calc(50% - var(--top-perspective-shift-factor-x) * 1%)
+      calc(50% + var(--top-perspective-shift-factor-y) * 1%);
+  }
+}
 
 /**********************
  * BLINKING ANIMATION *
@@ -1138,8 +1116,8 @@ html {
  * STARFIELD *
  *************/
 
-/* Wrapper for content (will “rumble”) */
-#rumble-wrapper {
+/* Wrapper for content (will “scrolly”) */
+#scrolly-wrapper {
   position: fixed;
   width: 100%;
   height: 100%;
@@ -1170,19 +1148,14 @@ html {
   opacity: 0;
 }
 
-
-
-
 .corner-line-wrapper.extruded-1 {
   animation: extrude-1 1s linear infinite;
-  
 }
 
 .corner-line-wrapper.extruded-2 {
   animation: extrude-1 1s linear infinite;
   animation-delay: 0.5s;
 }
-
 
 @keyframes extrude-1 {
   0% {
@@ -1212,7 +1185,8 @@ html {
 }
 
 /* Robot lights */
-#light-1, #light-2 {
+#light-1,
+#light-2 {
   fill: var(--color-1);
 }
 
@@ -1242,6 +1216,7 @@ html {
 /* Wall animation styles */
 .wall {
   /* Default state is managed by inline style in JavaScript */
+  transform: translateZ(calc(-1 * var(--wall-depth)));
   transition: transform 0s;
 }
 
@@ -1271,23 +1246,33 @@ html {
  * PULSATING LIGHT    *
  ***********************/
 
-.light {
-  animation: pulsateLight 4s ease-in-out infinite;
+#light {
+  animation: pulsateLight 5s ease-in-out infinite;
   will-change: filter; /* Optimize animation performance */
 }
 
 @keyframes pulsateLight {
-  0% {
-    filter: brightness(1);
-  }
-  40% {
-    filter: brightness(1.5);
-  }
-  60% {
-    filter: brightness(1.5);
-  }
+  0%,
   100% {
-    filter: brightness(1);
+    filter: brightness(100%);
+  }
+  50% {
+    filter: brightness(120%);
+  }
+  75% {
+    filter: brightness(80%);
   }
 }
+
+@keyframes pulsateLight-Video {
+  0%,
+  100% {
+    filter: brightness(100%);
+  }
+  50% {
+    filter: brightness(110%);
+  }
+  75% {
+    filter: brightness(95%);
+  }
 }

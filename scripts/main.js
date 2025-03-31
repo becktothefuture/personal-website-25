@@ -20,7 +20,7 @@
  * - widgetEffects.js: Manages interactive effects for various UI widgets
  * - mousemonitors.js: Tracks mouse movement, speed and interaction metrics
  * - processorAnimations.js: Handles the multiple processor visualization animations
- * - rumbleEffect.js: Creates physical rumble/shake effects based on scroll velocity
+ * - scrollEffect.js: Creates physical scrolly/shake effects based on scroll velocity
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * - button3DToggle.js: Manages 3D button toggling with only one active at a time
@@ -38,8 +38,9 @@ import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
-import { initStarfieldThruster } from './modules/starfieldThruster.js';
-import { initPerspectiveController } from './modules/perspectiveController.js';
+// import { initStarfieldThruster } from './modules/starfieldThruster.js';
+import { initCursorEffects } from './modules/cursorEffects.js'; 
+
 import './modules/scrollTracker.js'; 
 import './modules/button3DToggle.js';
 
@@ -48,8 +49,9 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 
 initBrowserTheme();
 initResizeOverlay(); 
-initStarfieldThruster();
-// initPerspectiveController();
+// initStarfieldThruster();
+initCursorEffects(); 
+
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -76,14 +78,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { initLondonClock } = await import('./modules/londonClock.js');
                 const { initFlicker } = await import('./modules/flicker.js');
                 const { initRobot } = await import('./modules/robotAnimation.js');
-                const { initMouseTracker } = await import('./modules/mouseTracker.js');
+                const { initcursorTracker } = await import('./modules/cursorTracker.js');
                 const { 
                     initProcessorAnimation1, 
                     initProcessorAnimation2,
                     initProcessorAnimation3,
                     initProcessorAnimation4 
                 } = await import('./modules/processorAnimations.js');
-                const { initRumbleEffect } = await import('./modules/rumbleEffect.js');
+                const { initscrollEffect } = await import('./modules/scrollEffect.js');
                 const { initLampEffect } = await import('./modules/lampEffect.js');
                 const { initDiffusionText } = await import('./modules/diffusionText.js');
                 const { scrollPattern } = await import('./modules/scrollPattern.js');
@@ -95,12 +97,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initFlicker();
                 // Store the robot controller but don't start speaking yet
                 robotController = initRobot();
-                initMouseTracker();
+                initcursorTracker();
                 initProcessorAnimation1();
                 initProcessorAnimation2();
                 initProcessorAnimation3();
                 initProcessorAnimation4();
-                // initRumbleEffect();
+                initscrollEffect(); // Enable scrolly effect with rubber band behavior
                 initLampEffect();
                 initDiffusionText();
 
