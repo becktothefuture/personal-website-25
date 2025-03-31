@@ -670,11 +670,6 @@ body {
   transform-style: preserve-3d;
 }
 
-/* Add main wrapper visibility control and animation */
-.page-hidden {
-  opacity: 0;
-  visibility: hidden;
-}
 
 .page-intro {
   animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards,
@@ -881,6 +876,7 @@ body {
   /* animation: 
     page-rotation var(--starship-movement-duration) infinite ease-in-out;  transform-origin: center center;  */
   backface-visibility: hidden;
+  will-change: transform;
 }
 
 /* Z-axis movement */
@@ -1021,34 +1017,6 @@ body {
   pointer-events: none;
 }
 
-/*************
- * SCROLLBAR *
- *************/
-
-html {
-  scrollbar-width: auto;
-  scrollbar-color: #00ff00 black; /* Firefox thumb and track colors */
-}
-
-/* Webkit browsers (Chrome, Safari, Edge) */
-::-webkit-scrollbar {
-  width: 12px;
-  background-color: black;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #00ff00;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #00cc00;
-}
-
-::-webkit-scrollbar-track {
-  background-color: black;
-}
-
 /*****************
  * TUNNEL EFFECT *
  *****************/
@@ -1092,20 +1060,27 @@ html {
   animation: pullIn var(--anim-duration) linear infinite;
 }
 
+
+/******************
+ * RESIZE OVERLAY *
+ ******************/
+
 #resize-overlay {
   position: fixed !important;
+  display: block;
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
   pointer-events: none !important;
   z-index: 9999999 !important;
-  transition: opacity 0.1s ease-in-out !important;
+  transition: opacity 0.2s ease-in-out !important;
+  opacity: 0 !important;
+
 }
 
 #resize-overlay.resize-overlay--visible {
   opacity: 1 !important;
-  display: block !important;
 }
 
 #resize-overlay.resize-overlay--hidden {

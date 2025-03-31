@@ -96,7 +96,6 @@ export async function initIntroSequence() {
     // Hide page and all widgets at the start of intro sequence
     const mainWrapper = document.querySelector('.page');
     if (mainWrapper) {
-      mainWrapper.classList.add('page-hidden');
       
       // Hide all widgets explicitly at the start of intro sequence
       const widgets = document.querySelectorAll('.widget');
@@ -142,7 +141,6 @@ export async function initIntroSequence() {
           
           // Show and animate the page first
           if (mainWrapper) {
-            mainWrapper.classList.remove('page-hidden');
             mainWrapper.classList.add('page-intro');
             
             // Animate the wall container after a tiny delay
