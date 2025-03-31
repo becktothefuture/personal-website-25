@@ -34,12 +34,15 @@
 
 
 // ===== IMMEDIATE INITIALISATION SEQUENCE =====
-import { initBrowserTheme } from './modules/browserTheme.js';
+// import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
 // import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initCursorEffects } from './modules/cursorEffects.js'; 
+import { initcursorTracker } from './modules/cursorTracker.js'; 
+import { initscrollEffect } from './modules/scrollEffect.js';
+import { initLampEffect } from './modules/lampEffect.js';
 
 import './modules/scrollTracker.js'; 
 import './modules/button3DToggle.js';
@@ -47,10 +50,13 @@ import './modules/button3DToggle.js';
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
 
-initBrowserTheme();
+// initBrowserTheme();
 initResizeOverlay(); 
 // initStarfieldThruster();
 initCursorEffects(); 
+initcursorTracker();
+initscrollEffect();
+initLampEffect();
 
 
 // ===== MAIN INITIALISATION SEQUENCE =====
@@ -78,17 +84,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { initLondonClock } = await import('./modules/londonClock.js');
                 const { initFlicker } = await import('./modules/flicker.js');
                 const { initRobot } = await import('./modules/robotAnimation.js');
-                const { initcursorTracker } = await import('./modules/cursorTracker.js');
                 const { 
                     initProcessorAnimation1, 
                     initProcessorAnimation2,
                     initProcessorAnimation3,
                     initProcessorAnimation4 
                 } = await import('./modules/processorAnimations.js');
-                const { initscrollEffect } = await import('./modules/scrollEffect.js');
-                const { initLampEffect } = await import('./modules/lampEffect.js');
                 const { initDiffusionText } = await import('./modules/diffusionText.js');
-                const { scrollPattern } = await import('./modules/scrollPattern.js');
 
                 initLightGrids();
                 initDateDisplay();
@@ -97,13 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initFlicker();
                 // Store the robot controller but don't start speaking yet
                 robotController = initRobot();
-                initcursorTracker();
                 initProcessorAnimation1();
                 initProcessorAnimation2();
                 initProcessorAnimation3();
                 initProcessorAnimation4();
-                initscrollEffect(); // Enable scrolly effect with rubber band behavior
-                initLampEffect();
                 initDiffusionText();
 
                 console.log('All modules initialized');
