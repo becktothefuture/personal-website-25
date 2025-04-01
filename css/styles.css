@@ -115,6 +115,12 @@
   /* Glass video – Translation  */
   --video-translate-x: 2%;
   --video-translate-y: 1%;
+
+  /* Lamp effect variables */
+  --lamp-brightness: 0;
+  --lamp-size: 20px;
+  --lamp-color: #c6ffcd;
+  --lamp-glow-intensity: 0.8;
 }
 
 * {
@@ -498,18 +504,7 @@ body {
  *******************/
 
 .intro-wrapper__text {
-  white-space: pre !important;
-  color: var(--intro-text);
-  text-shadow: 0 0 2px var(--intro-text), 0 0 3px rgba(156, 224, 169, 0.3);
-  width: 100%;
-  position: relative;
-  font-family: monospace;
-  margin: 0;
-  padding: 0;
-  line-height: 130%; /* Increased line height */
-  min-height: 100vh; /* Ensure full height */
-  display: block;
-  letter-spacing: 0.5px;
+  /* text-shadow: 0 0 2px var(--intro-text), 0 0 3px rgba(156, 224, 169, 0.3); */
 }
 
 /* Add the new intro flash animation */
@@ -672,8 +667,7 @@ body {
 
 
 .page-intro {
-  animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards,
-    verticalJitter 0.1s infinite, distortionEffect 0.05s infinite alternate;
+  animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards
 }
 
 @keyframes mainWrapperIntro {
@@ -889,6 +883,7 @@ body {
 .depth-wrapper {
   will-change: perspective-origin, transform;
   perspective: var(--perspective-depth);
+  perspective-origin: 50% 40%;
   /* animation: depth-wrapper-perspective var(--starship-movement-duration) infinite ease-in-out; */
 }
 
@@ -1015,6 +1010,26 @@ body {
   transform-origin: center left;
   will-change: transform, box-shadow, background-color; /* Optimization for animations */
   pointer-events: none;
+}
+
+/*****************
+ * THRUSTER LAMP *
+ *****************/
+
+#thruster-lamp {
+  position: fixed;
+  width: var(--lamp-size);
+  height: var(--lamp-size);
+  background: var(--lamp-color);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 calc(5px + (var(--lamp-brightness) * 8px)) calc(3px + (var(--lamp-brightness) * 4px)) rgba(255,253,234,calc(0.8 * var(--lamp-brightness))),
+    0 0 calc(10px + (var(--lamp-brightness) * 15px)) calc(5px + (var(--lamp-brightness) * 8px)) rgba(156,224,169,calc(0.7 * var(--lamp-brightness))),
+    0 0 calc(20px + (var(--lamp-brightness) * 30px)) calc(10px + (var(--lamp-brightness) * 15px)) rgba(156,224,169,calc(0.5 * var(--lamp-brightness)));
+  opacity: calc(0.7 + (var(--lamp-brightness) * 0.3));
+  pointer-events: none;
+  z-index: 99999;
+  transition: box-shadow 0.1s ease, opacity 0.1s ease;
 }
 
 /*****************
@@ -1232,10 +1247,10 @@ body {
     filter: brightness(100%);
   }
   50% {
-    filter: brightness(120%);
+    filter: brightness(110%);
   }
   75% {
-    filter: brightness(80%);
+    filter: brightness(70%);
   }
 }
 

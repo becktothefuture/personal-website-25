@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <script type="module" src="./scripts/modules/scrollTracker.js"></script>
+    <link rel="stylesheet" href="./css/styles.css">
+    <style>
+      /* Set background to black and text to white */
+      body { background-color: black; color: white; }
+      /* Center the lamp element */
+      #thruster-lamp {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        /* Optionally force a z-index so it's on top */
+        z-index: 100000;
+      }
+    </style>
+    <!-- ...existing code... -->
+  </head>
+  <body>
+    <!-- New lamp element for testing the lamp effect -->
+    <div id="thruster-lamp"></div>
+    
+    <!-- Existing display elements -->
+    <div id="scroll-value-m"></div>
+    <div id="scroll-value-miles"></div>
+    <div id="scroll-value-px"></div>
+    <!-- New display elements for scroll systems -->
+    <div id="speed-system">Speed System: 0</div>
+    <div id="acceleration-system">Acceleration System: 0</div>
+    <!-- ...existing code... -->
+    
+    <!-- Import and initialize the lamp effect -->
+    <script type="module">
+      import { initLampEffect } from './scripts/modules/lampEffect.js';
+      initLampEffect();
+    </script>
+  </body>
+</html>

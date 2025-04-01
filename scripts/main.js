@@ -39,7 +39,7 @@ import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initIntroSequence } from './modules/intro.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js'; 
 // import { initStarfieldThruster } from './modules/starfieldThruster.js';
-import { initCursorEffects } from './modules/cursorEffects.js'; 
+// import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initcursorTracker } from './modules/cursorTracker.js'; 
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initLampEffect } from './modules/lampEffect.js';
@@ -53,7 +53,7 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 // initBrowserTheme();
 initResizeOverlay(); 
 // initStarfieldThruster();
-initCursorEffects(); 
+// initCursorEffects(); 
 initcursorTracker();
 initscrollEffect();
 initLampEffect();
@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Sound system initialized');
 
         // Step 2: Start intro sequence with the delay from intro.js
+        
         const introSequencePromise = initIntroSequence();
         console.log('Intro sequence started');
 
@@ -116,10 +117,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         await introSequencePromise;
         console.log('Intro sequence completed');
         
-        // Dispatch the intro complete event
-        document.dispatchEvent(new CustomEvent('intro:complete'));
+        // Ensure any lingering intro styles are cleaned up
+        document.querySelectorAll('.intro-wrapper, .intro-element').forEach(el => el.remove());
         
-        // Start robot speaking immediately after intro is complete
+        // Make sure the page is visible
+        const pageElement = document.querySelector('.page');
+        if (pageElement) {
+            pageElement.style.removeProperty('visibility');
+        }
+        
+        // Reset perspective - important for 3D effects
+        requestAnimationFrame(() => {
+            // Force a repaint to ensure 3D transforms are properly applied
+            const depthWrapper = document.querySelector('.depth-wrapper');
+            if (depthWrapper) {
+                depthWrapper.style.perspective = 'var(--perspective-depth)';
+            }
+            
+            const panelWrapper = document.querySelector('.panel-wrapper');
+            if (panelWrapper) {
+                panelWrapper.style.animation = 'page-z-movement var(--z-movement-duration) infinite ease-in-out';
+            }
+        });
+        
+        // Start robot speaking after a short delay
         if (robotController && robotController.startSpeaking) {
             console.log('Starting robot speech after intro completion');
             

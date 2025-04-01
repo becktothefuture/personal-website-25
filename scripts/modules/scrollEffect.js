@@ -1,7 +1,7 @@
 /**
  * scrollEffect Module
  * --------------------
- * Implements two distinct scroll-reactive systems:
+ * Implements three distinct scroll-reactive systems:
  * 
  * 1. SPEED SYSTEM (like car velocity):
  *    - Gradual build-up and slow decrease
@@ -51,196 +51,161 @@ export const scrollyConfig = {
   }
 };
 
-class scrollEffect {
-  constructor() {
-    // System states
-    this.rumbleState = {
-      intensity: 0,
-      lastUpdateTime: performance.now()
-    };
-    
-    this.rubberBandState = {
-      currentZOffset: 0,    // Current offset from default (negative = closer to camera)
-      velocity: 0,          // Current velocity of the rubber band effect
-      lastUpdateTime: performance.now()
-    };
-    
-    // Element collections
-    this.scrollyWrapperElement = null;
-    this.wallElements = [];
-    this.patternWrappers = [];
-    
-    // Animation frame tracking
+/**
+ * Base Effect class that all specific effects extend from
+ */
+class BaseEffect {
+  constructor(config) {
+    this.config = config;
+    this.enabled = config.enabled;
     this.initialized = false;
-    this.animationFrameId = null;
-    
-    // Initialize the module
-    this.init();
   }
   
   init() {
-    console.log("Initializing scrollEffect module");
+    if (this.initialized) return;
+    this.initialized = true;
+  }
+  
+  update(deltaTime) {
+    // Override in child classes
+  }
+  
+  destroy() {
+    this.initialized = false;
+  }
+}
+
+/**
+ * RumbleEffect - Handles screen shake based on scroll speed
+ */
+class RumbleEffect extends BaseEffect {
+  constructor(config) {
+    super(config);
+    this.intensity = 0;
+    this.element = null;
+  }
+  
+  init() {
+    if (this.initialized) return;
     
     // Find the scrolly wrapper for rumble effect
-    this.scrollyWrapperElement = document.getElementById('scrolly-wrapper');
-    if (!this.scrollyWrapperElement) {
-      console.warn('scrollEffect: No element with ID "scrolly-wrapper" found. Rumble effect disabled.');
+    this.element = document.getElementById('scrolly-wrapper');
+    if (!this.element) {
+      console.warn('RumbleEffect: No element with ID "scrolly-wrapper" found. Using document.documentElement as fallback.');
+      this.element = document.documentElement;
     }
     
-    // Find all wall elements for rubber band effect
+    super.init();
+  }
+  
+  setIntensity(velocityKMH) {
+    if (!this.enabled || !this.initialized) return;
+    
+    const speedRatio = Math.max(0, (velocityKMH - this.config.speedThreshold) / 
+                         this.config.rampRange);
+    this.intensity = Math.min(1, speedRatio) * 
+                    (this.config.maxIntensity - this.config.minIntensity) + 
+                    this.config.minIntensity;
+  }
+  
+  update(deltaTime) {
+    if (!this.enabled || !this.initialized || this.intensity < 0.1) return;
+    
+    // Apply rumble effect
+    const intensity = this.intensity;
+    const offsetX = (Math.random() - 0.5) * intensity;
+    const offsetY = (Math.random() - 0.5) * intensity;
+    
+    // Safely apply transform
+    if (this.element) {
+      this.element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+    
+    // Gradually decrease intensity (car-like deceleration)
+    this.intensity *= Math.pow(this.config.dampingFactor, deltaTime * 60);
+  }
+  
+  destroy() {
+    if (this.element) {
+      this.element.style.transform = '';
+    }
+    super.destroy();
+  }
+}
+
+/**
+ * RubberBandEffect - Handles elastic wall movement based on scroll acceleration
+ */
+class RubberBandEffect extends BaseEffect {
+  constructor(config) {
+    super(config);
+    this.currentZOffset = 0;
+    this.velocity = 0;
+    this.wallElements = [];
+  }
+  
+  init() {
+    if (this.initialized) return;
+    
+    // Find all wall elements
     this.wallElements = Array.from(document.querySelectorAll('.wall'));
-    console.log(`scrollEffect: Found ${this.wallElements.length} wall elements`);
     
-    // Set CSS variable for default wall depth if not already set
-    document.documentElement.style.setProperty('--wall-depth', `${scrollyConfig.rubberBand.defaultZTranslate}px`);
-    
-    // Initialize wall elements with default transform
-    this.wallElements.forEach(wall => {
-      wall.style.transform = `translateZ(${scrollyConfig.rubberBand.defaultZTranslate}px)`;
-      // Add GPU acceleration
-      wall.style.willChange = 'transform';
-    });
-    
-    // Initialize scroll pattern elements
-    this.initScrollPatterns();
-    
-    // Listen for scroll velocity updates (for rumble effect)
-    scrollTracker.on("update", (data) => {
-      // Calculate rumble intensity based on velocity (car-like speed behavior)
-      if (scrollyConfig.rumble.enabled) {
-        const speedRatio = Math.max(0, (data.velocityKMH - scrollyConfig.rumble.speedThreshold) / 
-                               scrollyConfig.rumble.rampRange);
-        const targetIntensity = Math.min(1, speedRatio) * 
-                              (scrollyConfig.rumble.maxIntensity - scrollyConfig.rumble.minIntensity) + 
-                              scrollyConfig.rumble.minIntensity;
-        this.rumbleState.intensity = targetIntensity;
-      }
-    });
-    
-    // Listen for scroll impulses (for rubber band effect)
-    scrollTracker.on("scroll", (data) => {
-      if (scrollyConfig.rubberBand.enabled) {
-        // Apply clamped impulse to rubber band (immediate acceleration response)
-        const clampedImpulse = Math.max(-scrollyConfig.rubberBand.maxImpulse, 
-                                     Math.min(data.impulse, scrollyConfig.rubberBand.maxImpulse));
-        this.applyRubberBandImpulse(clampedImpulse * scrollyConfig.rubberBand.responsiveness);
-      }
-    });
-    
-    this.initialized = true;
-    this.startAnimation();
-    
-    // Listen for window resize to reinitialize pattern elements
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => this.initScrollPatterns(), 300);
-    });
-  }
-  
-  // Initialize scroll pattern elements
-  initScrollPatterns() {
-    if (!scrollyConfig.pattern.enabled) return;
-    
-    try {
-      // Find all wrappers containing the pattern element
-      this.patternWrappers = Array.from(document.querySelectorAll('.scroll-pattern-wrapper'));
-      console.log(`Found ${this.patternWrappers.length} scroll pattern wrappers`);
+    if (this.wallElements.length === 0) {
+      console.warn('RubberBandEffect: No wall elements found.');
+    } else {
+      console.log(`RubberBandEffect: Found ${this.wallElements.length} wall elements`);
       
-      this.patternWrappers.forEach(wrapper => {
-        if (wrapper.dataset.initialized) return; // Skip if already initialised
-        wrapper.dataset.initialized = 'true';
-        wrapper.style.overflow = 'hidden';
-
-        // Use the element with the pattern texture.
-        // If a container with class 'scroll-pattern-container' exists, use it; otherwise, use the first child.
-        let patternEl = wrapper.querySelector('.scroll-pattern-container');
-        if (!patternEl) {
-          patternEl = wrapper.firstElementChild;
-        }
-        if (!patternEl) {
-          console.warn('No pattern element found in wrapper');
-          return;
-        }
-
-        // Ensure GPU-accelerated transforms for smooth animation
-        patternEl.style.willChange = 'transform';
-
-        // Since the pattern element is 200% width,
-        // half its width equals the wrapper's width (for a seamless loop).
-        const initialWidth = patternEl.scrollWidth / 2;
-        wrapper._patternData = { patternEl, initialWidth, position: 0 };
+      // Set CSS variable for default wall depth
+      document.documentElement.style.setProperty('--wall-depth', `${this.config.defaultZTranslate}px`);
+      
+      // Initialize wall elements with default transform and GPU acceleration
+      this.wallElements.forEach(wall => {
+        wall.style.transform = `translateZ(${this.config.defaultZTranslate}px)`;
+        wall.style.willChange = 'transform';
       });
-    } catch (error) {
-      console.error('Error during scroll pattern initialisation:', error);
     }
-  }
-  
-  applyRubberBandImpulse(impulse) {
-    // Negative impulse pushes elements toward camera (reduces Z value)
-    this.rubberBandState.velocity -= impulse;
-  }
-  
-  startAnimation() {
-    const animate = (timestamp) => {
-      try {
-        const now = timestamp;
-        
-        // Calculate delta time for physics simulation with safety cap
-        const deltaTime = Math.min((now - this.rubberBandState.lastUpdateTime) / 1000, 0.05);
-        this.rubberBandState.lastUpdateTime = now;
-        
-        // ===== UPDATE RUBBER BAND PHYSICS (ACCELERATION SYSTEM) =====
-        if (scrollyConfig.rubberBand.enabled) {
-          // Update position based on velocity
-          this.rubberBandState.currentZOffset += this.rubberBandState.velocity * deltaTime;
-          
-          // Calculate spring force pulling back to default position (F = -k * x)
-          const springForce = -scrollyConfig.rubberBand.stiffness * this.rubberBandState.currentZOffset;
-          
-          // Apply spring force to velocity (F = ma, assume mass=1)
-          this.rubberBandState.velocity += springForce * deltaTime;
-          
-          // Apply damping (elasticity) to velocity
-          this.rubberBandState.velocity *= Math.pow(scrollyConfig.rubberBand.elasticity, deltaTime * 60);
-          
-          // Limit the maximum offset (prevents extreme movement)
-          const maxOffset = scrollyConfig.rubberBand.defaultZTranslate - scrollyConfig.rubberBand.minZTranslate;
-          this.rubberBandState.currentZOffset = Math.max(-maxOffset, Math.min(0, this.rubberBandState.currentZOffset));
-          
-          // Apply effect to wall elements
-          this.applyRubberBandEffect();
-          
-          // Broadcast rubber band state for other modules (lamp)
-          this.broadcastRubberBandState();
-        }
-        
-        // ===== UPDATE SCROLL PATTERNS =====
-        if (scrollyConfig.pattern.enabled) {
-          this.updateScrollPatterns(deltaTime);
-        }
-        
-        // ===== UPDATE RUMBLE EFFECT (SPEED SYSTEM) =====
-        if (scrollyConfig.rumble.enabled && this.rumbleState.intensity > 0.01 && this.scrollyWrapperElement) {
-          this.applyRumbleEffect();
-          
-          // Gradually decrease rumble intensity for car-like deceleration
-          this.rumbleState.intensity *= Math.pow(scrollyConfig.rumble.dampingFactor, deltaTime * 60);
-        }
-      } catch (error) {
-        console.error('Error in scrolly effect animation:', error);
-      }
-      
-      this.animationFrameId = requestAnimationFrame(animate);
-    };
     
-    this.animationFrameId = requestAnimationFrame(animate);
+    super.init();
   }
   
-  // Apply rubber band effect to wall elements
-  applyRubberBandEffect() {
+  applyImpulse(impulse) {
+    if (!this.enabled || !this.initialized) return;
+    
+    // Apply clamped impulse (negative impulse pushes elements toward camera)
+    const clampedImpulse = Math.max(-this.config.maxImpulse, 
+                               Math.min(impulse, this.config.maxImpulse));
+    this.velocity -= clampedImpulse * this.config.responsiveness;
+  }
+  
+  update(deltaTime) {
+    if (!this.enabled || !this.initialized || this.wallElements.length === 0) return;
+    
+    // Update position based on velocity
+    this.currentZOffset += this.velocity * deltaTime;
+    
+    // Calculate spring force pulling back to default position (F = -k * x)
+    const springForce = -this.config.stiffness * this.currentZOffset;
+    
+    // Apply spring force to velocity (F = ma, assume mass=1)
+    this.velocity += springForce * deltaTime;
+    
+    // Apply damping (elasticity) to velocity
+    this.velocity *= Math.pow(this.config.elasticity, deltaTime * 60);
+    
+    // Limit the maximum offset (prevents extreme movement)
+    const maxOffset = this.config.defaultZTranslate - this.config.minZTranslate;
+    this.currentZOffset = Math.max(-maxOffset, Math.min(0, this.currentZOffset));
+    
+    // Apply effect to wall elements
+    this.applyToWalls();
+    
+    // Broadcast rubber band state for other modules
+    this.broadcastState();
+  }
+  
+  applyToWalls() {
     // Calculate current Z translate value
-    const currentZTranslate = scrollyConfig.rubberBand.defaultZTranslate + this.rubberBandState.currentZOffset;
+    const currentZTranslate = this.config.defaultZTranslate + this.currentZOffset;
     
     // Apply to all wall elements
     this.wallElements.forEach(wall => {
@@ -248,19 +213,85 @@ class scrollEffect {
     });
   }
   
-  // Update scroll pattern positions based on velocity and rubber band effect
-  updateScrollPatterns(deltaTime) {
-    // Retrieve the scroll velocity from scrollTracker (default to 0 if unavailable)
-    let velocity = 0;
-    try {
-      velocity = scrollTracker.getState().velocityMS || 0;
-    } catch (e) {
-      console.warn('ScrollTracker error, using 0 velocity');
-    }
+  broadcastState() {
+    // Calculate normalized offset (0-1) representing current rubber band stretch
+    const maxOffset = this.config.defaultZTranslate - this.config.minZTranslate;
+    const normalizedOffset = Math.abs(this.currentZOffset) / maxOffset;
     
-    // Calculate the rubber band effect influence (normalized 0-1)
-    const maxOffset = scrollyConfig.rubberBand.defaultZTranslate - scrollyConfig.rubberBand.minZTranslate;
-    const normalizedOffset = Math.abs(this.rubberBandState.currentZOffset) / maxOffset;
+    // Create and dispatch custom event
+    document.dispatchEvent(new CustomEvent('rubberband:update', { 
+      detail: {
+        offset: this.currentZOffset,
+        normalizedOffset: normalizedOffset,
+        velocity: this.velocity,
+        currentZ: this.config.defaultZTranslate + this.currentZOffset
+      }
+    }));
+  }
+  
+  destroy() {
+    this.wallElements.forEach(wall => {
+      wall.style.transform = '';
+      wall.style.willChange = '';
+    });
+    super.destroy();
+  }
+}
+
+/**
+ * PatternEffect - Handles scroll pattern animations
+ */
+class PatternEffect extends BaseEffect {
+  constructor(config) {
+    super(config);
+    this.patternWrappers = [];
+  }
+  
+  init() {
+    if (this.initialized) return;
+    
+    this.initPatterns();
+    super.init();
+  }
+  
+  initPatterns() {
+    if (!this.enabled) return;
+    
+    try {
+      // Find all wrappers containing the pattern element
+      this.patternWrappers = Array.from(document.querySelectorAll('.scroll-pattern-wrapper'));
+      console.log(`PatternEffect: Found ${this.patternWrappers.length} scroll pattern wrappers`);
+      
+      this.patternWrappers.forEach(wrapper => {
+        if (wrapper.dataset.initialized) return; // Skip if already initialized
+        wrapper.dataset.initialized = 'true';
+        wrapper.style.overflow = 'hidden';
+
+        // Use the element with the pattern texture
+        let patternEl = wrapper.querySelector('.scroll-pattern-container');
+        if (!patternEl) {
+          patternEl = wrapper.firstElementChild;
+        }
+        if (!patternEl) {
+          console.warn('PatternEffect: No pattern element found in wrapper');
+          return;
+        }
+
+        // Ensure GPU-accelerated transforms for smooth animation
+        patternEl.style.willChange = 'transform';
+
+        // Since the pattern element is 200% width,
+        // half its width equals the wrapper's width (for a seamless loop)
+        const initialWidth = patternEl.scrollWidth / 2;
+        wrapper._patternData = { patternEl, initialWidth, position: 0 };
+      });
+    } catch (error) {
+      console.error('Error during scroll pattern initialization:', error);
+    }
+  }
+  
+  update(deltaTime, velocity, normalizedRubberBandOffset) {
+    if (!this.enabled || !this.initialized || this.patternWrappers.length === 0) return;
     
     // Update each wrapper's pattern element position
     this.patternWrappers.forEach(wrapper => {
@@ -269,10 +300,10 @@ class scrollEffect {
 
       // Calculate movement combining:
       // 1. Base movement from constant velocity (car-like speed)
-      const baseMovement = velocity * scrollyConfig.pattern.speedFactor * deltaTime;
+      const baseMovement = velocity * this.config.speedFactor * deltaTime;
       
       // 2. Rubber band movement from acceleration impulses
-      const rubberBandMovement = normalizedOffset * scrollyConfig.pattern.rubberBandFactor * deltaTime;
+      const rubberBandMovement = normalizedRubberBandOffset * this.config.rubberBandFactor * deltaTime;
       
       // Combine movements (move left as values increase)
       const totalMovement = baseMovement + rubberBandMovement;
@@ -288,66 +319,141 @@ class scrollEffect {
     });
   }
   
-  // Broadcast rubber band state for other modules
-  broadcastRubberBandState() {
-    // Calculate normalized offset (0-1) representing current rubber band stretch
-    const maxOffset = scrollyConfig.rubberBand.defaultZTranslate - scrollyConfig.rubberBand.minZTranslate;
-    const normalizedOffset = Math.abs(this.rubberBandState.currentZOffset) / maxOffset;
-    
-    // Create and dispatch custom event
-    document.dispatchEvent(new CustomEvent('rubberband:update', { 
-      detail: {
-        offset: this.rubberBandState.currentZOffset,
-        normalizedOffset: normalizedOffset,
-        velocity: this.rubberBandState.velocity,
-        currentZ: scrollyConfig.rubberBand.defaultZTranslate + this.rubberBandState.currentZOffset
+  reinitialize() {
+    // Clear existing pattern data
+    this.patternWrappers.forEach(wrapper => {
+      if (wrapper._patternData && wrapper._patternData.patternEl) {
+        wrapper._patternData.patternEl.style.transform = '';
+        wrapper._patternData.patternEl.style.willChange = '';
       }
-    }));
+      delete wrapper.dataset.initialized;
+    });
+    
+    this.patternWrappers = [];
+    this.initPatterns();
   }
   
-  // Apply rumble effect to scrolly wrapper
-  applyRumbleEffect() {
-    // Simple screen shake effect based on rumble intensity
-    const intensity = this.rumbleState.intensity;
-    if (intensity < 0.1) return; // Skip tiny movements
+  destroy() {
+    this.patternWrappers.forEach(wrapper => {
+      if (wrapper._patternData && wrapper._patternData.patternEl) {
+        wrapper._patternData.patternEl.style.transform = '';
+        wrapper._patternData.patternEl.style.willChange = '';
+      }
+    });
+    super.destroy();
+  }
+}
+
+/**
+ * Main ScrollEffectManager class that coordinates all effects
+ */
+class ScrollEffectManager {
+  constructor() {
+    // Create effect instances
+    this.rumbleEffect = new RumbleEffect(scrollyConfig.rumble);
+    this.rubberBandEffect = new RubberBandEffect(scrollyConfig.rubberBand);
+    this.patternEffect = new PatternEffect(scrollyConfig.pattern);
     
-    // Create random offsets scaled by intensity
-    const offsetX = (Math.random() - 0.5) * intensity;
-    const offsetY = (Math.random() - 0.5) * intensity;
+    // Animation frame tracking
+    this.initialized = false;
+    this.animationFrameId = null;
+    this.lastUpdateTime = performance.now();
     
-    // Apply to scrolly wrapper or root element
-    if (this.scrollyWrapperElement) {
-      this.scrollyWrapperElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-    } else {
-      document.documentElement.style.margin = `${offsetY}px ${offsetX}px`;
-    }
+    // Initialize the manager
+    this.init();
   }
   
-  // Clean up method
+  init() {
+    console.log("Initializing ScrollEffectManager");
+    
+    // Initialize all effects
+    this.rumbleEffect.init();
+    this.rubberBandEffect.init();
+    this.patternEffect.init();
+    
+    // Listen for scroll velocity updates (for rumble effect)
+    scrollTracker.on("update", (data) => {
+      if (this.rumbleEffect.enabled) {
+        this.rumbleEffect.setIntensity(data.velocityKMH);
+      }
+    });
+    
+    // Listen for scroll impulses (for rubber band effect)
+    scrollTracker.on("scroll", (data) => {
+      if (this.rubberBandEffect.enabled) {
+        this.rubberBandEffect.applyImpulse(data.impulse);
+      }
+    });
+    
+    // Listen for window resize to reinitialize pattern elements
+    window.addEventListener('resize', this.handleResize.bind(this));
+    
+    this.initialized = true;
+    this.startAnimation();
+  }
+  
+  handleResize() {
+    if (!this.initialized) return;
+    
+    // Use a debounce approach
+    if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+    this.resizeTimeout = setTimeout(() => {
+      this.patternEffect.reinitialize();
+    }, 300);
+  }
+  
+  startAnimation() {
+    const animate = (timestamp) => {
+      try {
+        const now = timestamp;
+        
+        // Calculate delta time for physics simulation with safety cap
+        const deltaTime = Math.min((now - this.lastUpdateTime) / 1000, 0.05);
+        this.lastUpdateTime = now;
+        
+        // Update rubber band effect
+        this.rubberBandEffect.update(deltaTime);
+        
+        // Get normalized rubber band offset for pattern effect
+        const maxOffset = scrollyConfig.rubberBand.defaultZTranslate - scrollyConfig.rubberBand.minZTranslate;
+        const normalizedOffset = Math.abs(this.rubberBandEffect.currentZOffset) / maxOffset;
+        
+        // Update pattern effect with velocity from scrollTracker
+        let velocity = 0;
+        try {
+          velocity = scrollTracker.getState().velocityMS || 0;
+        } catch (e) {
+          console.warn('ScrollTracker error, using 0 velocity');
+        }
+        this.patternEffect.update(deltaTime, velocity, normalizedOffset);
+        
+        // Update rumble effect
+        this.rumbleEffect.update(deltaTime);
+      } catch (error) {
+        console.error('Error in scroll effect animation:', error);
+      }
+      
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    this.animationFrameId = requestAnimationFrame(animate);
+  }
+  
   destroy() {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
     
-    // Reset elements
-    if (this.scrollyWrapperElement) {
-      this.scrollyWrapperElement.style.transform = '';
-    } else {
-      document.documentElement.style.margin = '';
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
     }
     
-    this.wallElements.forEach(wall => {
-      wall.style.transform = '';
-      wall.style.willChange = '';
-    });
+    // Clean up all effects
+    this.rumbleEffect.destroy();
+    this.rubberBandEffect.destroy();
+    this.patternEffect.destroy();
     
-    this.patternWrappers.forEach(wrapper => {
-      const patternEl = wrapper._patternData?.patternEl;
-      if (patternEl) {
-        patternEl.style.transform = '';
-        patternEl.style.willChange = '';
-      }
-    });
+    this.initialized = false;
   }
 }
 
@@ -355,18 +461,17 @@ class scrollEffect {
 let scrollEffectInstance = null;
 
 /**
- * Initialize the scrolly effect module
+ * Initialize the scroll effect module
  */
 export function initscrollEffect() {
   if (!scrollEffectInstance) {
-    scrollEffectInstance = new scrollEffect();
+    scrollEffectInstance = new ScrollEffectManager();
   }
   return scrollEffectInstance;
 }
 
 // Export the scroll pattern functionality as a separate variable for backward compatibility
-// (this ensures any existing code referring to scrollPattern still works)
 export const scrollPattern = {
   // This is just a stub to maintain compatibility
-  // The actual functionality is now part of the scrollEffect class
+  // The actual functionality is now part of the ScrollEffectManager class
 };
