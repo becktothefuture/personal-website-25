@@ -1,20 +1,56 @@
 /**
- * Scroll Tracker Module
- * --------------------
- * Tracks scrolling behavior and velocity, emitting events for other components.
+ * @fileoverview Scroll Tracker Module - Tracks and normalizes scroll speed and acceleration
+ * @module scrollTracker
+ * @author Alexander Beck
  * 
- * This module:
- * - Implements a physics-based model for scroll momentum and velocity
- * - Provides configurable parameters for mass, drag, impulse and damping
- * - Calculates scroll speed in m/s and km/h with realistic physics
- * - Includes an event system to notify other modules of scroll updates
- * - Applies quadratic drag for realistic deceleration
- * - Handles both upward (accelerate) and downward (brake) scroll inputs
- * - Enforces maximum velocity limits with smooth damping
- * - Rotates elements with class "turnstyle" based on scroll velocity
+ * A module that provides scroll tracking functionality by monitoring wheel events and 
+ * calculating normalized speed and acceleration values. This creates a physics-based
+ * scroll experience that can be consumed by other components.
  */
 
-// scrollTracker.js
+/**
+ * Simple event emitter for implementing the observer pattern and enabling decoupled communication
+ * @class
+ */
+
+/**
+ * ScrollTracker class that extends EventEmitter to provide scroll metrics
+ * @class
+ * @extends EventEmitter
+ * @fires ScrollTracker#scroll - Emitted on wheel events with normalized values
+ * @fires ScrollTracker#normalizedUpdate - Emitted on each animation frame with updated values
+ */
+
+/**
+ * Configuration parameters for scroll tracking behavior
+ * @private
+ * @type {Object}
+ * @property {number} scrollScalingFactor - Controls scroll sensitivity (lower = more sensitive)
+ * @property {number} speedDecayRate - Controls how quickly speed decays (higher = faster decay)
+ * @property {number} accelerationDecayRate - Controls how quickly acceleration decays (higher = faster decay)
+ */
+
+/**
+ * Internal state values normalized between 0 and 1
+ * @private
+ * @type {Object}
+ * @property {number} speed - Current normalized speed value
+ * @property {number} acceleration - Current normalized acceleration value
+ */
+
+/**
+ * DOM elements for displaying metrics (for demo purposes)
+ * @private
+ * @type {Object}
+ * @property {HTMLElement|null} speedDisplay - Element to display speed value
+ * @property {HTMLElement|null} accelDisplay - Element to display acceleration value
+ */
+
+/**
+ * Singleton instance of the ScrollTracker
+ * @const {ScrollTracker}
+ */
+// Scroll Tracker Module
 
 
 console.log('Scroll Tracker Module Initialized');
@@ -82,14 +118,12 @@ class ScrollTracker extends EventEmitter {
   
   update() {
     const dt = 0.016; // ~60fps
-    // Integrate acceleration to update speed (like a car's physics)
+    // Integrate acceleration to update speed
     this.#state.speed += this.#state.acceleration * dt;
     // Ensure speed is never negative.
     this.#state.speed = Math.max(this.#state.speed, 0);
-    
     // Apply friction decay to speed (simulate resistance)
     this.#state.speed *= (1 - dt * this.#config.speedDecayRate);
-    
     // Exponential decay on acceleration
     this.#state.acceleration *= Math.exp(-this.#config.accelerationDecayRate * dt);
     

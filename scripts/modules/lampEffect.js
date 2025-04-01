@@ -21,14 +21,11 @@ console.log('Lamp Effect module initialized');
  * Configuration for the lamp effect
  */
 export const lampConfig = {
-  fadeSpeed: 4,
   minBrightness: 0.0,
   maxBrightness: 2.0
 };
 
 class LampEffect {
-  #currentBrightness = lampConfig.minBrightness;
-  #targetBrightness = lampConfig.minBrightness;
   #isActive = false;
   #animationFrameId = null;
   
@@ -40,26 +37,20 @@ class LampEffect {
     // Update brightness continuously using normalizedUpdate (acceleration decays over time)
     scrollTracker.on("normalizedUpdate", (data) => {
       const normalizedAccel = Math.min(data.normalizedAcceleration, 1);
-      this.#targetBrightness = lampConfig.minBrightness +
+      const brightness = lampConfig.minBrightness + 
         normalizedAccel * (lampConfig.maxBrightness - lampConfig.minBrightness);
+        
+      // Directly set the CSS variable without additional dampening
+      document.documentElement.style.setProperty('--lamp-brightness', brightness);
     });
     
     this.#isActive = true;
-    this.#animate();
+    this.#startListening();
   }
   
-  #animate() {
+  #startListening() {
     if (!this.#isActive) return;
-    
-    // Use a simple lerp to move currentBrightness toward targetBrightness.
-    const diff = this.#targetBrightness - this.#currentBrightness;
-    const lerpFactor = Math.min(lampConfig.fadeSpeed * 0.05, 1);
-    this.#currentBrightness += diff * lerpFactor;
-    
-    // Update CSS variable for the lamp brightness
-    document.documentElement.style.setProperty('--lamp-brightness', this.#currentBrightness);
-    
-    this.#animationFrameId = requestAnimationFrame(this.#animate.bind(this));
+    this.#animationFrameId = requestAnimationFrame(this.#startListening.bind(this));
   }
   
   destroy() {
