@@ -78,10 +78,9 @@ class EventEmitter {
 
 // Streamlined ScrollTracker: tracks normalized speed and acceleration from scroll events.
 class ScrollTracker extends EventEmitter {
-  // Configuration parameters.
   #config = {
     scrollScalingFactor: 100,  // Lower value increases sensitivity
-    speedDecayRate: 0.1,  // Higher value increases speed decay
+    speedDecayRate: 1,  // Higher value increases speed decay
     accelerationDecayRate: 6  // Higher value increases acceleration decay
   };
 
@@ -91,9 +90,22 @@ class ScrollTracker extends EventEmitter {
     acceleration: 0
   };
 
-  // Demo page display elements.
-  #speedDisplay = document.getElementById('speed-system');
-  #accelDisplay = document.getElementById('acceleration-system');
+  // Conversion factors and constants
+  #conversion = {
+    // Base measurement is pixels per second
+    pixelsPerSecond: 3000, // Maximum px/sec when speed = 1
+    
+    // Conversion constants
+    pixelsPerInch: 96, // Standard screen resolution (96 DPI)
+    inchesPerMile: 63360, // 1 mile = 63,360 inches
+    inchesPerKm: 39370.1, // 1 km = 39,370.1 inches
+    secondsPerHour: 3600 // 1 hour = 3,600 seconds
+  };
+
+  // Scroll monitoring DOM elements.
+  #mphDisplay = document.getElementById('scroll-value-milesPerHour');
+  #kphDisplay = document.getElementById('scroll-value-kmPerHour');
+  #pxpsDisplay = document.getElementById('scroll-value-pxPerSecond');
 
   constructor() {
     super();
@@ -127,13 +139,30 @@ class ScrollTracker extends EventEmitter {
     // Exponential decay on acceleration
     this.#state.acceleration *= Math.exp(-this.#config.accelerationDecayRate * dt);
     
-    // Update demo displays.
-    if(this.#speedDisplay) this.#speedDisplay.textContent = `Speed: ${this.#state.speed.toFixed(2)}`;
-    if(this.#accelDisplay) this.#accelDisplay.textContent = `Acceleration: ${this.#state.acceleration.toFixed(2)}`;
+    // Calculate pixels per second first (our base measurement)
+    const pxps = this.#state.speed * this.#conversion.pixelsPerSecond;
+    
+    // Convert pixels per second to miles per hour
+    // (px/s) ÷ (px/in) ÷ (in/mi) × (s/h) = mi/h
+    const mph = pxps / this.#conversion.pixelsPerInch / this.#conversion.inchesPerMile * this.#conversion.secondsPerHour;
+    
+    // Convert pixels per second to kilometers per hour
+    // (px/s) ÷ (px/in) ÷ (in/km) × (s/h) = km/h
+    const kph = pxps / this.#conversion.pixelsPerInch / this.#conversion.inchesPerKm * this.#conversion.secondsPerHour;
+    
+    // Update displays with fixed precision format (000.00)
+    if(this.#mphDisplay) this.#mphDisplay.textContent = this.formatSpeed(mph);
+    if(this.#kphDisplay) this.#kphDisplay.textContent = this.formatSpeed(kph);
+    if(this.#pxpsDisplay) this.#pxpsDisplay.textContent = this.formatSpeed(pxps);
     
     // Emit update event.
     this.emit("normalizedUpdate", { normalizedSpeed: this.#state.speed, normalizedAcceleration: this.#state.acceleration });
     requestAnimationFrame(this.update.bind(this));
+  }
+  
+  formatSpeed(speed) {
+    // Format as 000.00 - pad with zeros as needed
+    return speed.toFixed(2).padStart(6, '0');
   }
   
   getNormalizedSpeed() {
@@ -142,6 +171,21 @@ class ScrollTracker extends EventEmitter {
   
   getNormalizedAcceleration() {
     return this.#state.acceleration;
+  }
+  
+  // Updated methods to get real-world speeds
+  getMilesPerHour() {
+    const pxps = this.#state.speed * this.#conversion.pixelsPerSecond;
+    return pxps / this.#conversion.pixelsPerInch / this.#conversion.inchesPerMile * this.#conversion.secondsPerHour;
+  }
+  
+  getKilometersPerHour() {
+    const pxps = this.#state.speed * this.#conversion.pixelsPerSecond;
+    return pxps / this.#conversion.pixelsPerInch / this.#conversion.inchesPerKm * this.#conversion.secondsPerHour;
+  }
+
+  getPixelsPerSecond() {
+    return this.#state.speed * this.#conversion.pixelsPerSecond;
   }
 }
 

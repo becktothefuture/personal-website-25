@@ -6,7 +6,7 @@
   <style>
     body {
       background: #111;
-      colour: #eee;
+      color: #eee;
       font-family: monospace;
       padding: 20px;
     }
@@ -43,134 +43,210 @@
   <pre id="ascii-art"></pre>
 
   <script>
-    // Final ASCII art (each line must be exactly as you want it to appear)
     const finalArt = [
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                     ██   ███                                        ",
-      "                       ░▒░░    ░                  ▒░                ",
-      "                 ▓▓▓▓▓░░   ░▒ ▓▓▒              ▒▒░▓▓▒               ",
-      "               ░▒▒▓▓▓▓  ░   ░ ▓▒▓▓▓▓░         ▓░▒▓▓                 ",
-      "              ▓▓▓▒▓░ ▓ ░    ░ ▓░ ▒▒           ▒█▓▓▓                 ",
-      "              ▒▓▒▒▒▒▓▓▓░░░░░░█▓▒▓▒▓▓▓▓        ▓▒▒▓░▓ ▓              ",
-      "             ▓░▓▓▒▒█▒░▒▓▓▓▓▓▒▓▒  ▒ ▓▒▓       ▒░▓▒▓▒▒▒▒▓▒░           ",
-      "             ▓▓█▓▓▒▓▒░▓▒▓▓▒█████████▒▓       ▒▒▒▒▓▓▓██▓▒▓▓          ",
-      "             ▓▒▒▒▓▓█▓█████████████▓▓▓       ▒█▓█████▓▓▓█▒░          ",
-      "              ▓█████████████████▓▒▒▒░        ▓█░█▓▓▓▓█▓             ",
-      "               ▒▒▒▓▒█████████▓ ▒▒▒▒▒         ▓█▓█▒█▓▒▓              ",
-      "                 ▒▓▓▒░    ░    ▒▓▒▓ ░▓  ▒▒▓█▓▓▓█▓▒▒█▓               ",
-      "                  ░▓███▓▓█▓▓▓██▓▒▒██▓█▓██▓▒▒▓▓▒▒█░▓ ▒░              ",
-      "                ▓▒▓█▓███▒▓▓███████▓█▒▒▒▓▒▓▒▓▒▒▒▒                    ",
-      "               ▒█▒▒▒▓▓▓██████▓▓▓▒▒░░▒ ▒                              ",
-      "               ░█▓█▓▓█▒▓▒▓▓▓▓▓▓▓▓                                    ",
-      "              ▒▒▒▒▓█▒▓█▓▓▒█▒▓▒▓▓▓                                    ",
-      "             ▒▓▓▒█▒▒▓▓░██▒▓█▓▒▒█▒▓▓                                 ",
-      "            ▒▒▒▓█▓██▒▓▓▒▒▓▒▒▒▒▒▓▒▓▒▓                                ",
-      "            ▓▒██▓▒▒▓▓▒▓▓▒▓▒▒▓█▒▒▒▒▓▓                                ",
-      "          ▒▓▓▓▓▓▒▒▒█▒▓▒▓▓▒▓█▒▓▓▓▒▓▒▓▓                               ",
-      "          ▒▒▒▒▒▒▒▒▓▒░▒▒░▒░▒▒░▒▒▒▒▒░▒                                "
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                              ░▒▒▓▓██▓▓▓▓▓██▓█████▓█▓▓▓▓███▓▒▒░                               ",
+      "                            ▓▒▒▒▓▓█████████████████████████▓▓▓▒▒▒                             ",
+      "                          ▓█▒▒▓▓█████████████████████████████▓▓▒▒▒█                           ",
+      "                         ░█▒▓▓▓███████████████████████████████▓▓▒▒▒█                          ",
+      "                 ▓███▓  ░█▒▓▓▓█████████████████████████████████▓▓▒▒▒█  ▒▓███▓                 ",
+      "                 ▓░▒▓██ ░▓░▒██████████████████████████████████████▓▒█░ ▒▓▒▒░                  ",
+      "                    ▒░░░░░░▒▒▒█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█▒▒▒░░░░░░                     ",
+      "                   ░▒▒▒▒▒▒▒▓▒▓▓█████████████████████████████████▒▓▓▒▒▒▒▓▓░░                   ",
+      "                 ░░▒▓▒▒▒▓▓▓█▓▓▒▓█████████████▓▒▒██████████████▒▓▓████░▒▒▒▓░░                  ",
+      "                 ░░▓▓█▓▒▒░███░░▓▒░██████████████████████████░▓▒░▒███▒▓ ██▒░░                 ",
+      "                 ░░█▒▒█▓█▓▓ ▓▓██▓████████████████████████████▒▓█░▓█ ▒██░▒▓▓░░                 ",
+      "                █▒▒▓██▓▓██░░▒█▓▓▒▓██████████████████████████▓██▓░░▒░█▓▓▓█▓▒▒▒                 ",
+      "                █▒▒▒▒▓▓▓▓█████▓▓▓▓█████████████████████████▓▒▓▓▓██▒▒█▓▓▓▓▒▒▒▒                 ",
+      "                █▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▒████████████████████████▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒░                 ",
+      "                █▒▒▒▓████▓█▓█▓▓▓▒█▒▒▒▒▒▓██████████████▓▓▓▒▓█▓▓▓███████████░▒░                 ",
+      "                █▒██████████▓▓▓▓▓▒███▓░░░░███▓░▒█░░░░░░░███▓▒▒▓▓▓██████████▒░░                ",
+      "                █▓█████████▓▓▓▓▓▓█████░░░░██▓█░░█░█░░░░░██████▓▓▓▓▒███████▓▓▒░                ",
+      "       ░ ░░░░░░░█ ███████▓▒▒▓▓██████████████████████████████████▓▒▒▒███████▓▒░░░░░░░ ░        ",
+      "    ░░░░░░░░░░░░██▓▒██████████████████████████████████████████████████████▓▓█░░░░░░░░░░░░░ ░  ",
+      "   ░░░░░░░░░░░░░███▓▓▓▓█████▓█▓████████████████████████████████████████▓▓▓▒██░░░░░░░░░░░░░░ ░ ",
+      "  ░ ░░░░░░░░░░░░░███████████▓█████▓█▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓█▓█████▓███████████░░░░░░░░░░░░░░ ░░",
+      "   ░ ░░░░░░░░░░░░▒▓▓█████████████████████████████████████████████████████▓▓▒▒░░░░░░░░░░░░░░░  ",
+      "     ░ ░░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▓█████████████████████████████████▓▓▓▓▓▒▒▒▒▒░░░░░░░░░░░░░░       ",
+      "              ░  ░ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ░               ",
+      "                                                        ░                                     ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              ",
+      "                                                                                              "
     ];
 
     // Character set used for random noise (feel free to adjust)
     const noiseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.<>/?";
 
+    // Character maps for animation (similar characters grouped together)
+    const charMaps = {
+      " ": [" "],  // Space stays space
+      "░": ["░", ".", "·", " "],
+      "▒": ["▒", ":", "░", "·"],
+      "▓": ["▓", "▒", ":", "░", "█"],
+      "█": ["█", "▓", "▒"],
+    };
+    
+    // Default mapping for characters not explicitly defined
+    const defaultCharMap = ["░", "▒", "▓", "█", " ", ".", ",", ":", ";", "+", "*", "#", "@"];
+    
+    // Get a similar character based on the original
+    function getSimilarChar(char) {
+      // If we have a specific map for this character, use it
+      if (charMaps[char]) {
+        const options = charMaps[char];
+        return options[Math.floor(Math.random() * options.length)];
+      }
+      
+      // For spaces, just return space
+      if (char === " ") return " ";
+      
+      // For other characters, use the default map with bias toward the original character
+      if (Math.random() < 0.7) return char; // 70% chance to keep the original character
+      
+      return defaultCharMap[Math.floor(Math.random() * defaultCharMap.length)];
+    }
+    
     // Global variables for animation control
     let animationFrameId = null;
-    let startTime = null;
-    let timings = []; // 2D array matching finalArt: { reveal, finalize } for each character
-    const artElement = document.getElementById("ascii-art");
-
-    // Retrieve control elements
-    const randomnessSlider = document.getElementById("randomness");
-    const durationSlider = document.getElementById("duration");
-    const restartButton = document.getElementById("restart");
-
-    // Pre-calculate timings for each cell based on current controls.
-    function initTimings(totalTime, randomnessFactor) {
-      timings = [];
-      // Set up parameters for noise duration (in seconds)
-      const revealMax = totalTime * 0.3; // maximum time for reveal to start
-      const minDelay = 0.2, maxDelay = totalTime * 0.8; // additional delay after reveal
-
-      for (let row = 0; row < finalArt.length; row++) {
-        const lineTimings = [];
-        for (let col = 0; col < finalArt[row].length; col++) {
-          // Only animate non-space characters; spaces remain spaces.
-          const isAnimated = finalArt[row][col] !== " ";
-          let reveal = isAnimated ? Math.random() * revealMax : 0;
-          let delay = isAnimated ? minDelay + (maxDelay - minDelay) * randomnessFactor * Math.random() : 0;
-          let finalize = reveal + delay;
-          lineTimings.push({ reveal, finalize });
-        }
-        timings.push(lineTimings);
+    let artElement = document.getElementById("ascii-art");
+    
+    // Animation parameters
+    const animationSpeed = 100; // milliseconds between updates
+    let lastUpdateTime = 0;
+    let mouseX = -1000, mouseY = -1000;
+    let isHovering = false;
+    
+    // Track mouse position for enhanced animation near cursor
+    artElement.addEventListener('mousemove', (e) => {
+      const rect = artElement.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+      isHovering = true;
+    });
+    
+    artElement.addEventListener('mouseleave', () => {
+      isHovering = false;
+    });
+    
+    // Calculate approximate character dimensions
+    let charWidth = 8;  // Default estimate for monospace character width
+    let charHeight = 16; // Default estimate for monospace character height
+    
+    function calculateCharDimensions() {
+      const testElement = document.createElement('span');
+      testElement.style.fontFamily = 'monospace';
+      testElement.style.fontSize = '14px';
+      testElement.style.position = 'absolute';
+      testElement.style.visibility = 'hidden';
+      testElement.textContent = 'X';
+      document.body.appendChild(testElement);
+      
+      const rect = testElement.getBoundingClientRect();
+      charWidth = rect.width;
+      charHeight = rect.height;
+      
+      document.body.removeChild(testElement);
+    }
+    
+    // Create a copy of the original art to use as reference
+    const originalArt = finalArt.map(line => line);
+    
+    // The continuous animation function
+    function animate(timestamp) {
+      // Throttle updates for better performance
+      if (timestamp - lastUpdateTime < animationSpeed) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
       }
-    }
-
-    // Returns a random character from noiseChars
-    function getRandomChar() {
-      return noiseChars[Math.floor(Math.random() * noiseChars.length)];
-    }
-
-    // The animation function
-    function animate(timestamp, totalTime) {
-      if (!startTime) startTime = timestamp;
-      const elapsed = (timestamp - startTime) / 1000; // in seconds
-
+      
+      lastUpdateTime = timestamp;
+      
       let output = "";
       for (let row = 0; row < finalArt.length; row++) {
         let line = "";
         for (let col = 0; col < finalArt[row].length; col++) {
-          const { reveal, finalize } = timings[row][col];
-          if (elapsed < reveal) {
-            // Before reveal time: show space (hidden)
+          const originalChar = originalArt[row][col];
+          
+          // Keep spaces as spaces
+          if (originalChar === " ") {
             line += " ";
-          } else if (elapsed >= reveal && elapsed < finalize) {
-            // In noise phase: show a random char
-            line += getRandomChar();
+            continue;
+          }
+          
+          // Check if near mouse cursor for enhanced animation
+          if (isHovering) {
+            const x = col * charWidth;
+            const y = row * charHeight;
+            const dx = x - mouseX;
+            const dy = y - mouseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Characters near cursor have higher chance of changing
+            if (distance < 50) {
+              line += getSimilarChar(originalChar);
+              continue;
+            }
+          }
+          
+          // Regular animation - small chance to change character
+          if (Math.random() < 0.05) { // 5% chance to change any character
+            line += getSimilarChar(originalChar);
           } else {
-            // Final phase: show the actual character
-            line += finalArt[row][col];
+            line += originalChar;
           }
         }
         output += line + "\n";
       }
+      
       artElement.innerText = output;
-
-      if (elapsed < totalTime) {
-        // Use requestAnimationFrame for smooth, high-performance animation.
-        animationFrameId = requestAnimationFrame(ts => animate(ts, totalTime));
-      } else {
-        // Ensure final state is rendered
-        artElement.innerText = finalArt.join("\n");
-      }
+      animationFrameId = requestAnimationFrame(animate);
     }
-
-    // Starts or restarts the animation
+    
+    // Retrieve control elements
+    const randomnessSlider = document.getElementById("randomness");
+    const durationSlider = document.getElementById("duration");
+    const restartButton = document.getElementById("restart");
+    
+    // Modify controls to adjust animation parameters
+    randomnessSlider.addEventListener('input', function() {
+      // Use randomness slider to control how much the characters change
+      const randomnessFactor = parseFloat(this.value);
+      // The mapping logic will use this global value
+      window.animationRandomness = randomnessFactor;
+    });
+    
+    durationSlider.addEventListener('input', function() {
+      // Use duration slider to control animation speed
+      const duration = parseFloat(this.value);
+      // Invert relationship: shorter duration = faster animation
+      animationSpeed = 200 - (duration * 15); // Range: 50ms to 200ms
+    });
+    
+    // Start or restart the animation
     function startAnimation() {
       // Cancel any ongoing animation
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      startTime = null;
-
-      // Read current slider values
-      const randomnessFactor = parseFloat(randomnessSlider.value);
-      const totalTime = parseFloat(durationSlider.value);
-
-      // Precompute timings for each cell to avoid recalculating in each frame.
-      initTimings(totalTime, randomnessFactor);
-
-      // Start the animation on next frame
-      animationFrameId = requestAnimationFrame(ts => animate(ts, totalTime));
+      
+      // Start new animation
+      animationFrameId = requestAnimationFrame(animate);
     }
-
+    
     // Attach event listeners
     restartButton.addEventListener("click", startAnimation);
-
-    // Trigger animation on page load
-    window.addEventListener("load", startAnimation);
+    
+    // Initialize and start animation on page load
+    window.addEventListener("load", () => {
+      calculateCharDimensions();
+      window.animationRandomness = parseFloat(randomnessSlider.value);
+      startAnimation();
+    });
   </script>
 </body>
 </html>
