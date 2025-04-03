@@ -21,20 +21,9 @@ export function init3DButtons() {
 function initializeButtons() {
   const buttonWrappers = document.querySelectorAll('.btn-3d');
   
-  // Check if any button is already active
-  const activeButtonExists = document.querySelector('.btn-3d__button.btn-3d--active');
+  // Initially don't set any button as active - wait for intro to complete
+  // The home button will be activated by the intro:complete event
   
-  // Set home button as active by default only if no active button exists yet
-  if (!activeButtonExists) {
-    const homeButton = document.getElementById('home-button');
-    if (homeButton) {
-      const homeButtonElement = homeButton.querySelector('.btn-3d__button');
-      if (homeButtonElement) {
-        homeButtonElement.classList.add('btn-3d--active');
-      }
-    }
-  }
-
   // Verify all screens exist at initialization
   const screens = ['home-view', 'portfolio-view', 'contact-view']; // Removed about-view
   const missingScreens = screens.filter(id => !document.getElementById(id));
@@ -42,8 +31,13 @@ function initializeButtons() {
     console.warn('Missing screen elements:', missingScreens.join(', '));
   }
 
-  // Initialize screen visibility based on active button
-  updateScreenVisibility();
+  // Hide all screens initially
+  screens.forEach(id => {
+    const screen = document.getElementById(id);
+    if (screen) {
+      screen.style.display = 'none';
+    }
+  });
 
   // Add click and sound handlers to all button wrappers
   buttonWrappers.forEach(wrapper => {
@@ -59,16 +53,45 @@ function initializeButtons() {
     const button = wrapper.querySelector('.btn-3d__button');
     if (button) {
       button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', button.classList.contains('btn-3d--active') ? 'true' : 'false');
+      button.setAttribute('aria-selected', 'false'); // All buttons inactive initially
     }
   });
   
-  // Listen for intro complete event to animate widgets on first view
+  // Listen for intro complete event to toggle home button and animate widgets
   document.addEventListener('intro:complete', () => {
-    console.log('Intro complete, animating initial widgets');
-    const activeScreen = getActiveScreen();
-    if (activeScreen) {
-      animateWidgets(activeScreen);
+    console.log('Intro complete, toggling home button');
+    const homeButton = document.getElementById('home-button');
+    if (homeButton) {
+      const homeButtonElement = homeButton.querySelector('.btn-3d__button');
+      if (homeButtonElement) {
+        // Deactivate any currently active button first
+        document.querySelectorAll('.btn-3d__button.btn-3d--active').forEach(btn => {
+          btn.classList.remove('btn-3d--active');
+          btn.setAttribute('aria-selected', 'false');
+        });
+        
+        // Activate home button
+        homeButtonElement.classList.add('btn-3d--active');
+        homeButtonElement.setAttribute('aria-selected', 'true');
+        
+        // Update screen visibility and animate widgets
+        const homeScreen = document.getElementById('home-view');
+        if (homeScreen) {
+          // Show the home screen
+          screens.forEach(id => {
+            const screen = document.getElementById(id);
+            if (screen) {
+              screen.style.display = id === 'home-view' ? 'block' : 'none';
+            }
+          });
+          
+          // Animate the widgets with a slight delay to ensure screen is fully visible
+          setTimeout(() => {
+            animateWidgetsDirection(homeScreen, 'in');
+            buttonSounds.play('confirm', 0.8);
+          }, 50);
+        }
+      }
     }
   });
   
@@ -107,73 +130,53 @@ function handleButtonClick(event) {
 
 // Function to update screen visibility based on active button
 function updateScreenVisibility(previousScreen = null) {
-  // Find which button is active
   const activeButton = document.querySelector('.btn-3d__button.btn-3d--active');
   if (!activeButton) return;
   
   const buttonWrapper = activeButton.closest('.btn-3d');
   if (!buttonWrapper || !buttonWrapper.id) return;
   
-  // Get the screen type from button ID (e.g., 'home-button' → 'home')
   const buttonId = buttonWrapper.id;
   const screenType = buttonId.replace('-button', '');
-  
-  // Get all screens
   const screens = {
     home: document.getElementById('home-view'),
     portfolio: document.getElementById('portfolio-view'),
     contact: document.getElementById('contact-view')
-    // Removed about-view
   };
-  
-  // Get the target screen
   const targetScreen = screens[screenType];
   if (!targetScreen) return;
   
-  // If no previous screen (first load) or same screen, just show the target screen
   if (!previousScreen) {
     Object.values(screens).forEach(screen => {
       if (screen && screen !== targetScreen) {
         screen.style.display = 'none';
       }
     });
-    
     targetScreen.style.display = 'block';
     animateScreenTransition(targetScreen);
     return;
   }
   
-  // Animate widgets out of the previous screen first, then switch
-  animateWidgetsOut(previousScreen).then(() => {
-    // Now hide all screens
+  animateWidgetsDirection(previousScreen, 'out').then(() => {
     Object.values(screens).forEach(screen => {
       if (screen) {
         screen.style.display = 'none';
       }
     });
-    
-    // Show the target screen
     targetScreen.style.display = 'block';
-    
-    // Play confirm sound when view changes
-    buttonSounds.play('confirm', 0.8); // Slightly reduced volume for confirmation sound
-    
-    // Animate the screen and its widgets in
+    buttonSounds.play('confirm', 0.8);
     animateScreenTransition(targetScreen);
   });
 }
 
 // Basic implementation of screen transition animations
 function animateScreenTransition(screenElement) {
-  // Simple fade-in effect that can be expanded later
   screenElement.style.opacity = '0';
   screenElement.style.transition = 'opacity 0.3s ease-in-out';
   
-  // Use setTimeout to ensure the transition works properly
   setTimeout(() => {
     screenElement.style.opacity = '1';
-    // Animate widgets after screen becomes visible
-    animateWidgets(screenElement);
+    animateWidgetsDirection(screenElement, 'in');
   }, 10);
 }
 
@@ -205,140 +208,83 @@ function resetWidgetAnimations(screenElement) {
   });
 }
 
-// Show widgets with staggered animation
-function animateWidgets(screenElement) {
-  if (!screenElement) return;
-  
+// Consolidated widget animation function for both entrance and exit
+function animateWidgetsDirection(screenElement, direction) {
+  if (!screenElement) return Promise.resolve();
   const widgets = Array.from(screenElement.querySelectorAll('.widget'));
-  if (widgets.length === 0) return;
+  if (widgets.length === 0) return Promise.resolve();
   
-  // Animation speed settings
-  const ANIMATION_SPEED = {
-    GLOBAL_MULTIPLIER: 2.0,
-    WIDGET_ANIMATION: 1.0,
-    BASE_DELAY: 80, // ms between each widget
-    MIN_RANDOM_DELAY: 20, // min additional random delay
-    MAX_RANDOM_DELAY: 150  // max additional random delay
-  };
-  
-  // Adjust widget animation speed based on global multiplier
-  const animationSpeedMultiplier = ANIMATION_SPEED.GLOBAL_MULTIPLIER * ANIMATION_SPEED.WIDGET_ANIMATION;
-  const animationDuration = (1.2 / animationSpeedMultiplier).toFixed(2);
-  
-  // Set animation duration CSS variable for widgets
-  document.documentElement.style.setProperty('--widget-animation-duration', `${animationDuration}s`);
-  
-  // Sort widgets by position (top to bottom, left to right)
-  widgets.sort((a, b) => {
-    const aRect = a.getBoundingClientRect();
-    const bRect = b.getBoundingClientRect();
-    return aRect.top - bRect.top || aRect.left - bRect.left;
+  // Reset widget visibility before animation
+  widgets.forEach(widget => {
+    widget.classList.remove('widget-hidden');
   });
   
-  // Apply animations with staggered delays
-  widgets.forEach((widget, index) => {
-    // Remove any existing animation classes
-    widget.classList.remove('widget-intro', 'widget-outro');
-    
-    // Calculate a progressive delay (earlier widgets appear sooner)
-    const baseDelay = index * (ANIMATION_SPEED.BASE_DELAY / animationSpeedMultiplier);
-    const randomDelay = getRandom(
-      ANIMATION_SPEED.MIN_RANDOM_DELAY, 
-      ANIMATION_SPEED.MAX_RANDOM_DELAY
-    ) / animationSpeedMultiplier;
-    
-    const totalDelay = baseDelay + randomDelay;
-    
-    // Use opacity CSS property directly instead of a class to avoid affecting transforms
-    widget.style.opacity = '0';
-    
-    // Apply animation with delay
-    setTimeout(() => {
-      // Remove the inline opacity style and add the intro animation class
-      widget.style.removeProperty('opacity');
-      widget.classList.add('widget-intro');
-    }, totalDelay);
-  });
-}
-
-// Animate widgets out with staggered animation
-function animateWidgetsOut(screenElement) {
-  return new Promise((resolve) => {
-    if (!screenElement) {
-      resolve();
-      return;
-    }
-    
-    const widgets = Array.from(screenElement.querySelectorAll('.widget'));
-    if (widgets.length === 0) {
-      resolve();
-      return;
-    }
-    
-    // Animation speed settings
-    const ANIMATION_SPEED = {
+  let config;
+  if (direction === 'in') {
+    config = {
       GLOBAL_MULTIPLIER: 2.0,
       WIDGET_ANIMATION: 1.0,
-      EXIT_SPEED_MULTIPLIER: 1.5, // Faster exit
-      BASE_DELAY: 50, // ms between each widget for exit
-      MIN_RANDOM_DELAY: 10, // min additional random delay
-      MAX_RANDOM_DELAY: 100 // max additional random delay
+      BASE_DELAY: 80,
+      MIN_RANDOM_DELAY: 20,
+      MAX_RANDOM_DELAY: 150,
+      duration: 1.2 // seconds
     };
-    
-    // Adjust widget animation speed based on global multiplier
-    const animationSpeedMultiplier = ANIMATION_SPEED.GLOBAL_MULTIPLIER * 
-                                     ANIMATION_SPEED.WIDGET_ANIMATION * 
-                                     ANIMATION_SPEED.EXIT_SPEED_MULTIPLIER;
-    
-    const animationDuration = (0.8 / animationSpeedMultiplier).toFixed(2);
-    
-    // Set animation duration CSS variable for widgets
-    document.documentElement.style.setProperty('--widget-animation-duration', `${animationDuration}s`);
-    
-    // Sort widgets in reverse order (compared to entrance animation)
-    // This creates a natural "last in, first out" effect
+  } else { // 'out'
+    config = {
+      GLOBAL_MULTIPLIER: 2.0,
+      WIDGET_ANIMATION: 1.0,
+      EXIT_SPEED_MULTIPLIER: 1.5,
+      BASE_DELAY: 50,
+      MIN_RANDOM_DELAY: 10,
+      MAX_RANDOM_DELAY: 100,
+      duration: 0.8 // seconds
+    };
+  }
+  
+  const multiplier = config.GLOBAL_MULTIPLIER * config.WIDGET_ANIMATION * (direction === 'out' ? config.EXIT_SPEED_MULTIPLIER : 1);
+  const animationDuration = (config.duration / multiplier).toFixed(2);
+  document.documentElement.style.setProperty('--widget-animation-duration', `${animationDuration}s`);
+  
+  // For "in" animations, randomize widget order; for "out", sort in reverse order
+  if (direction === 'in') {
+    widgets.sort(() => Math.random() - 0.5);
+  } else {
     widgets.sort((a, b) => {
       const aRect = a.getBoundingClientRect();
       const bRect = b.getBoundingClientRect();
-      return bRect.top - aRect.top || bRect.left - aRect.left;
+      return (bRect.top - aRect.top || bRect.left - aRect.left);
     });
+  }
+  
+  let maxDelay = 0;
+  widgets.forEach((widget, index) => {
+    widget.classList.remove('widget-intro', 'widget-outro');
+    const baseDelay = index * (config.BASE_DELAY / multiplier);
+    const randomDelay = getRandom(config.MIN_RANDOM_DELAY, config.MAX_RANDOM_DELAY) / multiplier;
+    const totalDelay = baseDelay + randomDelay;
+    maxDelay = Math.max(maxDelay, totalDelay);
     
-    // Keep track of max delay for promise resolution
-    let maxDelay = 0;
-    
-    // Apply animations with staggered delays
-    widgets.forEach((widget, index) => {
-      // Remove any existing intro animation
-      widget.classList.remove('widget-intro');
-      
-      // Calculate a progressive delay
-      const baseDelay = index * (ANIMATION_SPEED.BASE_DELAY / animationSpeedMultiplier);
-      const randomDelay = getRandom(
-        ANIMATION_SPEED.MIN_RANDOM_DELAY, 
-        ANIMATION_SPEED.MAX_RANDOM_DELAY
-      ) / animationSpeedMultiplier;
-      
-      const totalDelay = baseDelay + randomDelay;
-      maxDelay = Math.max(maxDelay, totalDelay);
-      
-      // Apply exit animation with delay
+    if (direction === 'in') {
+      widget.style.opacity = '0';
+      setTimeout(() => {
+        widget.style.removeProperty('opacity');
+        widget.classList.add('widget-intro');
+      }, totalDelay);
+    } else {
       setTimeout(() => {
         widget.classList.add('widget-outro');
       }, totalDelay);
-    });
-    
-    // Resolve the promise after all animations complete (with a small buffer)
-    const totalDuration = maxDelay + (parseFloat(animationDuration) * 1000) + 50;
-    setTimeout(resolve, totalDuration);
+    }
   });
+  
+  const totalDuration = maxDelay + (parseFloat(animationDuration) * 1000) + 50;
+  return new Promise(resolve => setTimeout(resolve, totalDuration));
 }
 
 // Generate random number in a range
 function getRandom(min, max) {
   return Math.random() * (max - min) + min;
 }
-
-// Remove the keyframe injection function as it's now in the stylesheet
 
 // Initialize when imported
 init3DButtons();

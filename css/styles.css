@@ -95,8 +95,8 @@
   --cockpit-rotate-max: 0.3deg;
 
   /* Perspective settings */
-  --perspective-depth: 2000px;
-  --wall-depth: 750px;
+  --perspective-depth: 1000px;
+  --wall-depth: 400px;
 
   /* Overall animation settings */
   --starship-movement-duration: 30s;
@@ -116,11 +116,6 @@
   --video-translate-x: 2%;
   --video-translate-y: 1%;
 
-  /* Lamp effect variables */
-  --lamp-brightness: 0;
-  --lamp-size: 20px;
-  --lamp-color: #c6ffcd;
-  --lamp-glow-intensity: 0.8;
 }
 
 * {
@@ -138,13 +133,11 @@ body {
   font-variant-ligatures: common-ligatures;
   text-rendering: geometricPrecision;
   word-spacing: 0.04em;
-  background-clip: text;
   margin: 0;
   overflow: hidden;
   position: fixed;
   width: 100%;
   min-height: 100svh;
-  background-color: var(--browser-color);
   align-items: center;
   justify-content: center;
   overscroll-behavior: none; /* Prevent overscroll */
@@ -300,10 +293,6 @@ body {
   }
 }
 
-/* Widget animation classes */
-.widget {
-}
-
 /* Hidden widget class that ONLY affects opacity, not transforms */
 .widget-hidden {
   opacity: 0;
@@ -412,7 +401,7 @@ body {
   height: 0.65em;
   background-color: var(--color-3); /* Use off color initially */
   border-radius: 10em;
-  animation: flicker 12s steps(2) infinite;
+  animation: flicker 3s steps(6) infinite;
   aspect-ratio: 1 / 1;
   opacity: 1;
   will-change: opacity;
@@ -420,16 +409,13 @@ body {
 
 @keyframes flicker {
   0% {
-    opacity: 0.3;
-  }
-  25% {
-    opacity: 1;
+    opacity: 0.4;
   }
   50% {
-    opacity: 0.3;
+    opacity: 1;
   }
   100% {
-    opacity: 0.3;
+    opacity: 0.4;
   }
 }
 
@@ -503,8 +489,12 @@ body {
  * INTRO ANIMATION *
  *******************/
 
-.intro-wrapper__text {
-  /* text-shadow: 0 0 2px var(--intro-text), 0 0 3px rgba(156, 224, 169, 0.3); */
+.intro-pre {
+  font-family: monospace;
+  white-space: pre !important; /* Force preserve whitespace */
+  line-height: 1.4;
+  color: var(--intro-text);
+  transform: none !important; /* Prevent transformations */
 }
 
 /* Add the new intro flash animation */
@@ -865,6 +855,12 @@ body {
  * STARSHIP MOVEMENT *
  *****************/
 
+ .glass-video,
+ .depth-wrapper {
+   transition: transform 0.6s ease-in-out, perspective-origin 0.6s ease-in-out;
+ }
+
+
 /* Page rotation */
 .page__inner {
   /* animation: 
@@ -873,11 +869,7 @@ body {
   will-change: transform;
 }
 
-/* Z-axis movement */
-.panel-wrapper {
-  animation: page-z-movement var(--z-movement-duration) infinite ease-in-out;
-  will-change: transform;
-}
+
 
 /* Perspective wrapper */
 .depth-wrapper {
@@ -887,12 +879,7 @@ body {
   /* animation: depth-wrapper-perspective var(--starship-movement-duration) infinite ease-in-out; */
 }
 
-/* Glass video */
-.glass-video {
-  /* -webkit-mask: radial-gradient(circle, black 70%, transparent 0%);
-  mask: radial-gradient(circle, black 70%, transparent 0%); */
-  /* animation: glass-video-movement var(--starship-movement-duration) infinite ease-in-out, pulsateLight-Video 5s ease-in-out infinite; */
-}
+
 /* Keyframe definitions with direct rotation values */
 @keyframes page-rotation {
   0%,
@@ -981,9 +968,9 @@ body {
 
 #thruster-lamp {
   box-shadow: 
-    0 0 calc(5px + (var(--lamp-brightness) * 8px)) calc(3px + (var(--lamp-brightness) * 4px)) rgba(255,253,234,calc(0.8 * var(--lamp-brightness))),
-    0 0 calc(10px + (var(--lamp-brightness) * 15px)) calc(5px + (var(--lamp-brightness) * 8px)) rgba(156,224,169,calc(0.7 * var(--lamp-brightness))),
-    0 0 calc(20px + (var(--lamp-brightness) * 30px)) calc(10px + (var(--lamp-brightness) * 15px)) rgba(156,224,169,calc(0.5 * var(--lamp-brightness)));
+    0 0 calc(2.5px + (var(--lamp-brightness) * 4px)) calc(1.5px + (var(--lamp-brightness) * 2px)) rgba(255,253,234,calc(0.8 * var(--lamp-brightness))),
+    0 0 calc(5px + (var(--lamp-brightness) * 7.5px)) calc(2.5px + (var(--lamp-brightness) * 4px)) rgba(255,55,0,calc(0.7 * var(--lamp-brightness))),
+    0 0 calc(10px + (var(--lamp-brightness) * 15px)) calc(5px + (var(--lamp-brightness) * 7.5px)) rgba(255,55,0,calc(0.5 * var(--lamp-brightness)));
   opacity: calc(0 + (var(--lamp-brightness) * 1));
   pointer-events: none;
   transition: box-shadow 0.15s ease-out, opacity 0.16s ease-out;
@@ -1182,25 +1169,34 @@ body {
 @keyframes pulsateLight {
   0%,
   100% {
-    filter: brightness(100%);
+    filter: brightness(50%);
   }
   50% {
-    filter: brightness(110%);
+    filter: brightness(60%);
   }
   75% {
-    filter: brightness(70%);
+    filter: brightness(30%);
   }
+}
+
+
+/* Glass video */
+.glass-video {
+  -webkit-mask: radial-gradient(circle, black 65%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 0.5) 85%, transparent 95%);
+  mask: radial-gradient(circle, black 65%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 0.5) 85%, transparent 95%);
+  animation: pulsateLight-Video 5s ease-in-out infinite;
+  will-change: filter; /* Optimize animation performance */
 }
 
 @keyframes pulsateLight-Video {
   0%,
   100% {
-    filter: brightness(100%);
+    filter: brightness(50%);
   }
   50% {
-    filter: brightness(110%);
+    filter: brightness(60%);
   }
   75% {
-    filter: brightness(95%);
+    filter: brightness(30%);
   }
 }

@@ -168,10 +168,10 @@ function updateDebugDisplay() {
 
 // **Mouse tracking – Event Handlers**
 function setupEventHandlers() {
-  function updateMouseMetrics(mouseX, mouseY, currentTime) {
+  function updateMouseMetrics(x, y, currentTime) {
     if (prevMouseX !== null && prevMouseY !== null && prevTime !== null) {
-      const dx = mouseX - prevMouseX;
-      const dy = mouseY - prevMouseY;
+      const dx = x - prevMouseX;
+      const dy = y - prevMouseY;
       const dt = (currentTime - prevTime) / 1000;
 
       if (dt > 0) {
@@ -200,6 +200,58 @@ function setupEventHandlers() {
     prevTime = currentTime;
   });
 
+  // Touch event handlers for mobile devices
+  document.addEventListener("touchmove", (e) => {
+    // Prevent scrolling while tracking touch
+    e.preventDefault();
+    
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const touchX = touch.clientX;
+      const touchY = touch.clientY;
+      const currentTime = performance.now();
+
+      // Calculate percentages
+      cursorXPercent = touchX / window.innerWidth;
+      cursorYPercent = touchY / window.innerHeight;
+
+      updateMouseMetrics(touchX, touchY, currentTime);
+
+      // Store current values for next frame
+      prevMouseX = touchX;
+      prevMouseY = touchY;
+      prevTime = currentTime;
+    }
+  }, { passive: false });
+
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const touchX = touch.clientX;
+      const touchY = touch.clientY;
+      
+      // Set initial position but don't calculate speed yet
+      prevMouseX = touchX;
+      prevMouseY = touchY;
+      prevTime = performance.now();
+      
+      // Update cursor position immediately on touch start
+      cursorXPercent = touchX / window.innerWidth;
+      cursorYPercent = touchY / window.innerHeight;
+      
+      // Count touch start as a click
+      clickCount++;
+    }
+  });
+
+  document.addEventListener("touchend", () => {
+    // Handle touch end similar to mouseout
+    speed = 0;
+    prevMouseX = null;
+    prevMouseY = null;
+    prevTime = null;
+  });
+
   // Reset tracking when mouse leaves window
   document.addEventListener("mouseout", () => {
     speed = 0;
@@ -208,9 +260,9 @@ function setupEventHandlers() {
     prevTime = null;
   });
 
-  // Click tracking
+  // Click tracking - keep the existing click handler
   document.addEventListener("click", () => clickCount++);
-  document.addEventListener("touchstart", () => clickCount++);
+  // Remove duplicate touchstart click counter as we've integrated it above
 }
 
 // **Animation loop**

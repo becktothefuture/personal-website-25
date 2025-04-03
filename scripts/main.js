@@ -45,7 +45,10 @@ import { initscrollEffect } from './modules/scrollEffect.js';
 import { initLampEffect } from './modules/lampEffect.js';
 
 import './modules/scrollTracker.js'; 
-import './modules/button3DToggle.js';
+
+// Explicitly import button3DToggle but don't auto-initialize
+// Let the intro sequence trigger the home button
+import { init3DButtons } from './modules/button3DToggle.js';
 
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
@@ -58,6 +61,8 @@ initcursorTracker();
 initscrollEffect();
 initLampEffect();
 
+// Initialize the button system (but it won't show home screen until intro completes)
+init3DButtons();
 
 // ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -117,28 +122,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await introSequencePromise;
         console.log('Intro sequence completed');
         
-        // Ensure any lingering intro styles are cleaned up
-        document.querySelectorAll('.intro-wrapper, .intro-element').forEach(el => el.remove());
-        
-        // Make sure the page is visible
-        const pageElement = document.querySelector('.page');
-        if (pageElement) {
-            pageElement.style.removeProperty('visibility');
-        }
-        
-        // Reset perspective - important for 3D effects
-        requestAnimationFrame(() => {
-            // Force a repaint to ensure 3D transforms are properly applied
-            const depthWrapper = document.querySelector('.depth-wrapper');
-            if (depthWrapper) {
-                depthWrapper.style.perspective = 'var(--perspective-depth)';
-            }
-            
-            const panelWrapper = document.querySelector('.panel-wrapper');
-            if (panelWrapper) {
-                panelWrapper.style.animation = 'page-z-movement var(--z-movement-duration) infinite ease-in-out';
-            }
-        });
         
         // Start robot speaking after a short delay
         if (robotController && robotController.startSpeaking) {

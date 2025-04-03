@@ -746,42 +746,33 @@ function updateSoundParameters() {
     animationFrameId = requestAnimationFrame(updateSoundParameters);
     return;
   }
-
-  // Get top speed from scrollTracker
+  // Ensure scrollTracker.getConfig is defined; if not, throw an error.
+  if (typeof scrollTracker.getConfig !== 'function') {
+    throw new Error("scrollTracker.getConfig is not a function");
+  }
+  
   const topSpeed = scrollTracker.getConfig().topSpeed;
-
-  // Use actual speed value directly
   const speedRatio = Math.min(Math.max(scrollSpeed, 0) / topSpeed, 1.0);
   const timeInSec = audioContext.currentTime;
-
-  // Ambient pitch - directly proportional to speed
+  
   const ambientPitch = CONFIG.ambient.minPitch + (speedRatio * (CONFIG.ambient.maxPitch - CONFIG.ambient.minPitch));
-
-  // Apply to ambient pitch - direct setting
   ambientSource.source.playbackRate.setTargetAtTime(
     ambientPitch,
     timeInSec,
     CONFIG.engine.rampTime
   );
-
-  // Only update engine parameters if user is active
+  
   if (isUserActive) {
-    // Engine volume - directly proportional to speed
     const engineVolume = CONFIG.engine.minVolume + (speedRatio * (CONFIG.engine.maxVolume - CONFIG.engine.minVolume));
-
-    // Filter frequency - directly proportional to speed
     const filterFreq = CONFIG.engine.minFreq + (speedRatio * (CONFIG.engine.maxFreq - CONFIG.engine.minFreq));
-
-    // Sub bass gain - directly proportional to speed (scrolly)
     const subGain = CONFIG.engine.minSubGain + (speedRatio * (CONFIG.engine.maxSubGain - CONFIG.engine.minSubGain));
-
-    // Apply all parameters with minimal smoothing - direct reflection of speed
+    
     engineSource.gainNode.gain.setTargetAtTime(engineVolume, timeInSec, CONFIG.engine.speedResponseTime);
     engineSource.filter.frequency.setTargetAtTime(filterFreq, timeInSec, CONFIG.engine.speedResponseTime);
     engineSource.bandpassFilter.frequency.setTargetAtTime(filterFreq * 1.5, timeInSec, CONFIG.engine.speedResponseTime);
     engineSource.subBassFilter.gain.setTargetAtTime(subGain, timeInSec, CONFIG.engine.speedResponseTime);
   }
-
+  
   animationFrameId = requestAnimationFrame(updateSoundParameters);
 }
 
