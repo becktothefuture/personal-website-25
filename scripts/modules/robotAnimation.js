@@ -396,6 +396,14 @@ export function initRobot() {
                 robotSpeech.init();
             }
         }, { once: true, passive: true });
+        
+        // Automatically start speaking
+        if (!animationStarted) {
+            animationStarted = true;
+            bubble.style.display = "block";
+            typeWriter().catch(err => console.error('Animation error:', err));
+            console.log("Robot animation started automatically");
+        }
     }
 
     // More efficient initialization
@@ -405,19 +413,19 @@ export function initRobot() {
         document.addEventListener("DOMContentLoaded", init, { once: true });
     }
     
-    // Return a more robust controller with better init status tracking
+    // Return a more robust controller (keeping startSpeaking for backward compatibility)
     return {
         startSpeaking: () => {
-            // Ensure audio is initialized before starting
-            if (!robotSpeech.isAudioInitialized()) {
-                robotSpeech.init();
-            }
-            
+            // This is now just a wrapper for existing functionality
             if (!animationStarted) {
+                if (!robotSpeech.isAudioInitialized()) {
+                    robotSpeech.init();
+                }
+                
                 animationStarted = true;
                 bubble.style.display = "block";
                 typeWriter().catch(err => console.error('Animation error:', err));
-                console.log("Robot animation started");
+                console.log("Robot animation started manually");
             }
         },
         // Add ability to check status

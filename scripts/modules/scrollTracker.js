@@ -161,8 +161,10 @@ class ScrollTracker extends EventEmitter {
   }
   
   formatSpeed(speed) {
+    // Cap speed at 999.99 before formatting
+    const cappedSpeed = Math.min(speed, 999.99);
     // Format as 000.00 - pad with zeros as needed
-    return speed.toFixed(2).padStart(6, '0');
+    return cappedSpeed.toFixed(2).padStart(6, '0');
   }
   
   getNormalizedSpeed() {
@@ -189,5 +191,14 @@ class ScrollTracker extends EventEmitter {
   }
 }
 
+// Add this function to provide configuration for the scroll tracker
+export function getConfig() {
+    // Adjust topSpeed value as appropriate for your application
+    return { topSpeed: 300 };
+}
+
 const scrollTracker = new ScrollTracker();
+// Attach getConfig to the instance so that scrollTracker.getConfig() becomes available
+scrollTracker.getConfig = getConfig;
+
 export { scrollTracker };

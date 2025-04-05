@@ -25,113 +25,105 @@
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * - button3DToggle.js: Manages 3D button toggling with only one active at a time
  * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
- * 
- * The initialization process is divided into two phases:
- * 1. Immediate initialization: Components that need to be available immediately
- * 2. Sequential initialization after DOM content is loaded
+ * - widgetAnimations.js: Handles widget animations for view transitions
  */
 
-
-
-// ===== IMMEDIATE INITIALISATION SEQUENCE =====
-// import { initBrowserTheme } from './modules/browserTheme.js';
+// Import all modules up front
+import { initBrowserTheme } from './modules/browserTheme.js';
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
-import { initIntroSequence } from './modules/intro.js';
-import { initResizeOverlay } from './modules/resizeOverlay.js'; 
-// import { initStarfieldThruster } from './modules/starfieldThruster.js';
-// import { initCursorEffects } from './modules/cursorEffects.js'; 
-import { initcursorTracker } from './modules/cursorTracker.js'; 
+import { 
+    hideAllWidgets, 
+    animateAllWidgetsIntro, 
+    showHomeView,
+    init as initWidgetAnimations 
+} from './modules/widgetAnimations.js';
+import { initResizeOverlay } from './modules/resizeOverlay.js';
+import { initStarfieldThruster } from './modules/starfieldThruster.js';
+import { initCursorEffects } from './modules/cursorEffects.js'; 
+import { initcursorTracker } from './modules/cursorTracker.js';
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initLampEffect } from './modules/lampEffect.js';
-
-import './modules/scrollTracker.js'; 
-
-// Explicitly import button3DToggle but don't auto-initialize
-// Let the intro sequence trigger the home button
 import { init3DButtons } from './modules/button3DToggle.js';
+import { initLightGrids } from './modules/lightGrid.js';
+import { initDateDisplay } from './modules/dateDisplay.js';
+import { initMarqueeContent } from './modules/marqueeContent.js';
+import { initLondonClock } from './modules/londonClock.js';
+import { initFlicker } from './modules/flicker.js';
+import { initRobot } from './modules/robotAnimation.js';
+import { 
+    initProcessorAnimation1, 
+    initProcessorAnimation2,
+    initProcessorAnimation3,
+    initProcessorAnimation4 
+} from './modules/processorAnimations.js';
+import { initDiffusionText } from './modules/diffusionText.js';
+import './modules/scrollTracker.js';
 
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
 
-// initBrowserTheme();
-initResizeOverlay(); 
-// initStarfieldThruster();
-// initCursorEffects(); 
-initcursorTracker();
-initscrollEffect();
-initLampEffect();
+// Critical visual components initialize immediately
+initBrowserTheme();
 
-// Initialize the button system (but it won't show home screen until intro completes)
-init3DButtons();
+/********************************
+ * MAIN INITIALIZATION SEQUENCE *
+ ********************************/
 
-// ===== MAIN INITIALISATION SEQUENCE =====
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Step 1: Initialize sound system and wait for user choice
+        // STEP 1: PREPARATION & SOUND SYSTEM
+        //--------------------------------------
+        // Hide widgets during initialization
+        hideAllWidgets();
+        console.log('Waiting for Lottie animations to initialize...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Initialize sound system and wait for user confirmation
         await initSoundSystem();
         await new Promise(resolve => {
             window.addEventListener(EVENTS.SOUND_CHOICE_MADE, resolve, { once: true });
         });
         console.log('Sound system initialized');
 
-        // Step 2: Start intro sequence with the delay from intro.js
-        
-        const introSequencePromise = initIntroSequence();
-        console.log('Intro sequence started');
+        // STEP 2: MODULE INITIALIZATION
+        //--------------------------------------
+        // Initialize all modules after sound choice is confirmed
+        initWidgetAnimations();
+        initResizeOverlay(); 
+        initStarfieldThruster();
+        initCursorEffects(); 
+        initcursorTracker();
+        initscrollEffect();
+        initLampEffect();
+        init3DButtons();
+        initLightGrids();
+        initDateDisplay();
+        initMarqueeContent();
+        initLondonClock();
+        initFlicker();
+        initRobot();
+        initProcessorAnimation1();
+        initProcessorAnimation2();
+        initProcessorAnimation3();
+        initProcessorAnimation4();
+        initDiffusionText();
 
-        // Step 3: While intro is running, load all other modules in parallel
-        let robotController; // Add variable to store robot controller
+        console.log('All modules initialized');
 
-        setTimeout(async () => {
-            try {
-                const { initLightGrids } = await import('./modules/lightGrid.js');
-                const { initDateDisplay } = await import('./modules/dateDisplay.js');
-                const { initMarqueeContent } = await import('./modules/marqueeContent.js');
-                const { initLondonClock } = await import('./modules/londonClock.js');
-                const { initFlicker } = await import('./modules/flicker.js');
-                const { initRobot } = await import('./modules/robotAnimation.js');
-                const { 
-                    initProcessorAnimation1, 
-                    initProcessorAnimation2,
-                    initProcessorAnimation3,
-                    initProcessorAnimation4 
-                } = await import('./modules/processorAnimations.js');
-                const { initDiffusionText } = await import('./modules/diffusionText.js');
+        // STEP 3: UI REVEAL & INTERACTIONS
+        //--------------------------------------
+        // Reveal widgets after a delay
+        const widgetRevealDelay = 2000;
+        setTimeout(() => {
+            // First animate all widgets intro
+            animateAllWidgetsIntro()
+              .then(() => {
+                // Then ensure the home view is shown
+                showHomeView();
+              });
+        }, widgetRevealDelay);
 
-                initLightGrids();
-                initDateDisplay();
-                initMarqueeContent();
-                initLondonClock();
-                initFlicker();
-                // Store the robot controller but don't start speaking yet
-                robotController = initRobot();
-                initProcessorAnimation1();
-                initProcessorAnimation2();
-                initProcessorAnimation3();
-                initProcessorAnimation4();
-                initDiffusionText();
 
-                console.log('All modules initialized');
-
-            } catch (error) {
-                console.error('Error loading modules:', error);
-            }
-        }, 500); // Small delay to ensure intro sequence starts first
-
-        // Wait for intro to complete
-        await introSequencePromise;
-        console.log('Intro sequence completed');
-        
-        
-        // Start robot speaking after a short delay
-        if (robotController && robotController.startSpeaking) {
-            console.log('Starting robot speech after intro completion');
-            
-            // Short delay to ensure everything is ready
-            setTimeout(() => {
-                robotController.startSpeaking();
-            }, 300);
-        }
     } catch (error) {
         console.error('Error in main initialization sequence:', error);
     }

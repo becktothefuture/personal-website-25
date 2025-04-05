@@ -5,47 +5,48 @@
  * 1. Mouse position (for devices with mouse/pointer)
  * 2. Automatic animations (for touch devices)
  * 
- * The module maintains the relationship between different wrapper elements
- * to create a cohesive 3D effect that responds to user input or animates
- * automatically on touch devices.
- * 
  * @requires ./cursorTracker.js
  */
 
 import { cursorXPercent, cursorYPercent } from './cursorTracker.js';
 
-// Configuration for perspective movement
+// Updated configuration: removed perspective depth and shift factors; added separate rotation ranges
 export const perspectiveConfig = {
-  // Max tilt parameters (degrees)
-  maxTiltX: 0.8,
-  maxTiltY: 0.4,
-  
-  // Max translation parameters (percentage)
-  maxTranslateX: 1,
-  maxTranslateY: 0.6,
-  
-  // Scale range for subtle zoom effect
+  // Page rotation configuration
+  pageRotation: {
+    maxTiltX: 1,
+    maxTiltY: 2
+  },
+  // Depth wrapper rotation configuration
+  depthRotation: {
+    maxTiltX: 2,
+    maxTiltY: 4
+  },
+  // Page scaling
   scaleRange: 0.01,
   
-  // Perspective shift factors
-  perspectiveShiftFactorX: -10,
-  perspectiveShiftFactorY: -8,
+  // Video effects remain unchanged
+  video: {
+    translateX: 3,
+    translateY: 2,
+    maxRotationX: 1, 
+    maxRotationY: 2,
+    inverted: true
+  },
   
-  // Rotation multiplier for depth elements
-  rotationMultiplier: 1.2,
-  
-  // Animation duration for touch devices
-  touchAnimationDuration: '40s',
-  
-  // Transition settings
-  transitionDuration: '0.5s',
-  transitionEasing: 'ease-in-out'
+  // Animation settings
+  smoothFactor: 0.1,
+  animation: {
+    duration: '0.5s',
+    easing: 'ease-in-out',
+    touchDuration: '40s'
+  }
 };
 
 class PerspectiveController {
   #pageWrapper = null;
   #depthWrapper = null;
-  #depthWrapperBottom = null;
+  #glassVideo = null;
   #isMouseDevice = false;
   #isInitialized = false;
   #animationFrameId = null;
@@ -60,12 +61,12 @@ class PerspectiveController {
   init() {
     if (this.#isInitialized) return;
     
-    // Find required DOM elements
+    // Find and cache required DOM elements
     this.#pageWrapper = document.querySelector('.page__inner');
     this.#depthWrapper = document.querySelector('.depth-wrapper');
-    this.#depthWrapperBottom = document.querySelector('.depth-wrapper-bottom');
+    this.#glassVideo = document.querySelector('.glass-video');
     
-    if (!this.#pageWrapper || !this.#depthWrapper || !this.#depthWrapperBottom) {
+    if (!this.#pageWrapper || !this.#depthWrapper) {
       console.error('Required DOM elements not found for perspective control');
       return;
     }
@@ -88,7 +89,6 @@ class PerspectiveController {
    * Detect if user is on a mouse device or touch device
    */
   #detectDeviceType() {
-    // Check for fine pointer support (mouse) and absence of touch capability
     this.#isMouseDevice = 
       window.matchMedia('(pointer: fine)').matches && 
       !('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -98,29 +98,27 @@ class PerspectiveController {
    * Apply CSS animations for touch devices
    */
   #setupTouchAnimation() {
-    // Remove any inline styles that might interfere
     this.#clearStyles();
     
     // Apply CSS animations from the stylesheet
-    this.#pageWrapper.style.animation = `pageWrapper-naturalMovement ${perspectiveConfig.touchAnimationDuration} infinite`;
-    this.#depthWrapper.style.animation = `depthWrapper-naturalMovement ${perspectiveConfig.touchAnimationDuration} infinite`;
-    this.#depthWrapperBottom.style.animation = `depthWrapperBottom-naturalMovement ${perspectiveConfig.touchAnimationDuration} infinite`;
+    this.#pageWrapper.style.animation = `pageWrapper-naturalMovement ${perspectiveConfig.animation.touchDuration} infinite`;
+    
+    // Apply perspective value only for top wrapper
+    this.#depthWrapper.style.perspective = `${perspectiveConfig.perspectiveDepth}px`;
+    
+    this.#depthWrapper.style.animation = `depthWrapper-naturalMovement ${perspectiveConfig.animation.touchDuration} infinite`;
     
     // Apply transitions
-    const transition = `all ${perspectiveConfig.transitionDuration} ${perspectiveConfig.transitionEasing}`;
+    const transition = `all ${perspectiveConfig.animation.duration} ${perspectiveConfig.animation.easing}`;
     this.#pageWrapper.style.transition = transition;
     this.#depthWrapper.style.transition = transition;
-    this.#depthWrapperBottom.style.transition = transition;
   }
   
   /**
    * Set up mouse-controlled movement
    */
   #setupMouseControl() {
-    // Remove CSS animations
     this.#clearStyles();
-    
-    // Start the animation loop for mouse control
     this.#startMouseControlLoop();
   }
   
@@ -128,87 +126,131 @@ class PerspectiveController {
    * Clear all animation styles
    */
   #clearStyles() {
-    if (!this.#pageWrapper || !this.#depthWrapper || !this.#depthWrapperBottom) return;
-    
     this.#pageWrapper.style.animation = 'none';
     this.#depthWrapper.style.animation = 'none';
-    this.#depthWrapperBottom.style.animation = 'none';
   }
   
   /**
    * Animation loop for mouse-controlled movement
    */
   #startMouseControlLoop() {
-    let lastX = 0, lastY = 0;
-  
-    // Keep cursor position updated
-    const updateLoop = () => {
-      lastX = cursorXPercent;
-      lastY = cursorYPercent;
-      requestAnimationFrame(updateLoop);
+    // State for smooth interpolation: add separate 'depth' state for depth-wrapper rotation
+    const state = {
+      page: { rotateX: 0, rotateY: 0, scale: 1 },
+      depth: { rotateX: 0, rotateY: 0 },
+      video: { translateX: 0, translateY: 0, rotateX: 0, rotateY: 0 }
     };
-  
-    updateLoop();
-  
-    // Only apply transforms every 750ms
-    setInterval(() => {
-      if (!this.#isInitialized || !this.#isMouseDevice) return;
-      this.#updateFromMousePosition(lastX, lastY);
-    }, 750);
+    
+    let lastTimestamp = 0;
+    
+    const animationStep = (timestamp) => {
+      const deltaTime = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 16.67, 2) : 1;
+      lastTimestamp = timestamp;
+      
+      const mouseXNormalized = (cursorXPercent - 0.5) * 2;
+      const mouseYNormalized = (cursorYPercent - 0.5) * 2;
+      
+      // Calculate target values for page rotation using pageRotation config
+      const targetPageRotateX = mouseYNormalized * perspectiveConfig.pageRotation.maxTiltX;
+      const targetPageRotateY = -mouseXNormalized * perspectiveConfig.pageRotation.maxTiltY;
+      const targetScale = 1 + (-Math.abs(mouseXNormalized) - Math.abs(mouseYNormalized) + 1) * (perspectiveConfig.scaleRange / 2);
+      
+      // Calculate target values for depth-wrapper rotation using depthRotation config
+      const targetDepthRotateX = mouseYNormalized * perspectiveConfig.depthRotation.maxTiltX;
+      const targetDepthRotateY = -mouseXNormalized * perspectiveConfig.depthRotation.maxTiltY;
+      
+      // Video movement/rotation remain unchanged
+      const videoInversionFactor = perspectiveConfig.video.inverted ? -1 : 1;
+      const targetVideoTranslateX = mouseXNormalized * perspectiveConfig.video.translateX * videoInversionFactor;
+      const targetVideoTranslateY = mouseYNormalized * perspectiveConfig.video.translateY * videoInversionFactor;
+      const targetVideoRotateX = -mouseYNormalized * perspectiveConfig.video.maxRotationX;
+      const targetVideoRotateY = -mouseXNormalized * perspectiveConfig.video.maxRotationY;
+      
+      const smoothFactor = perspectiveConfig.smoothFactor * deltaTime;
+      
+      // Interpolate page state
+      this.#smoothInterpolate(state.page, 'rotateX', targetPageRotateX, smoothFactor);
+      this.#smoothInterpolate(state.page, 'rotateY', targetPageRotateY, smoothFactor);
+      this.#smoothInterpolate(state.page, 'scale', targetScale, smoothFactor);
+      
+      // Interpolate depth-wrapper state
+      this.#smoothInterpolate(state.depth, 'rotateX', targetDepthRotateX, smoothFactor);
+      this.#smoothInterpolate(state.depth, 'rotateY', targetDepthRotateY, smoothFactor);
+      
+      // Interpolate video state
+      this.#smoothInterpolate(state.video, 'translateX', targetVideoTranslateX, smoothFactor);
+      this.#smoothInterpolate(state.video, 'translateY', targetVideoTranslateY, smoothFactor);
+      this.#smoothInterpolate(state.video, 'rotateX', targetVideoRotateX, smoothFactor);
+      this.#smoothInterpolate(state.video, 'rotateY', targetVideoRotateY, smoothFactor);
+      
+      // Apply transformations
+      this.#applyPageTransforms(state.page);
+      this.#applyVideoTransforms(state.video);
+      this.#applyDepthWrapperTransforms(state.depth);
+      
+      this.#animationFrameId = requestAnimationFrame(animationStep);
+    };
+    
+    this.#animationFrameId = requestAnimationFrame(animationStep);
   }
   
   /**
-   * Update element transformations based on mouse position
+   * Smoothly interpolate a value
    */
-  #updateFromMousePosition(x, y) {
-    const mouseXNormalized = (x - 0.5) * 2;
-    const mouseYNormalized = (y - 0.5) * 2;
+  #smoothInterpolate(obj, key, targetValue, smoothFactor) {
+    if (obj[key] === undefined) obj[key] = 0;
+    obj[key] += smoothFactor * (targetValue - obj[key]);
+  }
   
-    // Rotate the page_inner (like animation)
-    const rotateX = -mouseYNormalized * perspectiveConfig.maxTiltX;
-    const rotateY = mouseXNormalized * perspectiveConfig.maxTiltY;
+  /**
+   * Apply transforms to page wrapper
+   */
+  #applyPageTransforms({ rotateX, rotateY, scale }) {
+    if (this.#pageWrapper) {
+      this.#pageWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
+    }
+  }
   
-    // Translate the glass video in sync with the rotation
-    const translateX = mouseXNormalized * perspectiveConfig.maxTranslateX;
-    const translateY = mouseYNormalized * perspectiveConfig.maxTranslateY;
+  /**
+   * Apply transforms to video element
+   */
+  #applyVideoTransforms({ translateX, translateY, rotateX, rotateY }) {
+    if (this.#glassVideo) {
+      this.#glassVideo.style.transform = 
+        `translate(${translateX}%, ${translateY}%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    }
+  }
   
-    const scale = 1 + (-Math.abs(mouseXNormalized) - Math.abs(mouseYNormalized) + 1) * (perspectiveConfig.scaleRange / 2);
-  
-    // Apply to .page__inner
-    const pageInner = document.querySelector('.page__inner');
-    if (pageInner)
-      pageInner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
-  
-    // Apply to .glass-video
-    const glassVideo = document.querySelector('.glass-video');
-    if (glassVideo)
-      glassVideo.style.transform = `translate(${translateX}%, ${translateY}%)`;
-  
-    // Inverse shift for depth-wrapper
-    const perspectiveOriginX = 50 - (mouseXNormalized * perspectiveConfig.perspectiveShiftFactorX);
-    const perspectiveOriginY = 50 + (mouseYNormalized * perspectiveConfig.perspectiveShiftFactorY);
-  
-    this.#depthWrapper.style.perspectiveOrigin = `${perspectiveOriginX}% ${perspectiveOriginY}%`;
+  /**
+   * Apply perspective transforms to depth wrapper
+   */
+  #applyDepthWrapperTransforms({ rotateX, rotateY }) {
+    if (this.#depthWrapper) {
+      this.#depthWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    }
   }
   
   /**
    * Handle window resize events
    */
   #handleResize() {
-    // Re-detect device type in case of device mode change
     const wasMouseDevice = this.#isMouseDevice;
     this.#detectDeviceType();
     
-    // If device type changed, reinitialize
     if (wasMouseDevice !== this.#isMouseDevice) {
       this.#isInitialized = false;
-      
-      if (this.#animationFrameId) {
-        cancelAnimationFrame(this.#animationFrameId);
-        this.#animationFrameId = null;
-      }
-      
+      this.#cancelAnimation();
       this.init();
+    }
+  }
+  
+  /**
+   * Cancel any running animation
+   */
+  #cancelAnimation() {
+    if (this.#animationFrameId) {
+      cancelAnimationFrame(this.#animationFrameId);
+      this.#animationFrameId = null;
     }
   }
   
@@ -216,9 +258,26 @@ class PerspectiveController {
    * Update configuration parameters
    */
   updateConfig(newConfig) {
+    // Deep merge for nested objects
+    if (newConfig.baseOrigin) {
+      perspectiveConfig.baseOrigin = {
+        ...perspectiveConfig.baseOrigin,
+        ...newConfig.baseOrigin
+      };
+      delete newConfig.baseOrigin;
+    }
+    
+    if (newConfig.video) {
+      perspectiveConfig.video = {
+        ...perspectiveConfig.video,
+        ...newConfig.video
+      };
+      delete newConfig.video;
+    }
+    
+    // Shallow merge for everything else
     Object.assign(perspectiveConfig, newConfig);
     
-    // Reinitialize to apply new settings
     if (this.#isInitialized) {
       this.#isInitialized = false;
       this.init();
@@ -229,13 +288,8 @@ class PerspectiveController {
    * Clean up and stop all animations
    */
   destroy() {
-    if (this.#animationFrameId) {
-      cancelAnimationFrame(this.#animationFrameId);
-      this.#animationFrameId = null;
-    }
-    
+    this.#cancelAnimation();
     window.removeEventListener('resize', this.#handleResize);
-    
     this.#clearStyles();
     this.#isInitialized = false;
   }
@@ -254,4 +308,8 @@ export function initPerspectiveController() {
     perspectiveControllerInstance.init();
   }
   return perspectiveControllerInstance;
+}
+
+export function initCursorEffects() {
+  return initPerspectiveController();
 }

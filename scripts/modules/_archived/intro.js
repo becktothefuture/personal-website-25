@@ -8,17 +8,29 @@
 
 console.log('Intro sequence module initialized');
 
+// Import sounds for widget animations
+import { buttonSounds } from './sounds.js';
+import { animateAllWidgetsIntro, hideAllWidgets } from './widgetAnimations.js';
+
 // Simplified timing configuration
 const DOTS_INTERVAL = 300;            // Interval for each dot animation (ms)
 const SOUND_CONFIRM_DELAY = 500;      // Delay after sound choice confirmed
-const WALL_ANIMATION_DURATION = 3000; // Wall animation duration (ms)
+const WALL_ANIMATION_DURATION = 10000; // Wall animation duration (ms)
+
+// Widget animation timing configuration - Initial intro
+const WIDGET_INTRO_CONFIG = {
+  INDIVIDUAL_DURATION: 2,    // Widget animation duration in seconds (unchanged from CSS)
+  GROUP_SIZE: 3,             // Number of widgets to animate at once
+  GROUP_DELAY: 180,          // Delay between groups in ms
+  TOTAL_DURATION: 3000,      // Target total duration for all widgets to appear (~3s)
+};
 
 // Speed configuration for intro animation
 const ANIMATION_SPEED = {
   // Characters per second
-  CHARS_PER_SECOND: 600,
+  CHARS_PER_SECOND: 1000,
   // Characters to reveal in each batch (higher = faster animation)
-  BATCH_SIZE: 10
+  BATCH_SIZE: 20
 };
 
 // Flashes the intro-wrapper element using its animation event
@@ -34,11 +46,32 @@ async function flashScreen(element) {
   });
 }
 
-// Hide all widgets on page load
-function hideAllWidgets() {
-  document.querySelectorAll('.widget').forEach(widget => {
-    widget.classList.add('widget-hidden');
-  });
+// Removed hideAllWidgets function since we're now importing it
+
+/**
+ * Ensures the intro overlay is completely removed from the DOM
+ * This is a safety measure to guarantee intro disappearance
+ */
+function ensureIntroRemoval() {
+  const introElements = document.querySelectorAll('.intro-wrapper');
+  if (introElements.length > 0) {
+    console.log(`Removing ${introElements.length} intro wrapper elements`);
+    introElements.forEach(element => {
+      // First make it invisible with CSS
+      element.style.opacity = '0';
+      element.style.pointerEvents = 'none';
+      element.style.transition = 'opacity 0.3s ease-out';
+      
+      // Then remove from DOM after transition
+      setTimeout(() => {
+        if (element && element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      }, 300);
+    });
+    return true;
+  }
+  return false;
 }
 
 // Animate wall depth from 0 to the CSS variable value
@@ -68,47 +101,25 @@ function animateWallDepth() {
     wall.style.transition = `transform ${WALL_ANIMATION_DURATION/1000}s cubic-bezier(0.19, 1, 0.22, 1)`;
     wall.style.transform = `translateZ(calc(-1 * ${wallDepth}))`;
     
+    // Only start widget animations after the overlay is gone, not during wall animation
+    // This ensures widgets aren't visible too early
+    
     // Resolve promise after animation completes
     setTimeout(resolve, WALL_ANIMATION_DURATION);
-    
-    // Start widget animations shortly after wall animation begins
-    // This ensures widgets appear during the wall animation
-    setTimeout(() => {
-      animateWidgetsRandomly();
-    }, 100); // Small delay to let wall animation start first
-  });
-}
-
-// Animate all widgets in random order
-function animateWidgetsRandomly() {
-  const widgets = Array.from(document.querySelectorAll('.widget'));
-  
-  // Shuffle widgets array for random order
-  const shuffledWidgets = widgets.sort(() => Math.random() - 0.5);
-  
-  // Animate each widget with increasing delay
-  shuffledWidgets.forEach((widget, index) => {
-    const delay = 100 + (index * 150) + (Math.random() * 300);
-    setTimeout(() => {
-      widget.classList.remove('widget-hidden');
-      widget.classList.add('widget-intro');
-      widget.addEventListener('animationend', () => {
-        widget.classList.remove('widget-intro');
-      }, { once: true });
-    }, delay);
   });
 }
 
 // Simplified intro sequence
 export async function initIntroSequence() {
-  // Hide all widgets on initialization
-  hideAllWidgets();
+  // Only hide widgets when intro sequence starts, not on page load
+  // This allows Lottie animations to properly initialize first
   
   return new Promise((resolve) => {
     // Hide the text element immediately
     const bootText = document.querySelector('.intro-wrapper__text');
     if(!bootText) {
       console.error('Boot text element not found');
+      ensureIntroRemoval(); // Try to clean up even if element not found
       resolve();
       return;
     }
@@ -119,6 +130,7 @@ export async function initIntroSequence() {
       const overlay = document.querySelector('.intro-wrapper');
       if (!overlay) {
         console.error('Intro wrapper not found');
+        ensureIntroRemoval(); // Try to clean up even if element not found
         resolve();
         return;
       }
@@ -188,19 +200,51 @@ export async function initIntroSequence() {
       }
       
       async function flashAndProceed() {
-        await flashScreen(overlay);
-        overlay.remove();
-        
-        // Start wall animation, but don't wait for its completion to move forward
-        // Widget animation will be triggered by the animateWallDepth function
-        animateWallDepth();
-        
-        // Dispatch intro complete event without waiting for animations
-        document.dispatchEvent(new CustomEvent('intro:complete'));
-        resolve();
+        try {
+          await flashScreen(overlay);
+          
+          // Set explicit styles to ensure the overlay is invisible before removal
+          overlay.style.opacity = '0';
+          overlay.style.pointerEvents = 'none';
+          overlay.style.transition = 'opacity 0.3s ease-out';
+          
+          // Force a reflow to ensure style changes take effect
+          void overlay.offsetWidth;
+          
+          // Remove after a short delay to allow opacity transition
+          setTimeout(() => {
+            // Use more robust removal method
+            if (overlay && overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+              console.log('Intro overlay removed from DOM');
+            }
+            
+            // Double-check for any remaining intro elements
+            ensureIntroRemoval();
+            
+            // Start wall animation and widget animations concurrently
+            animateWallDepth();
+            animateAllWidgetsIntro()
+              .then(() => {
+                hideAllWidgets(); // hide widgets at the end
+              });
+            
+            document.dispatchEvent(new CustomEvent('intro:complete'));
+            resolve();
+          }, 300);
+        } catch (error) {
+          console.error('Error in flashAndProceed:', error);
+          ensureIntroRemoval();
+          resolve();
+        }
       }
       
       typeNextBatch();
     }, SOUND_CONFIRM_DELAY);
   });
+}
+
+// Add an additional exported function to force removal of intro elements
+export function forceRemoveIntroElements() {
+  return ensureIntroRemoval();
 }

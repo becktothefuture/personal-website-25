@@ -184,28 +184,104 @@ class DiffusionTextAnimator {
  * Initialize the diffusion text animator
  */
 export function initDiffusionText() {
-  // Find target element
-  const container = document.getElementById('diffusion-text');
-  if (!container) {
+  // Find target elements
+  const textContainer = document.getElementById('diffusion-text');
+  const authorContainer = document.getElementById('diffusion-text-author');
+  
+  if (!textContainer) {
     console.warn("No element with ID 'diffusion-text' found. Diffusion text animation not initialized.");
     return null;
   }
   
-  // Create and start the animator with default configuration
-  const animator = new DiffusionTextAnimator({
-    texts: [
-      "communication designer (ba) at heart\n— hybrid UX/ UI / Dev",
-      "travelling across disciplines \nto create things entirely new",
-      "Reach out and let us build \na brighter digital tomorrow."
-    ],
+  // Quote collection with text and authors
+  const quotes = [
+    {
+      text: "No great discovery was ever made without a bold guess.",
+      author: "– Isaac Newton"
+    },
+    {
+      text: "Simplicity is the ultimate sophistication.",
+      author: "– Leonardo da Vinci"
+    },
+    {
+      text: "Obsessions make my life worse and my work better.",
+      author: "– Stefan Sagmeister"
+    },
+    {
+      text: "Creativity is intelligence having fun.",
+      author: "– Albert Einstein"
+    },
+    {
+      text: "Inspiration exists, but it has to find you working.",
+      author: "– Pablo Picasso"
+    },
+    {
+      text: "Innovation is saying 'no' to a thousand things.",
+      author: "– Steve Jobs"
+    },
+    {
+      text: "Imagination is the bridge to everywhere.",
+      author: "– Albert Einstein"
+    },
+    {
+      text: "The details are not the details. They make the design.",
+      author: "– Charles Eames"
+    }
+  ];
+  
+  // Extract quote texts for the main animator
+  const quoteTexts = quotes.map(quote => quote.text);
+  
+  // Create and start the text animator
+  const textAnimator = new DiffusionTextAnimator({
+    texts: quoteTexts,
     animateInDuration: 1500,
     legiblePauseDuration: 2000,
     animateOutDuration: 1500,
     frameInterval: 200,
     letterPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-=[]{}|;:,.<>/*‚·°‡›‹¬∆ƒ∂πø¥†®∑ */?/~`",
-    container: container
+    container: textContainer
   });
   
-  animator.start();
-  return animator;
+  textAnimator.start();
+  
+  // If author container exists, create and start the author animator
+  let authorAnimator = null;
+  if (authorContainer) {
+    const authorTexts = quotes.map(quote => quote.author);
+    
+    authorAnimator = new DiffusionTextAnimator({
+      texts: authorTexts,
+      animateInDuration: 1500,
+      legiblePauseDuration: 2000,
+      animateOutDuration: 1500,
+      frameInterval: 200,
+      letterPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-=[]{}|;:,.<>/*‚·°‡›‹¬∆ƒ∂πø¥†®∑ */?/~`",
+      container: authorContainer
+    });
+    
+    // Synchronize with the text animator's state changes
+    const originalUpdateMethod = textAnimator.update;
+    textAnimator.update = function(timestamp) {
+      const prevState = textAnimator.currentState;
+      const prevIndex = textAnimator.currentTextIndex;
+      
+      originalUpdateMethod.call(textAnimator, timestamp);
+      
+      // If text animator changes state or index, update author animator too
+      if (prevState !== textAnimator.currentState || prevIndex !== textAnimator.currentTextIndex) {
+        authorAnimator.currentState = textAnimator.currentState;
+        authorAnimator.currentTextIndex = textAnimator.currentTextIndex;
+        authorAnimator.stepCount = textAnimator.stepCount;
+        authorAnimator.stateStartTime = textAnimator.stateStartTime;
+      }
+    };
+    
+    authorAnimator.start();
+  }
+  
+  return { 
+    textAnimator, 
+    authorAnimator 
+  };
 }

@@ -152,17 +152,26 @@ function updateDistanceMetrics() {
   smoothedDistanceMiles += (distanceMilesVal - smoothedDistanceMiles) * SMOOTH_FACTOR;
 }
 
+// Format speed values to "000.00" format, capped at 999.99
+function formatSpeed(speed) {
+  // Cap the speed at 999.99
+  const cappedSpeed = Math.min(speed, 999.99);
+  // Format as 000.00 with trailing zeros
+  return cappedSpeed.toFixed(2).padStart(6, '0');
+}
+
 // Update DOM elements with tracking data
 function updateDebugDisplay() {
-  // Update speed values
-  if (speedValueM) speedValueM.textContent = smoothedSpeedKmh.toFixed(2);
-  if (speedValueMiles) speedValueMiles.textContent = smoothedSpeedMilesH.toFixed(2);
-  if (speedValuePx) speedValuePx.textContent = displayedSpeed.toFixed(1);
+  // Update speed values with formatted values
+  if (speedValueM) speedValueM.textContent = formatSpeed(smoothedSpeedKmh);
+  if (speedValueMiles) speedValueMiles.textContent = formatSpeed(smoothedSpeedMilesH);
+  if (speedValuePx) speedValuePx.textContent = formatSpeed(displayedSpeed);
   
   // Update click counter and distance values
   if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
-  if (distanceValueM) distanceValueM.textContent = smoothedDistanceMeters.toFixed(2);
-  if (distanceValueMiles) distanceValueMiles.textContent = smoothedDistanceMiles.toFixed(4);
+  // Also format distance values consistently
+  if (distanceValueM) distanceValueM.textContent = formatSpeed(smoothedDistanceMeters);
+  if (distanceValueMiles) distanceValueMiles.textContent = formatSpeed(smoothedDistanceMiles);
 }
 
 
