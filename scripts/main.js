@@ -51,7 +51,6 @@ import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
 import { initLondonClock } from './modules/londonClock.js';
-import { initFlicker } from './modules/flicker.js';
 import { initRobot } from './modules/robotAnimation.js';
 import { 
     initProcessorAnimation1, 
@@ -60,10 +59,13 @@ import {
     initProcessorAnimation4 
 } from './modules/processorAnimations.js';
 import { initDiffusionText } from './modules/diffusionText.js';
+import { initInterference } from './modules/interference.js';
 import './modules/scrollTracker.js';
 
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
+
+
 
 // We don't need to call initBrowserTheme() here anymore as it self-initialized on import
 
@@ -102,13 +104,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         initDateDisplay();
         initMarqueeContent();
         initLondonClock();
-        initFlicker();
         initRobot();
         initProcessorAnimation1();
         initProcessorAnimation2();
         initProcessorAnimation3();
         initProcessorAnimation4();
         initDiffusionText();
+        initInterference();
 
         console.log('All modules initialized');
 

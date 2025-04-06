@@ -7,6 +7,7 @@
  */
 
 import { buttonSounds } from './sounds.js';
+import { applyInterference, removeInterference } from './interference.js';
 
 // Animation configuration constants
 const ANIMATION_CONFIG = {
@@ -36,10 +37,9 @@ function calculateOptimalGroupSize(widgetCount) {
 export function hideAllWidgets() {
   console.log('Hiding all widgets - widgets will remain in DOM for Lottie initialization');
   document.querySelectorAll('.widget').forEach(widget => {
-    // Use both techniques to ensure widget is hidden but stays in DOM
+    // Remove any interference effect if present
+    removeInterference(widget);
     widget.classList.add('widget-hidden');
-    // Don't use visibility:hidden as it might interfere with Lottie
-    // Instead keep opacity:0 which allows for rendering but invisible
     widget.style.opacity = '0';
   });
 }
@@ -157,9 +157,13 @@ function animateWidget(widget, animateIn, animationId) {
       widget.addEventListener('animationend', () => {
         if (widget.dataset.animationId === animationId) {
           widget.classList.remove('widget-intro');
+          // Apply interference effect when widget is visible
+          applyInterference(widget);
         }
       }, { once: true });
     } else {
+      // Remove interference effect before animating out
+      removeInterference(widget);
       widget.classList.add('widget-outro');
       widget.addEventListener('animationend', () => {
         if (widget.dataset.animationId === animationId) {
