@@ -63,6 +63,7 @@ class PatternEffect {
     this.config = config;
     this.patternWrappers = [];
   }
+  
   init() {
     if (!this.config.enabled) return;
     // Find all wrappers containing the pattern element
@@ -74,28 +75,73 @@ class PatternEffect {
         console.warn('PatternEffect: No pattern element found in wrapper');
         return;
       }
+      
       patternEl.style.willChange = 'transform';
-      // Store pattern element and current horizontal position
-      wrapper._patternData = { patternEl, position: 0 };
+      
+      // Calculate and store the actual width of the pattern element
+      const computedStyle = window.getComputedStyle(patternEl);
+      const patternWidth = parseFloat(computedStyle.width);
+      
+      // Create a clone for seamless looping if needed
+      if (!wrapper.querySelector('.scroll-pattern-clone')) {
+        const clone = patternEl.cloneNode(true);
+        clone.classList.add('scroll-pattern-clone');
+        clone.style.position = 'absolute';
+        clone.style.left = '100%';
+        clone.style.top = '0';
+        wrapper.style.position = 'relative';
+        wrapper.style.overflow = 'hidden';
+        wrapper.appendChild(clone);
+      }
+      
+      // Store pattern element, its width and current position
+      wrapper._patternData = { 
+        patternEl, 
+        position: 0,
+        width: patternWidth || 100 // Fallback to 100 if width calculation fails
+      };
     });
   }
+  
   update({ normalizedAcceleration }) {
     if (!this.config.enabled) return;
     // Clamp acceleration similar to lampEffect responsiveness
     const effectiveAccel = Math.min(normalizedAcceleration, 1);
     const movement = effectiveAccel * this.config.accelerationFactor;
+    
     this.patternWrappers.forEach(wrapper => {
       const data = wrapper._patternData;
       if (!data) return;
-      // Seamlessly loop using modulo arithmetic instead of abrupt reset
-      data.position = ((data.position - movement) % 100 + 100) % 100;
+      
+      // Update position
+      data.position -= movement;
+      
+      // Check if we need to reset position for seamless loop
+      if (Math.abs(data.position) >= data.width) {
+        // Reset position while maintaining the exact fractional part for smoothness
+        data.position = data.position % data.width;
+      }
+      
+      // Apply the transform
       data.patternEl.style.transform = `translateX(${data.position}px)`;
+      
+      // Also update clone if it exists
+      const clone = wrapper.querySelector('.scroll-pattern-clone');
+      if (clone) {
+        clone.style.transform = `translateX(${data.position}px)`;
+      }
     });
   }
+  
   destroy() {
     this.patternWrappers.forEach(wrapper => {
       if (wrapper._patternData && wrapper._patternData.patternEl) {
         wrapper._patternData.patternEl.style.transform = '';
+      }
+      // Remove clones if they exist
+      const clone = wrapper.querySelector('.scroll-pattern-clone');
+      if (clone) {
+        clone.remove();
       }
     });
   }

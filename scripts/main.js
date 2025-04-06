@@ -28,8 +28,11 @@
  * - widgetAnimations.js: Handles widget animations for view transitions
  */
 
-// Import all modules up front
-import { initBrowserTheme } from './modules/browserTheme.js';
+// Import browser theme module - this module self-initializes on import
+import './modules/browserTheme.js';
+console.log('Browser theme initialized via self-initialization');
+
+// Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { 
     hideAllWidgets, 
@@ -62,8 +65,7 @@ import './modules/scrollTracker.js';
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
 
-// Critical visual components initialize immediately
-initBrowserTheme();
+// We don't need to call initBrowserTheme() here anymore as it self-initialized on import
 
 /********************************
  * MAIN INITIALIZATION SEQUENCE *

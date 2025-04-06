@@ -6,23 +6,16 @@
  * appearance in both light and dark modes. This helps create a seamless visual
  * integration between the website and the browser interface.
  *
- * 
  * Features:
  * - Detects browser type (Chrome, Safari, Firefox, Edge, Opera, Brave, Arc)
- * - Sets CSS variables for browser UI colors (--browser-color, --line-color)
+ * - Sets background color directly on .overlay__inner elements
  * - Updates meta theme-color tag to match the browser UI
  * - Automatically responds to system theme changes
  * 
- * Usage:
- * Import and call the initBrowserTheme() function when your application starts.
- * 
- * @example
- * import { initBrowserTheme } from './modules/browserTheme.js';
- * initBrowserTheme();
+ * This module self-initializes immediately upon import.
  */
 
-console.log('Browser Theme Initialised');
-
+console.log('Browser Theme Module Loading - Immediate Initialization');
 
 const userAgent = navigator.userAgent.toLowerCase();
 const prefersDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
@@ -86,19 +79,31 @@ function applyBrowserColors() {
     const browserColor = (COLOR_PRESETS[browser] || COLOR_PRESETS.default)[mode];
     const lineColor = (COLOR_LINE_PRESETS[browser] || COLOR_LINE_PRESETS.default)[mode];
 
-    // Apply to CSS variables
-    document.documentElement.style.setProperty("--browser-color", browserColor);
-    document.documentElement.style.setProperty("--line-color", lineColor);
+    // Instead of applying inline styles directly, set a CSS custom property
+    document.documentElement.style.setProperty('--browser-color', browserColor);
+    document.documentElement.style.setProperty('--browser-line-color', lineColor);
+    
+    console.log(`Applied browser color ${browserColor} as CSS variable --browser-color`);
 
-    // Update <meta name="theme-color"> if it exists
+    // Keep updating the meta theme-color tag if it exists
     const metaThemeColor = document.getElementById('theme-color-meta');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', browserColor);
     }
 }
 
-// Initialize theme settings
-export function initBrowserTheme() {
-    applyBrowserColors();
-    prefersDarkMode.addEventListener("change", applyBrowserColors);
+// Self-initialize when this module is loaded
+applyBrowserColors();
+prefersDarkMode.addEventListener("change", applyBrowserColors);
+
+// Also run when DOM is loaded to make sure elements are available
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyBrowserColors);
+} else {
+    // DOM is already ready, apply again to be sure
+    setTimeout(applyBrowserColors, 0);
 }
+
+console.log('Browser Theme Module Loaded - Browser and Dark Mode Status:');
+console.log('Browser:', detectBrowser());
+console.log('Dark Mode:', prefersDarkMode.matches);

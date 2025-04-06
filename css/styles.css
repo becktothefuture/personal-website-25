@@ -133,11 +133,9 @@ body {
   text-rendering: geometricPrecision;
   word-spacing: 0.04em;
   overflow: hidden;
-  position: fixed;
   min-height: 100svh;
-  align-items: center;
-  justify-content: center;
   overscroll-behavior: none; /* Prevent overscroll */
+  pointer-events: all;
 }
 
 /******************
@@ -212,6 +210,24 @@ body {
   }
 }
 
+
+/******************
+ * PROJECT IMAGES *
+ ******************/
+ .portfolio-card__image {
+  background-size: 400% 100%;       
+  background-position: 0 0;
+}
+
+.portfolio-card:hover > .portfolio-card__image{
+  animation: playSprite 1s steps(3) infinite;
+}
+
+@keyframes playSprite {
+  0% { background-position: 0% 0; }
+  100%   { background-position: 100% 0; }
+
+}
 /******************
  * WIDGET EFFECTS *
  ******************/
@@ -929,17 +945,7 @@ body {
  ******************/
 
 #resize-overlay {
-  position: fixed !important;
-  display: block;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  pointer-events: none !important;
-  z-index: 9999999 !important;
-  transition: opacity 0.2s ease-in-out !important;
-  opacity: 0 !important;
-
+  transition: opacity 0.15s ease-in-out !important;
 }
 
 #resize-overlay.resize-overlay--visible {
