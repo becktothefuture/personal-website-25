@@ -7,7 +7,7 @@
  */
 
 import { buttonSounds } from './sounds.js';
-import { animateViewWidgets, hideAllWidgets } from './widgetAnimations.js';
+import { animateViewTransition, hideAllWidgets } from './widgetAnimations.js';
 
 // Track if a transition is in progress to prevent multiple button clicks
 let transitionInProgress = false;
@@ -97,7 +97,7 @@ function activateHomeButton() {
     
     // Animate widgets with delay to ensure screen is visible
     setTimeout(() => {
-      animateViewWidgets('#home-view', true).then(() => {
+      animateViewTransition('#home-view', true).then(() => {
         transitionInProgress = false;
       });
       buttonSounds.play('confirm', 0.8);
@@ -160,7 +160,15 @@ function showScreenOnly(screenId) {
   SCREEN_IDS.forEach(id => {
     const screen = document.getElementById(id);
     if (screen) {
-      screen.style.display = id === screenId ? 'block' : 'none';
+      if (id === screenId) {
+        screen.style.visibility = 'visible';
+        screen.style.opacity = '1';
+        screen.style.position = 'relative';
+      } else {
+        screen.style.visibility = 'hidden';
+        screen.style.opacity = '0';
+        screen.style.position = 'absolute';
+      }
     }
   });
 }
@@ -191,13 +199,10 @@ function updateScreenVisibility(previousScreen = null) {
     return;
   }
 
-  // Hide all widgets before transition
-  hideAllWidgets();
-  
   // If no previous screen, simply show target screen
   if (!previousScreen) {
     showScreenOnly(targetScreenId);
-    animateViewWidgets(`#${targetScreenId}`, true).then(() => {
+    animateViewTransition(`#${targetScreenId}`, true).then(() => {
       transitionInProgress = false;
     });
     return;
@@ -206,12 +211,7 @@ function updateScreenVisibility(previousScreen = null) {
   // Animate out previous screen, then animate in target screen
   buttonSounds.play('confirm', 0.8);
   
-  animateViewWidgets(`#${previousScreen.id}`, false)
-    .then(() => {
-      showScreenOnly(targetScreenId);
-      return new Promise(resolve => setTimeout(resolve, 50));
-    })
-    .then(() => animateViewWidgets(`#${targetScreenId}`, true))
+  animateViewTransition(`#${previousScreen.id}`, `#${targetScreenId}`, activeButton)
     .then(() => {
       transitionInProgress = false;
     });

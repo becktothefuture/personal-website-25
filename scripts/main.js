@@ -77,10 +77,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
-        // Hide widgets during initialization
-        hideAllWidgets();
-        console.log('Waiting for Lottie animations to initialize...');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Initialize widgets in a way that allows Lottie to properly initialize
+        // But don't show them yet - just prepare the DOM structure
+        initWidgetAnimations();
+        console.log('Widget animations initialized, preparing for Lottie');
+        
+        // Wait for Lottie to initialize properly - slightly longer delay for complex animations
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Initialize sound system and wait for user confirmation
         await initSoundSystem();
@@ -91,8 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 2: MODULE INITIALIZATION
         //--------------------------------------
-        // Initialize all modules after sound choice is confirmed
-        initWidgetAnimations();
+        // Initialize all other modules after sound choice is confirmed
         initResizeOverlay(); 
         initStarfieldThruster();
         initCursorEffects(); 
@@ -116,17 +118,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------
-        // Reveal widgets after a delay
-        const widgetRevealDelay = 2000;
-        setTimeout(() => {
-            // First animate all widgets intro
-            animateAllWidgetsIntro()
-              .then(() => {
-                // Then ensure the home view is shown
-                showHomeView();
-              });
-        }, widgetRevealDelay);
-
+        // Show the home view widgets immediately
+        showHomeView();
 
     } catch (error) {
         console.error('Error in main initialization sequence:', error);

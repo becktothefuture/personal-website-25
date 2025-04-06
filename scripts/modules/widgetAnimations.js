@@ -1,240 +1,228 @@
 /**
  * @module widgetAnimations
- * @description Handles widget animations for view transitions
- * 
- * This module manages animating widgets in and out when switching between views.
- * It ensures only widgets within the active view are animated during navigation.
+ * @description Simple widget animation system
  */
 
 import { buttonSounds } from './sounds.js';
+// Import interference but we'll use it selectively
 import { applyInterference, removeInterference } from './interference.js';
 
-// Animation configuration constants
-const ANIMATION_CONFIG = {
-  DURATION: 1,         // Animation duration in seconds
-  GROUP_DELAY: 50,     // Delay between groups in ms
-  MIN_GROUP_SIZE: 1,   // Minimum widgets per group
-  MAX_GROUP_SIZE: 4,   // Maximum widgets per group
-  TARGET_TOTAL_DURATION: 1800 // ~1.8 seconds total animation time
-};
+// Very simple animation delay
+const WIDGET_DELAY = 50; // ms between widgets
 
-// Calculate optimal group size based on total widget count
-function calculateOptimalGroupSize(widgetCount) {
-  if (widgetCount <= ANIMATION_CONFIG.MIN_GROUP_SIZE) {
-    return ANIMATION_CONFIG.MIN_GROUP_SIZE;
-  }
+/**
+ * STEP 1: On page load, make all views except home invisible
+ * but keep widgets in the DOM for proper Lottie initialization
+ */
+function setupInitialViewState() {
+  console.log('Setting up initial view state - super simple version');
   
-  const animationSteps = ANIMATION_CONFIG.TARGET_TOTAL_DURATION / ANIMATION_CONFIG.GROUP_DELAY;
-  const groupSize = Math.ceil(widgetCount / animationSteps);
-  
-  return Math.max(
-    ANIMATION_CONFIG.MIN_GROUP_SIZE,
-    Math.min(ANIMATION_CONFIG.MAX_GROUP_SIZE, groupSize)
-  );
-}
-
-// Hide all widgets in the document
-export function hideAllWidgets() {
-  console.log('Hiding all widgets - widgets will remain in DOM for Lottie initialization');
-  document.querySelectorAll('.widget').forEach(widget => {
-    // Remove any interference effect if present
-    removeInterference(widget);
-    widget.classList.add('widget-hidden');
-    widget.style.opacity = '0';
+  // First, make ALL views visible in the DOM but with opacity 0
+  // This ensures Lottie can initialize properly
+  document.querySelectorAll('.view').forEach(view => {
+    view.style.display = 'block'; 
+    view.style.opacity = '0';
   });
+  
+  // Then, make home view visible but keep widgets invisible
+  const homeView = document.getElementById('home-view');
+  if (homeView) {
+    homeView.style.opacity = '1';
+    
+    // Make home view widgets invisible initially
+    homeView.querySelectorAll('.widget').forEach(widget => {
+      widget.style.opacity = '0';
+    });
+  }
 }
 
-// Animate all widgets into view when the page is loaded
-export function animateAllWidgetsIntro() {
-  const widgets = Array.from(document.querySelectorAll('.widget'));
-  if (widgets.length === 0) {
-    console.warn('No widgets found to animate');
-    return Promise.resolve(0);
-  }
+/**
+ * STEP 2: Show all widgets in home view
+ */
+export function showHomeView() {
+  console.log('Showing home view widgets - simple animation');
   
-  console.log(`Animating ${widgets.length} widgets intro`);
+  const homeView = document.getElementById('home-view');
+  if (!homeView) return Promise.resolve();
   
-  // Shuffle widgets for randomness
-  const shuffledWidgets = widgets.sort(() => Math.random() - 0.5);
-  const groupSize = calculateOptimalGroupSize(shuffledWidgets.length);
+  // Make sure home view is fully visible
+  homeView.style.display = 'block';
+  homeView.style.opacity = '1';
   
-  // Calculate total duration based on group size and animation duration
-  const totalGroups = Math.ceil(shuffledWidgets.length / groupSize);
-  const totalDuration = (totalGroups * ANIMATION_CONFIG.GROUP_DELAY) + 
-                        (ANIMATION_CONFIG.DURATION * 1000);
+  // Get all widgets in the home view
+  const widgets = Array.from(homeView.querySelectorAll('.widget'));
+  if (!widgets.length) return Promise.resolve();
   
-  // Create animation groups and schedule them
-  for (let groupIndex = 0; groupIndex < totalGroups; groupIndex++) {
-    const startIdx = groupIndex * groupSize;
-    const endIdx = Math.min(startIdx + groupSize, shuffledWidgets.length);
-    const groupDelay = groupIndex * ANIMATION_CONFIG.GROUP_DELAY;
-    
+  // Simple fade-in for each widget with slight delay
+  widgets.forEach((widget, index) => {
     setTimeout(() => {
-      // Play sound for each group of widgets
+      // Play sound for each widget
       buttonSounds.play('confirm', 0.6);
       
-      for (let i = startIdx; i < endIdx; i++) {
-        const widget = shuffledWidgets[i];
-        // Clear any inline styles that might interfere
-        widget.style.opacity = '';
-        widget.style.visibility = '';
-        
-        // Remove hidden class and add intro animation
-        widget.classList.remove('widget-hidden', 'widget-outro');
-        widget.classList.add('widget-intro');
-        
-        widget.addEventListener('animationend', () => {
-          widget.classList.remove('widget-intro');
-        }, { once: true });
-      }
-    }, groupDelay);
-  }
-  
-  return Promise.resolve(totalDuration);
-}
-
-// Animate widgets in or out based on the view selector
-export function animateViewWidgets(viewSelector, animateIn = true) {
-  return new Promise(resolve => {
-    // Check if viewSelector is valid
-    const view = document.querySelector(viewSelector);
-    if (!view) return resolve(0);
-    
-    // Get all widgets within the view
-    const widgets = Array.from(view.querySelectorAll('.widget'));
-    if (widgets.length === 0) return resolve(0);
-    
-    // Calculate group size based on widget count
-    const groupSize = calculateOptimalGroupSize(widgets.length);
-    
-    // Randomize widget order for natural staggered effect
-    const shuffledWidgets = widgets.sort(() => Math.random() - 0.5);
-    
-    // Calculate total duration based on group size and animation duration
-    const totalGroups = Math.ceil(shuffledWidgets.length / groupSize);
-    const totalDuration = (totalGroups * ANIMATION_CONFIG.GROUP_DELAY) + 
-                          (ANIMATION_CONFIG.DURATION * 1000);
-    
-    // Generate unique animation ID to prevent conflicts
-    const animationId = `anim_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    // Schedule animation groups
-    for (let groupIndex = 0; groupIndex < totalGroups; groupIndex++) {
-      const startIdx = groupIndex * groupSize;
-      const endIdx = Math.min(startIdx + groupSize, shuffledWidgets.length);
-      const groupDelay = groupIndex * ANIMATION_CONFIG.GROUP_DELAY;
+      // Simple fade in with transition
+      widget.style.transition = 'opacity 0.3s ease-in-out';
+      widget.style.opacity = '1';
       
+      // Optional: Add interference effect after fade
       setTimeout(() => {
-        // Play sound for each group of widgets
-        buttonSounds.play('confirm', 0.6);
-        
-        for (let i = startIdx; i < endIdx; i++) {
-          animateWidget(shuffledWidgets[i], animateIn, animationId);
-        }
-      }, groupDelay);
-    }
-    
-    setTimeout(resolve, totalDuration, totalDuration);
-  });
-}
-
-// Animate a single widget in or out
-function animateWidget(widget, animateIn, animationId) {
-  
-  // Store animation ID in dataset to prevent conflicts
-  widget.dataset.animationId = animationId;
-  
-  // Reset animation state without forcing reflow
-  widget.classList.remove('widget-intro', 'widget-outro');
-  
-  // Use requestAnimationFrame to ensure the class changes are applied in the next rendering frame
-  requestAnimationFrame(() => {
-    if (animateIn) {
-      // First make the widget visible in the DOM
-      widget.style.visibility = widget.dataset.originalVisibility || '';
-      widget.classList.remove('widget-hidden');
-      widget.classList.add('widget-intro');
-      widget.addEventListener('animationend', () => {
-        if (widget.dataset.animationId === animationId) {
-          widget.classList.remove('widget-intro');
-          // Apply interference effect when widget is visible
+        try {
           applyInterference(widget);
+        } catch (e) {
+          console.warn('Could not apply interference:', e);
         }
-      }, { once: true });
+      }, 300);
+    }, index * WIDGET_DELAY);
+  });
+  
+  // Return a promise that resolves when all animations should be done
+  return new Promise(resolve => {
+    const totalTime = widgets.length * WIDGET_DELAY + 500;
+    setTimeout(resolve, totalTime);
+  });
+}
+
+/**
+ * STEP 3: Hide all widgets in a view
+ */
+function hideViewWidgets(viewSelector) {
+  console.log(`Hiding widgets in ${viewSelector}`);
+  
+  const view = document.querySelector(viewSelector);
+  if (!view) return Promise.resolve();
+  
+  const widgets = Array.from(view.querySelectorAll('.widget'));
+  if (!widgets.length) return Promise.resolve();
+  
+  // Simple fade-out for each widget
+  widgets.forEach((widget, index) => {
+    setTimeout(() => {
+      // Remove any effects first
+      try {
+        removeInterference(widget);
+      } catch (e) {
+        console.warn('Could not remove interference:', e);
+      }
+      
+      // Simple fade out
+      widget.style.transition = 'opacity 0.3s ease-in-out';
+      widget.style.opacity = '0';
+    }, index * WIDGET_DELAY);
+  });
+  
+  // Return a promise that resolves when all fade-outs should be complete
+  return new Promise(resolve => {
+    const totalTime = widgets.length * WIDGET_DELAY + 500;
+    setTimeout(() => {
+      // Hide the entire view when done
+      view.style.opacity = '0';
+      view.style.display = 'none';
+      resolve();
+    }, totalTime);
+  });
+}
+
+/**
+ * STEP 4: Show all widgets in a view
+ */
+function showViewWidgets(viewSelector) {
+  console.log(`Showing widgets in ${viewSelector}`);
+  
+  const view = document.querySelector(viewSelector);
+  if (!view) return Promise.resolve();
+  
+  // Make view visible first
+  view.style.display = 'block';
+  view.style.opacity = '1';
+  
+  const widgets = Array.from(view.querySelectorAll('.widget'));
+  if (!widgets.length) return Promise.resolve();
+  
+  // Simple fade-in for each widget
+  widgets.forEach((widget, index) => {
+    setTimeout(() => {
+      // Play sound for each widget
+      buttonSounds.play('confirm', 0.6);
+      
+      // Simple fade in
+      widget.style.transition = 'opacity 0.3s ease-in-out';
+      widget.style.opacity = '1';
+      
+      // Optional: Add interference effect after fade
+      setTimeout(() => {
+        try {
+          applyInterference(widget);
+        } catch (e) {
+          console.warn('Could not apply interference:', e);
+        }
+      }, 300);
+    }, index * WIDGET_DELAY);
+  });
+  
+  // Return a promise that resolves when all animations should be done
+  return new Promise(resolve => {
+    const totalTime = widgets.length * WIDGET_DELAY + 500;
+    setTimeout(resolve, totalTime);
+  });
+}
+
+/**
+ * STEP 5: Handle view transitions
+ */
+export function animateViewTransition(oldViewSelector, newViewSelector, activeButton) {
+  console.log(`Simple view transition: ${oldViewSelector || 'none'} → ${newViewSelector}`);
+  
+  // Update button states if provided
+  if (activeButton) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.nav-button, .btn-3d__button').forEach(btn => {
+      btn.classList.remove('active', 'btn-3d--active');
+    });
+    
+    // Add active class to clicked button
+    if (activeButton.classList.contains('btn-3d__button')) {
+      activeButton.classList.add('btn-3d--active');
     } else {
-      // Remove interference effect before animating out
-      removeInterference(widget);
-      widget.classList.add('widget-outro');
-      widget.addEventListener('animationend', () => {
-        if (widget.dataset.animationId === animationId) {
-          // Hide but keep in DOM
-          widget.style.visibility = 'hidden';
-          widget.classList.add('widget-hidden');
-          widget.classList.remove('widget-outro');
-        }
-      }, { once: true });
+      activeButton.classList.add('active');
     }
-  });
-}
-
-// Handle view change animation
-// This function is called when the view changes
-export function animateViewChange(oldViewSelector, newViewSelector) {
-  if (!oldViewSelector && newViewSelector) {
-    return animateViewWidgets(newViewSelector, true);
   }
   
-  return animateViewWidgets(oldViewSelector, false)
-    .then(() => animateViewWidgets(newViewSelector, true));
-}
-
-// Show the home view on initialization
-export function showHomeView() {
-  const homeViewSelector = '#home-view';
-  const homeView = document.querySelector(homeViewSelector);
-  
-  if (homeView) {
-    console.log('Found home view, ensuring visibility');
-    // Ensure the home view is visible by default
-    homeView.style.display = 'block';
-    homeView.style.visibility = 'visible';
-    homeView.style.opacity = '1';
-  } else {
-    console.warn('Home view element not found for selector:', homeViewSelector);
-    // Fallback: reveal all widgets
-    document.querySelectorAll('.widget').forEach(widget => {
-      // Remove hidden class
-      widget.classList.remove('widget-hidden');
-      // Clear any inline styles that might hide the widget
-      widget.style.opacity = '';
-      widget.style.visibility = '';
-    });
-    return Promise.resolve();
+  // If no old view, just show the new view
+  if (!oldViewSelector) {
+    return showViewWidgets(newViewSelector);
   }
   
-  // Try to log the widgets within home view
-  const homeViewWidgets = homeView.querySelectorAll('.widget');
-  console.log(`Found ${homeViewWidgets.length} widgets in home view`);
-  
-  return animateViewWidgets(homeViewSelector, true);
+  // Otherwise, hide old view first, then show new view
+  return hideViewWidgets(oldViewSelector)
+    .then(() => showViewWidgets(newViewSelector));
 }
 
-// Initialize the module and set up event listeners
+/**
+ * Legacy function for backward compatibility
+ */
+export function hideAllWidgets() {
+  setupInitialViewState();
+  return Promise.resolve();
+}
+
+/**
+ * Legacy function for backward compatibility
+ */
+export function animateAllWidgetsIntro() {
+  return showHomeView();
+}
+
+/**
+ * Initialize module and set up event listeners
+ */
 export function init() {
-  document.addEventListener('navigation:viewChange', (event) => {
-    const { oldView, newView } = event.detail;
-    animateViewChange(oldView, newView);
-  });
+  console.log('Initializing simple widget animations');
   
-  // Show home view after DOM is fully loaded
-  if (document.readyState === 'complete') {
-    showHomeView();
-  } else {
-    window.addEventListener('load', () => {
-      showHomeView();
-    });
-  }
+  // Set up initial state
+  setupInitialViewState();
+  
+  // Listen for navigation events
+  document.addEventListener('navigation:viewChange', (event) => {
+    const { oldView, newView, button } = event.detail;
+    animateViewTransition(oldView, newView, button);
+  });
 }
-
-// Initialize the module
-init();

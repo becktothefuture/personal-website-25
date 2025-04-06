@@ -1201,3 +1201,31 @@ body {
   animation: interferenceAnimation var(--interference-duration) steps(5, end) infinite;
   animation-delay: var(--interference-delay);
 }
+
+
+
+/********************************
+ * SOUND CONTROL ICON ANIMATION *
+ ********************************/
+
+
+.sound-control__icon-wrapper {
+  display: inline-block;
+  animation: verticalMotion 0.5s infinite ease-in-out alternate;
+}
+
+@keyframes verticalMotion {
+  from { transform: translateY(-2px); }
+  to { transform: translateY(2px); }
+}
+
+.sound-control__icon {
+  display: inline-block;
+  animation: horizontalMotion 1s infinite ease-in-out alternate;
+  transform-origin: center;
+}
+
+@keyframes horizontalMotion {
+  from { transform: translateX(-2px) rotate(-2deg); }
+  to { transform: translateX(2px) rotate(2deg); }
+}
