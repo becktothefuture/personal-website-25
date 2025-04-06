@@ -161,10 +161,14 @@ function showScreenOnly(screenId) {
     const screen = document.getElementById(id);
     if (screen) {
       if (id === screenId) {
+        // Make target screen visible but don't animate widgets yet
         screen.style.visibility = 'visible';
         screen.style.opacity = '1';
         screen.style.position = 'relative';
+        screen.style.display = 'block';
       } else {
+        // Hide other screens using position and opacity instead of display:none
+        // This maintains Lottie context
         screen.style.visibility = 'hidden';
         screen.style.opacity = '0';
         screen.style.position = 'absolute';
@@ -199,18 +203,19 @@ function updateScreenVisibility(previousScreen = null) {
     return;
   }
 
-  // If no previous screen, simply show target screen
+  // Play button sound
+  buttonSounds.play('confirm', 0.8);
+
+  // If no previous screen, simply show and animate target screen
   if (!previousScreen) {
     showScreenOnly(targetScreenId);
-    animateViewTransition(`#${targetScreenId}`, true).then(() => {
+    animateViewTransition(null, `#${targetScreenId}`, activeButton).then(() => {
       transitionInProgress = false;
     });
     return;
   }
   
   // Animate out previous screen, then animate in target screen
-  buttonSounds.play('confirm', 0.8);
-  
   animateViewTransition(`#${previousScreen.id}`, `#${targetScreenId}`, activeButton)
     .then(() => {
       transitionInProgress = false;

@@ -948,21 +948,6 @@ body {
 }
 
 
-/******************
- * RESIZE OVERLAY *
- ******************/
-
-#resize-overlay {
-  transition: opacity 0.15s ease-in-out !important;
-}
-
-#resize-overlay.resize-overlay--visible {
-  opacity: 1 !important;
-}
-
-#resize-overlay.resize-overlay--hidden {
-  opacity: 0 !important;
-}
 
 /******************
  * RESIZE OVERLAY *

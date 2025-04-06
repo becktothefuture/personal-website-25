@@ -77,13 +77,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
-        // Initialize widgets in a way that allows Lottie to properly initialize
-        // But don't show them yet - just prepare the DOM structure
+        // Initialize widget animations first to allow Lottie to start initializing
+        // This ensures all elements are in the DOM and visible
+        console.log('Initializing widget system for proper Lottie initialization');
         initWidgetAnimations();
-        console.log('Widget animations initialized, preparing for Lottie');
         
-        // Wait for Lottie to initialize properly - slightly longer delay for complex animations
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Give Lottie more time to initialize properly before continuing
+        console.log('Waiting for Lottie animations to initialize...');
+        await new Promise(resolve => setTimeout(resolve, 1200));
         
         // Initialize sound system and wait for user confirmation
         await initSoundSystem();
@@ -118,8 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------
-        // Show the home view widgets immediately
-        showHomeView();
+        // Show the home view widgets with a slight delay to prevent race conditions
+        setTimeout(() => {
+            showHomeView();
+        }, 300);
 
     } catch (error) {
         console.error('Error in main initialization sequence:', error);
