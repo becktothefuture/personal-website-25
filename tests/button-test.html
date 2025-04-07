@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Button – 70° Sides</title>
+  <style>
+    :root {
+      /* Button dimensions and extrusion depth */
+      --button-width: 200px;
+      --button-height: 60px;
+      --depth: 10px;
+      /* Angle for the side rotation */
+      --angle: 70deg;
+      /* Pre‐calculated approximations */
+      --cos-angle: 0.342;  /* cos(70deg) */
+      --sin-angle: 0.94;   /* sin(70deg) */
+      /* Offsets computed from the depth and angle */
+      --offset: calc(var(--depth) * var(--cos-angle)); /* Horizontal/vertical inset */
+      --z-offset: calc(var(--depth) * var(--sin-angle)); /* How far forward the front face sits */
+    }
+
+    /* Basic page styling */
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+    }
+
+    /* Parent container with 3D perspective */
+    .container {
+      perspective: 300px;
+      transform: rotateY(70deg)
+      
+    }
+
+    /* Button container sized to include the extruded sides */
+    .button {
+      position: relative;
+      width: calc(var(--button-width) + 2 * var(--offset));
+      height: calc(var(--button-height) + 2 * var(--offset));
+      transform-style: preserve-3d;
+    }
+
+    /* Common style for each face */
+    .face {
+      position: absolute;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+
+    }
+
+    /* Front face – note it’s shifted by z-offset so its edge matches the inner edges of the extruded sides */
+    .front {
+      top: var(--offset);
+      left: var(--offset);
+      width: var(--button-width);
+      height: var(--button-height);
+      background: #3498db;
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateZ(var(--z-offset));
+      z-index: 2;
+      transform-style: preserve-3d;
+
+    }
+
+    /* Left face – rotated from its left edge */
+    .left {
+      top: calc(var(--offset));
+      left: 0;
+      width: var(--depth);
+      height: calc(var(--button-height) + 2 * var(--offset));
+      background: #2471a3;
+      transform-origin: left;
+      transform: rotateY(var(--angle));
+      /* Create a trapezoid so its inner edge (right side) is inset by --offset */
+      clip-path: polygon(0 0, 100% var(--offset), 100% calc(100% - var(--offset)), 0 100%);
+      transform-style: preserve-3d;
+
+    }
+
+    /* Right face – rotated from its right edge */
+    .right {
+      top: calc(var(--offset));
+      right: 0;
+      width: var(--depth);
+      height: calc(var(--button-height) + 2 * var(--offset));
+      background: #2471a3;
+      transform-origin: right;
+      transform: rotateY(calc(-1 * var(--angle)));
+      clip-path: polygon(100% 0, 0 var(--offset), 0 calc(100% - var(--offset)), 100% 100%);
+      transform-style: preserve-3d;
+
+    }
+
+    /* Top face – rotated from its top edge */
+    .top {
+      top: 0;
+      left: 0;
+      width: calc(var(--button-width) + 2 * var(--offset));
+      height: var(--depth);
+      background: #2980b9;
+      transform-origin: top;
+      transform: rotateX(var(--angle));
+      clip-path: polygon(0 0, 100% 0, calc(100% - var(--offset)) 100%, var(--offset) 100%);
+      transform-style: preserve-3d;
+
+    }
+
+    /* Bottom face – rotated from its bottom edge */
+    .bottom {
+      bottom: 0;
+      left: 0;
+      width: calc(var(--button-width) + 2 * var(--offset));
+      height: var(--depth);
+      background: #2980b9;
+      transform-origin: bottom;
+      transform: rotateX(calc(-1 * var(--angle)));
+      clip-path: polygon(var(--offset) 0, calc(100% - var(--offset)) 0, 100% 100%, 0 100%);
+      transform-style: preserve-3d;
+
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="button">
+      <div class="face top"></div>
+      <div class="face left"></div>
+      <div class="face front">3D Button</div>
+      <div class="face right"></div>
+      <div class="face bottom"></div>
+    </div>
+  </div>
+</body>
+</html>

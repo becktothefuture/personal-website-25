@@ -26,27 +26,33 @@
  * - button3DToggle.js: Manages 3D button toggling with only one active at a time
  * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
  * - widgetAnimations.js: Handles widget animations for view transitions
+ * - viewToggle.js: Toggles between different views without removing them from DOM
  */
 
 // Import browser theme module - this module self-initializes on import
 import './modules/browserTheme.js';
 console.log('Browser theme initialized via self-initialization');
 
+// Import the new viewToggle module
+import initViewToggle from './modules/viewToggle.js';
+
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
-import { 
+// Comment out widget animations import
+/* import { 
     hideAllWidgets, 
     animateAllWidgetsIntro, 
     showHomeView,
     init as initWidgetAnimations 
-} from './modules/widgetAnimations.js';
+} from './modules/widgetAnimations.js'; */
 import { initResizeOverlay } from './modules/resizeOverlay.js';
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initcursorTracker } from './modules/cursorTracker.js';
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initLampEffect } from './modules/lampEffect.js';
-import { init3DButtons } from './modules/button3DToggle.js';
+// Comment out 3D buttons import
+// import { init3DButtons } from './modules/button3DToggle.js';
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
@@ -77,10 +83,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
-        // Initialize widget animations first to allow Lottie to start initializing
-        // This ensures all elements are in the DOM and visible
-        console.log('Initializing widget system for proper Lottie initialization');
-        initWidgetAnimations();
+        // Initialize view toggle first, before any other UI components
+        console.log('Initializing view toggle system');
+        initViewToggle();
+        
+        // Initialize widget animations commented out
+        // console.log('Initializing widget system for proper Lottie initialization');
+        // initWidgetAnimations();
         
         // Give Lottie more time to initialize properly before continuing
         console.log('Waiting for Lottie animations to initialize...');
@@ -102,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initcursorTracker();
         initscrollEffect();
         initLampEffect();
-        init3DButtons();
+        // init3DButtons(); // Commented out as requested
         initLightGrids();
         initDateDisplay();
         initMarqueeContent();
@@ -119,10 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------
-        // Show the home view widgets with a slight delay to prevent race conditions
-        setTimeout(() => {
-            showHomeView();
-        }, 300);
+        // Removed showHomeView call since we're using viewToggle instead
 
     } catch (error) {
         console.error('Error in main initialization sequence:', error);

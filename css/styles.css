@@ -89,7 +89,6 @@
   --cockpit-rotate-max: 0.3deg;
 
   /* Perspective settings */
-  --perspective-depth: 1000px;
   --wall-depth: 400px;
 
   /* Overall animation settings */
@@ -562,13 +561,13 @@ body {
  * 3D BUTTONS *
  ***************/
 
-.btn-3d__button > .btn-3d__front,
-.btn-3d__button > .btn-3d__sides {
+.btn-3d__front,
+.btn-3d__sides {
   background-color: var(--buttons);
 }
 
-.btn-3d__button.btn-3d--active > .btn-3d__front,
-.btn-3d__button.btn-3d--active > .btn-3d__sides {
+.btn-3d.btn-3D--active > .btn-3d__front,
+.btn-3d.btn-3d--active > .btn-3d__sides {
   background-color: var(--light);
   animation: oscillateColor 3s infinite;
 }
@@ -835,7 +834,7 @@ body {
 .page__inner {
   backface-visibility: hidden;
   will-change: transform;
-  perspective: var(--perspective-depth);
+  transform-style: preserve-3d; 
 }
 
 /* Inner display rotation */
@@ -903,6 +902,40 @@ body {
   pointer-events: none;
   transition: box-shadow 0.15s ease-out, opacity 0.16s ease-out;
 }
+
+
+/**************************
+ * VIEWS TOGGLE ANIMATION *
+ **************************/
+
+
+.home-content{
+  transform-style: preserve-3d;    /* Maintain the 3D context for children */
+}
+
+.hub-grid__item{
+  backface-visibility: hidden;
+  transform: translateZ(0); /* Kickstarts the GPU for smoother transforms */
+}
+
+
+ /* Active view: fully visible, interactive, and with a smooth fade-in effect */
+.view--active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.3s ease;
+  transform: translateZ(0); /* Ensure GPU acceleration */
+}
+
+/* Hidden view: fully transparent, non-interactive, yet still present in the DOM */
+.view--hidden {
+  opacity: 1;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
 
 /*****************
  * TUNNEL EFFECT *
