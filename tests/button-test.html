@@ -2,141 +2,181 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>3D Button – 70° Sides</title>
+  <title>Truncated Pyramid Test</title>
+  <link rel="stylesheet" href="styles.css">
   <style>
-    :root {
-      /* Button dimensions and extrusion depth */
-      --button-width: 200px;
-      --button-height: 60px;
-      --depth: 10px;
-      /* Angle for the side rotation */
-      --angle: 70deg;
-      /* Pre‐calculated approximations */
-      --cos-angle: 0.342;  /* cos(70deg) */
-      --sin-angle: 0.94;   /* sin(70deg) */
-      /* Offsets computed from the depth and angle */
-      --offset: calc(var(--depth) * var(--cos-angle)); /* Horizontal/vertical inset */
-      --z-offset: calc(var(--depth) * var(--sin-angle)); /* How far forward the front face sits */
-    }
+:root {
+  /* -------------------------
+     PRIMARY CONTROLS
+     ------------------------- */
+  --base-width: 200px;
+  --base-height: 200px;
+  /* Cap scale: 1 = same size as base (cuboid), 0.8 = 80% of base */
+  --cap-scale: 0.8;
+  /* Depth of the pyramid (distance along Z between base and cap) */
+  --depth: 150px;
 
-    /* Basic page styling */
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f5f5f5;
-    }
+  /* -------------------------
+     DERIVED VALUES
+     ------------------------- */
+  --cap-width: calc(var(--base-width) * var(--cap-scale));
+  --cap-height: calc(var(--base-height) * var(--cap-scale));
 
-    /* Parent container with 3D perspective */
-    .container {
-      perspective: 300px;
-      transform: rotateY(70deg)
-      
-    }
+  /* Pre-calculated tangent of the side angle.
+     tan(θ) = (base - cap)/(2×depth). For default values:
+     (200 - 200×0.8)/(2×150) = (200×0.2)/(300) ≈ 0.133 */
+  --tan-angle: 0.133;
+  /* Inset computed from depth * tan(angle) */
+  --inset: calc(var(--depth) * var(--tan-angle));
+}
 
-    /* Button container sized to include the extruded sides */
-    .button {
-      position: relative;
-      width: calc(var(--button-width) + 2 * var(--offset));
-      height: calc(var(--button-height) + 2 * var(--offset));
-      transform-style: preserve-3d;
-    }
+/* Global styles */
+body {
+  margin: 0;
+  background: #111;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 600px;
+}
 
-    /* Common style for each face */
-    .face {
-      position: absolute;
-      backface-visibility: hidden;
-      transform-style: preserve-3d;
+.scene {
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(20deg);
+}
 
-    }
+.pyramid {
+  position: relative;
+  width: var(--base-width);
+  height: var(--base-height);
+  transform-style: preserve-3d;
+}
 
-    /* Front face – note it’s shifted by z-offset so its edge matches the inner edges of the extruded sides */
-    .front {
-      top: var(--offset);
-      left: var(--offset);
-      width: var(--button-width);
-      height: var(--button-height);
-      background: #3498db;
-      color: #fff;
-      font-family: sans-serif;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: translateZ(var(--z-offset));
-      z-index: 2;
-      transform-style: preserve-3d;
+/* Common face style */
+.face {
+  position: absolute;
+  background: linear-gradient(to bottom right, #999, #ccc);
+  transform-style: preserve-3d;
+}
 
-    }
+/* -------------------------------
+   BASE: the larger bottom square
+   ------------------------------- */
+.face-base {
+  width: var(--base-width);
+  height: var(--base-height);
+  top: 0;
+  left: 0;
+  /* For a “floor” effect, rotate 90deg about X */
+  transform-origin: center;
+  transform: rotateX(90deg);
+}
 
-    /* Left face – rotated from its left edge */
-    .left {
-      top: calc(var(--offset));
-      left: 0;
-      width: var(--depth);
-      height: calc(var(--button-height) + 2 * var(--offset));
-      background: #2471a3;
-      transform-origin: left;
-      transform: rotateY(var(--angle));
-      /* Create a trapezoid so its inner edge (right side) is inset by --offset */
-      clip-path: polygon(0 0, 100% var(--offset), 100% calc(100% - var(--offset)), 0 100%);
-      transform-style: preserve-3d;
+/* -------------------------------
+   CAP: the top, smaller square
+   ------------------------------- */
+.face-cap {
+  width: var(--cap-width);
+  height: var(--cap-height);
+  background: #fff;
+  /* Center the cap over the base */
+  left: calc((var(--base-width) - var(--cap-width)) / 2);
+  top: calc((var(--base-height) - var(--cap-height)) / 2);
+  /* Rotate to be parallel to the base, then translate along Z */
+  transform: rotateX(90deg) translateY(calc(-1 * var(--depth)));
+}
 
-    }
+/* -------------------------------
+   FRONT FACE
+   ------------------------------- */
+.face-front {
+  width: var(--base-width);
+  height: var(--depth);
+  left: 0;
+  bottom: 0;
+  /* Pivot along the bottom edge */
+  transform-origin: bottom center;
+  /* Rotate upward (inward) around the X-axis by an angle defined by our tangent */
+  transform: rotateX(calc(-1 * (90deg - atan(var(--tan-angle)))));
+  /* Since CSS can’t compute atan(), we manually adjust by using our inset:
+     The top edge of this trapezoid is inset by --inset from each side */
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    calc(100% - var(--inset)) 100%,
+    var(--inset) 100%
+  );
+}
 
-    /* Right face – rotated from its right edge */
-    .right {
-      top: calc(var(--offset));
-      right: 0;
-      width: var(--depth);
-      height: calc(var(--button-height) + 2 * var(--offset));
-      background: #2471a3;
-      transform-origin: right;
-      transform: rotateY(calc(-1 * var(--angle)));
-      clip-path: polygon(100% 0, 0 var(--offset), 0 calc(100% - var(--offset)), 100% 100%);
-      transform-style: preserve-3d;
+/* -------------------------------
+   BACK FACE
+   ------------------------------- */
+.face-back {
+  width: var(--base-width);
+  height: var(--depth);
+  left: 0;
+  top: 0;
+  /* Pivot along the top edge */
+  transform-origin: top center;
+  transform: rotateX(calc(90deg - atan(var(--tan-angle))));
+  clip-path: polygon(
+    var(--inset) 0%,
+    calc(100% - var(--inset)) 0%,
+    100% 100%,
+    0% 100%
+  );
+}
 
-    }
+/* -------------------------------
+   LEFT FACE
+   ------------------------------- */
+.face-left {
+  height: var(--base-height);
+  width: var(--depth);
+  top: 0;
+  left: 0;
+  /* Pivot along the left edge */
+  transform-origin: left center;
+  transform: rotateY(calc(-1 * (90deg - atan(var(--tan-angle)))));
+  clip-path: polygon(
+    0% 0%,
+    100% var(--inset),
+    100% calc(100% - var(--inset)),
+    0% 100%
+  );
+}
 
-    /* Top face – rotated from its top edge */
-    .top {
-      top: 0;
-      left: 0;
-      width: calc(var(--button-width) + 2 * var(--offset));
-      height: var(--depth);
-      background: #2980b9;
-      transform-origin: top;
-      transform: rotateX(var(--angle));
-      clip-path: polygon(0 0, 100% 0, calc(100% - var(--offset)) 100%, var(--offset) 100%);
-      transform-style: preserve-3d;
+/* -------------------------------
+   RIGHT FACE
+   ------------------------------- */
+.face-right {
+  height: var(--base-height);
+  width: var(--depth);
+  top: 0;
+  right: 0;
+  transform-origin: right center;
+  transform: rotateY(calc(90deg - atan(var(--tan-angle))));
+  clip-path: polygon(
+    100% 0%,
+    0% var(--inset),
+    0% calc(100% - var(--inset)),
+    100% 100%
+  );
+}
 
-    }
-
-    /* Bottom face – rotated from its bottom edge */
-    .bottom {
-      bottom: 0;
-      left: 0;
-      width: calc(var(--button-width) + 2 * var(--offset));
-      height: var(--depth);
-      background: #2980b9;
-      transform-origin: bottom;
-      transform: rotateX(calc(-1 * var(--angle)));
-      clip-path: polygon(var(--offset) 0, calc(100% - var(--offset)) 0, 100% 100%, 0 100%);
-      transform-style: preserve-3d;
-
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="button">
-      <div class="face top"></div>
-      <div class="face left"></div>
-      <div class="face front">3D Button</div>
-      <div class="face right"></div>
-      <div class="face bottom"></div>
+  <div class="scene">
+    <div class="pyramid">
+      <!-- Side faces -->
+      <div class="face face-top"></div>
+      <div class="face face-bottom"></div>
+      <div class="face face-left"></div>
+      <div class="face face-right"></div>
+      <!-- Cap -->
+      <div class="face face-cap"></div>
     </div>
   </div>
 </body>

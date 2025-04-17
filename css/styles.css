@@ -61,8 +61,8 @@
   --ambient-glow: rgba(0, 0, 0, 0.466); /* min: 0.05, max: 0.6 */
 
   /* Animation Timing (in seconds) */
-  --flicker-speed: 0.03s; /* min: 0.05s, max: 2.0s */
-  --scanline-speed: 4s; /* min: 1s, max: 10s */
+  --flicker-speed: 0.01s; /* min: 0.05s, max: 2.0s */
+  --scanline-speed: 10s; /* min: 1s, max: 10s */
 
   /* Effect Intensities */
   --scanline-opacity: 0.4; /* min: 0.2, max: 0.9 */
@@ -88,8 +88,6 @@
   --cockpit-rotate-min: -0.1deg;
   --cockpit-rotate-max: 0.3deg;
 
-  /* Perspective settings */
-  --wall-depth: 400px;
 
   /* Overall animation settings */
   --starship-movement-duration: 30s;
@@ -426,7 +424,7 @@ body {
   width: var(--cube-size);
   height: var(--cube-size);
   transform-style: preserve-3d;
-  animation: rotate-cube 5s infinite linear;
+  animation: rotate-cube 5s infinite steps(30);
 }
 
 .cube-face {
@@ -561,16 +559,36 @@ body {
  * 3D BUTTONS *
  ***************/
 
-.btn-3d__front,
-.btn-3d__sides {
+
+
+ .btn-3d{
+  /* in webflow */
+ }
+
+ .btn-3d__glow{
+  opacity: 0;
+}
+
+.btn-3d__button--front,
+.btn-3d__button--sides {
   background-color: var(--buttons);
 }
 
-.btn-3d.btn-3D--active > .btn-3d__front,
-.btn-3d.btn-3d--active > .btn-3d__sides {
-  background-color: var(--light);
-  animation: oscillateColor 3s infinite;
+
+.btn-3d--active{
+  transform: translateZ(calc(var(--button-depth) * -0.5));
 }
+
+.btn-3d--active .btn-3d__button--front,
+.btn-3d--active .btn-3d__button--sides {
+  animation: oscillateColor 2s ease-in-out infinite;
+}
+
+.btn-3d--active > .btn-3d__glow {
+  animation: buttonGlow 2s ease-in-out infinite;
+}
+
+
 
 @keyframes oscillateColor {
   0% {
@@ -583,6 +601,19 @@ body {
     background-color: var(--light-2);
   }
 }
+
+@keyframes buttonGlow {
+  0% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
 
 /*********
  * CLOCK *
@@ -659,7 +690,7 @@ body {
 }
 
 .display {
-  animation: verticalJitter 0.1s infinite;
+  /* animation: verticalJitter 0.1s infinite; */
   transform-style: preserve-3d;
 }
 
@@ -690,7 +721,7 @@ body {
 .flicker {
   position: fixed;
   inset: 0;
-  background: rgba(var(--crt-primary-color), 0.02);
+  background: rgba(var(--crt-primary-color), 0.01);
   mix-blend-mode: overlay;
   animation: flickerAnimation var(--flicker-speed) infinite;
   opacity: var(--flicker-opacity);
@@ -930,7 +961,7 @@ body {
 
 /* Hidden view: fully transparent, non-interactive, yet still present in the DOM */
 .view--hidden {
-  opacity: 1;
+  opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.3s ease;

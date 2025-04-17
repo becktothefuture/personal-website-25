@@ -81,7 +81,8 @@ class ScrollTracker extends EventEmitter {
   #config = {
     scrollScalingFactor: 100,  // Lower value increases sensitivity
     speedDecayRate: 1,  // Higher value increases speed decay
-    accelerationDecayRate: 6  // Higher value increases acceleration decay
+    accelerationDecayRate: 6,  // Higher value increases acceleration decay
+    maxSpeed: 1.0      // Maximum normalized speed (0-1)
   };
 
   // State values (normalized 0 to 1).
@@ -132,6 +133,8 @@ class ScrollTracker extends EventEmitter {
     const dt = 0.016; // ~60fps
     // Integrate acceleration to update speed
     this.#state.speed += this.#state.acceleration * dt;
+    // Cap speed at max value
+    this.#state.speed = Math.min(this.#state.speed, this.#config.maxSpeed);
     // Ensure speed is never negative.
     this.#state.speed = Math.max(this.#state.speed, 0);
     // Apply friction decay to speed (simulate resistance)
@@ -156,7 +159,20 @@ class ScrollTracker extends EventEmitter {
     if(this.#pxpsDisplay) this.#pxpsDisplay.textContent = this.formatSpeed(pxps);
     
     // Emit update event.
-    this.emit("normalizedUpdate", { normalizedSpeed: this.#state.speed, normalizedAcceleration: this.#state.acceleration });
+    this.emit("normalizedUpdate", { 
+      normalizedSpeed: this.#state.speed, 
+      normalizedAcceleration: this.#state.acceleration 
+    });
+    
+    // Also emit a general update event with additional data for starfieldThruster
+    this.emit("update", {
+      normalizedSpeed: this.#state.speed,
+      normalizedAcceleration: this.#state.acceleration,
+      velocityKMH: kph,
+      velocityMPH: mph,
+      pixelsPerSecond: pxps
+    });
+    
     requestAnimationFrame(this.update.bind(this));
   }
   
@@ -193,8 +209,11 @@ class ScrollTracker extends EventEmitter {
 
 // Add this function to provide configuration for the scroll tracker
 export function getConfig() {
-    // Adjust topSpeed value as appropriate for your application
-    return { topSpeed: 300 };
+    // Return full configuration including topSpeed
+    return { 
+      topSpeed: 300,  // KMH
+      maxNormalizedSpeed: 1.0
+    };
 }
 
 const scrollTracker = new ScrollTracker();

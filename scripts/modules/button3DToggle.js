@@ -6,14 +6,15 @@
  * Manages staggered animation of widgets when switching views.
  */
 
+// Import necessary modules
 import { buttonSounds } from './sounds.js';
 import { animateViewTransition, hideAllWidgets } from './widgetAnimations.js';
 
-// Track if a transition is in progress to prevent multiple button clicks
-let transitionInProgress = false;
-
 // Available screen IDs for validation
 const SCREEN_IDS = ['home-view', 'portfolio-view', 'contact-view'];
+
+// Track if a transition is currently in progress
+let transitionInProgress = false;
 
 /**
  * Initialize the 3D buttons module
@@ -26,9 +27,8 @@ export function init3DButtons() {
   }
 }
 
-/**
- * Set up the 3D buttons and screen visibility
- */
+// This function initializes the button toggle functionality
+// and handles the activation of the home button when the intro is complete
 function initializeButtons() {
   const buttonWrappers = document.querySelectorAll('.btn-3d');
   
@@ -53,12 +53,11 @@ function initializeButtons() {
   console.log('3D button toggle initialized');
 }
 
-/**
- * Set up event listeners for a button wrapper
- * @param {Element} wrapper - Button wrapper element
- */
+// This function sets up event listeners for each button wrapper
+// Applies click handler to the entire btn-3d wrapper
+// Sets up sound effects on press and accessibility attributes
 function setupButtonEvents(wrapper) {
-  // Click handler
+  // Click handler on the wrapper (btn-3d)
   wrapper.addEventListener('click', handleButtonClick);
   
   // Sound effect on press
@@ -76,19 +75,18 @@ function setupButtonEvents(wrapper) {
 
 /**
  * Handle the intro complete event by activating home button
+ * This activates the home button when the intro animation is complete
  */
 function activateHomeButton() {
+  // Check if the home button element exists
   const homeButton = document.getElementById('home-button');
   if (!homeButton) return;
-  
-  const homeButtonElement = homeButton.querySelector('.btn-3d__button');
-  if (!homeButtonElement) return;
   
   // Deactivate any active buttons first
   deactivateAllButtons();
   
-  // Activate home button
-  activateButton(homeButtonElement);
+  // Activate home button wrapper
+  activateButton(homeButton);
   
   // Show and animate home screen
   const homeScreen = document.getElementById('home-view');
@@ -105,29 +103,32 @@ function activateHomeButton() {
   }
 }
 
-/**
- * Handle button click events
- * @param {Event} event - Click event
- */
+// This function handles the button click event
+// - Checks if the clicked button is already active
+// - Stores the previously active screen
+// - Deactivates all buttons
+// - Activates the clicked button (applies btn-3d--active class)
+// - Handles the screen transition
 function handleButtonClick(event) {
-  // Ignore clicks during transitions
+  // Prevent rapid clicking during transitions
   if (transitionInProgress) return;
-  
-  const buttonElement = this.querySelector('.btn-3d__button');
-  if (!buttonElement) return;
-  
-  // If already active, do nothing
-  if (buttonElement.classList.contains('btn-3d--active')) return;
-  
-  // Lock transitions
   transitionInProgress = true;
+  
+  // This refers to the .btn-3d wrapper element that was clicked
+  const buttonWrapper = this;
+  
+  // Don't do anything if button is already active
+  if (buttonWrapper.classList.contains('btn-3d--active')) {
+    transitionInProgress = false;
+    return;
+  }
 
   // Store previously active screen
   const previousScreen = getActiveScreen();
 
   // Update button states
   deactivateAllButtons();
-  activateButton(buttonElement);
+  activateButton(buttonWrapper);
   
   // Handle screen transition
   updateScreenVisibility(previousScreen);
@@ -135,25 +136,41 @@ function handleButtonClick(event) {
 
 /**
  * Deactivate all 3D buttons
+ * Removes the active class and updates accessibility attributes
  */
 function deactivateAllButtons() {
-  document.querySelectorAll('.btn-3d__button').forEach(btn => {
-    btn.classList.remove('btn-3d--active');
-    btn.setAttribute('aria-selected', 'false');
+  document.querySelectorAll('.btn-3d').forEach(wrapper => {
+    // Remove active class from wrapper
+    wrapper.classList.remove('btn-3d--active');
+    
+    // Update accessibility attribute on the button element
+    const button = wrapper.querySelector('.btn-3d__button');
+    if (button) {
+      button.setAttribute('aria-selected', 'false');
+    }
   });
 }
 
 /**
  * Activate a specific button
- * @param {Element} button - Button element to activate
+ * Applies the active class to the wrapper and updates accessibility attributes
+ * This affects the button front, sides, glow, and shadow via CSS
+ * @param {Element} wrapper - Button wrapper (.btn-3d) to activate
  */
-function activateButton(button) {
-  button.classList.add('btn-3d--active');
-  button.setAttribute('aria-selected', 'true');
+function activateButton(wrapper) {
+  // Add active class to wrapper
+  wrapper.classList.add('btn-3d--active');
+  
+  // Update accessibility attribute on the button element
+  const button = wrapper.querySelector('.btn-3d__button');
+  if (button) {
+    button.setAttribute('aria-selected', 'true');
+  }
 }
 
 /**
  * Show only the specified screen, hiding all others
+ * Handles visibility, opacity, and positioning to maintain Lottie contexts
  * @param {string} screenId - ID of screen to show
  */
 function showScreenOnly(screenId) {
@@ -179,22 +196,22 @@ function showScreenOnly(screenId) {
 
 /**
  * Update screen visibility based on active button
+ * Handles the transition between screens with proper animations
  * @param {Element|null} previousScreen - Previously active screen element
  */
 function updateScreenVisibility(previousScreen = null) {
-  const activeButton = document.querySelector('.btn-3d__button.btn-3d--active');
-  if (!activeButton) {
+  const activeWrapper = document.querySelector('.btn-3d.btn-3d--active');
+  if (!activeWrapper) {
     transitionInProgress = false;
     return;
   }
   
-  const buttonWrapper = activeButton.closest('.btn-3d');
-  if (!buttonWrapper || !buttonWrapper.id) {
+  if (!activeWrapper.id) {
     transitionInProgress = false;
     return;
   }
   
-  const screenType = buttonWrapper.id.replace('-button', '');
+  const screenType = activeWrapper.id.replace('-button', '');
   const targetScreenId = `${screenType}-view`;
   const targetScreen = document.getElementById(targetScreenId);
   
@@ -209,14 +226,14 @@ function updateScreenVisibility(previousScreen = null) {
   // If no previous screen, simply show and animate target screen
   if (!previousScreen) {
     showScreenOnly(targetScreenId);
-    animateViewTransition(null, `#${targetScreenId}`, activeButton).then(() => {
+    animateViewTransition(null, `#${targetScreenId}`, activeWrapper).then(() => {
       transitionInProgress = false;
     });
     return;
   }
   
   // Animate out previous screen, then animate in target screen
-  animateViewTransition(`#${previousScreen.id}`, `#${targetScreenId}`, activeButton)
+  animateViewTransition(`#${previousScreen.id}`, `#${targetScreenId}`, activeWrapper)
     .then(() => {
       transitionInProgress = false;
     });
@@ -224,16 +241,16 @@ function updateScreenVisibility(previousScreen = null) {
 
 /**
  * Get the currently active screen element
+ * Finds the active screen based on the active button wrapper
  * @returns {Element|null} The active screen element or null
  */
 function getActiveScreen() {
-  const activeButton = document.querySelector('.btn-3d__button.btn-3d--active');
-  if (!activeButton) return null;
+  const activeWrapper = document.querySelector('.btn-3d.btn-3d--active');
+  if (!activeWrapper) return null;
   
-  const buttonWrapper = activeButton.closest('.btn-3d');
-  if (!buttonWrapper || !buttonWrapper.id) return null;
+  if (!activeWrapper.id) return null;
   
-  const screenType = buttonWrapper.id.replace('-button', '');
+  const screenType = activeWrapper.id.replace('-button', '');
   return document.getElementById(`${screenType}-view`);
 }
 

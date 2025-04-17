@@ -38,20 +38,12 @@ import initViewToggle from './modules/viewToggle.js';
 
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
-// Comment out widget animations import
-/* import { 
-    hideAllWidgets, 
-    animateAllWidgetsIntro, 
-    showHomeView,
-    init as initWidgetAnimations 
-} from './modules/widgetAnimations.js'; */
 import { initResizeOverlay } from './modules/resizeOverlay.js';
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initcursorTracker } from './modules/cursorTracker.js';
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initLampEffect } from './modules/lampEffect.js';
-// Comment out 3D buttons import
 // import { init3DButtons } from './modules/button3DToggle.js';
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
@@ -93,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Give Lottie more time to initialize properly before continuing
         console.log('Waiting for Lottie animations to initialize...');
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Initialize sound system and wait for user confirmation
         await initSoundSystem();
@@ -123,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initProcessorAnimation4();
         initDiffusionText();
         initInterference();
+
 
         console.log('All modules initialized');
 

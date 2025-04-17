@@ -5,7 +5,7 @@
  * illusion of moving through space. The star movement speed is tied to
  * scroll velocity, enhancing the feeling of acceleration. Features include:
  * - WebGL-powered star rendering for performance
- * - Dynamic star movement based on scroll speed
+ * - Dynamic star movement based on scroll acceleration
  * - Adaptive performance optimization
  * - Depth-based star scaling and opacity
  * 
@@ -14,7 +14,6 @@
 
 console.log('Starfield Thruster Module Initialized');
 
-
 import { scrollTracker } from './scrollTracker.js';
 
 /**
@@ -22,14 +21,15 @@ import { scrollTracker } from './scrollTracker.js';
  * that, if set to true, can skip frames when speeds or star counts are huge.
  */
 export const starConfig = {
-  baseSpeed: 5,      
-  numStars: 800,
+  baseSpeed: 3,      
+  numStars: 300,
   maxDepth: 3000,
   perspective: 400,
   fieldSize: 3000,
   pointSizeFactor: 4,
   starColor: [0.8, 1.0, 0.8],
-  adaptivePerformance: false 
+  adaptivePerformance: false,
+  accelerationMultiplier: 10  // Changed from speedMultiplier to accelerationMultiplier
 };
 
 class StarfieldThruster {
@@ -42,6 +42,7 @@ class StarfieldThruster {
   #uMaxDepthLoc;
   #uPointSizeFactorLoc;
   #uStarColorLoc;
+  #resizeObserver; // Add declaration for the private field here
 
   #starBuffer;
   #stars;
@@ -50,7 +51,8 @@ class StarfieldThruster {
   #frameSkipCounter = 0; 
 
   
-  extraSpeed = 0;
+  // Change to track acceleration instead of speed
+  extraMovement = 0;
 
   constructor() {
     this.#canvas = document.getElementById('starfield');
@@ -58,6 +60,11 @@ class StarfieldThruster {
       console.error("Canvas element #starfield not found.");
       return;
     }
+    
+    // Apply CSS directly to make canvas 100% of parent container
+    this.#canvas.style.width = '100%';
+    this.#canvas.style.height = '100%';
+    
     // Create WebGL context with alpha transparency enabled
     this.#gl = this.#canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     if (!this.#gl) {
@@ -68,11 +75,30 @@ class StarfieldThruster {
     this.#resizeCanvas(); // Set canvas size before initializing GL
     this.#initGL();
     this.#initStars();
+    
+    // Create a ResizeObserver to better handle size changes
+    this.#resizeObserver = new ResizeObserver(() => {
+      this.#resizeCanvas();
+    });
+    
+    // Observe the parent container
+    const parent = this.#canvas.parentElement;
+    if (parent) {
+      this.#resizeObserver.observe(parent);
+    }
+    
+    // Still keep the resize listener for older browsers
     window.addEventListener('resize', () => this.#resizeCanvas());
 
-    
-    scrollTracker.on("update", (data) => {
-      this.extraSpeed = data.velocityKMH;
+    // Listen to the normalized update event from scrollTracker and use acceleration
+    scrollTracker.on("normalizedUpdate", (data) => {
+      // Use acceleration instead of speed for movement
+      this.extraMovement = data.normalizedAcceleration * starConfig.accelerationMultiplier;
+      
+      // Debug log
+      if (data.normalizedAcceleration > 0.1) {
+        console.log(`Starfield Movement: ${this.extraMovement.toFixed(2)} from acceleration: ${data.normalizedAcceleration.toFixed(2)}`);
+      }
     });
 
     requestAnimationFrame(this.#animate.bind(this));
@@ -180,16 +206,25 @@ class StarfieldThruster {
     const parent = canvas.parentElement;
     if (!parent) return;
     
-    const rect = parent.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const displayWidth = parent.clientWidth;
+    const displayHeight = parent.clientHeight;
     
-    // Update resolution with canvas dimensions
-    this.#resolution = [canvas.width, canvas.height];
-    
-    // Update viewport if GL is initialized
-    if (this.#gl) {
-      this.#gl.viewport(0, 0, canvas.width, canvas.height);
+    // Only update canvas dimensions if they've actually changed
+    // This prevents unnecessary resets of the WebGL context
+    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+      // Set canvas resolution to match display size
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      
+      // Update resolution with canvas dimensions
+      this.#resolution = [displayWidth, displayHeight];
+      
+      // Update viewport if GL is initialized
+      if (this.#gl) {
+        this.#gl.viewport(0, 0, displayWidth, displayHeight);
+      }
+      
+      console.log(`Resized starfield canvas to ${displayWidth}x${displayHeight}`);
     }
   }
   
@@ -203,12 +238,13 @@ class StarfieldThruster {
       return;
     }
 
+    // Calculate total movement using base speed plus extra from acceleration
+    const totalMovement = starConfig.baseSpeed + this.extraMovement;
     
-    const totalSpeed = starConfig.baseSpeed + this.extraSpeed;
-    const speedMS = totalSpeed * 0.27778;
+    // Move stars based on combined movement
     for (let i = 0; i < starConfig.numStars; i++) {
       const zIdx = i * 3 + 2;
-      this.#stars[zIdx] += speedMS * dt * 50;
+      this.#stars[zIdx] += totalMovement * dt * 50;
       if (this.#stars[zIdx] >= 0) {
         this.#stars[zIdx] -= starConfig.maxDepth;
       }
@@ -219,12 +255,12 @@ class StarfieldThruster {
   }
 
   /**
-   * Simple heuristic to skip frames if speed or star count is huge
+   * Simple heuristic to skip frames if movement or star count is huge
    */
   #shouldSkipFrame() {
-    const speedMS = (starConfig.baseSpeed + this.extraSpeed) * 0.27778;
+    const movementFactor = (starConfig.baseSpeed + this.extraMovement) * 0.27778;
     
-    if (speedMS > 300 || starConfig.numStars > 10000) {
+    if (movementFactor > 300 || starConfig.numStars > 10000) {
       this.#frameSkipCounter = (this.#frameSkipCounter + 1) % 2;
       return this.#frameSkipCounter === 1;
     }

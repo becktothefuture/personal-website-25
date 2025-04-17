@@ -95,7 +95,7 @@ function debounce(func, wait) {
     }
   
     // Create a debounced version of toggleView with a 300ms wait time.
-    const debouncedToggleView = debounce(toggleView, 300);
+    const debouncedToggleView = debounce(toggleView, 100);
   
     // Attach click event listeners to each button.
     // The debounced function prevents multiple rapid toggles.
@@ -112,5 +112,5 @@ function debounce(func, wait) {
     // Set the initial view (e.g. home view) after Webflow has loaded the page.
     // This ensures that all Lottie animations in every view are initialised on page load.
     console.log("Setting initial view to 'home'");
-    toggleView('home');
+    toggleView('contact');
   }

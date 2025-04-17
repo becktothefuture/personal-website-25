@@ -1,149 +1,189 @@
 /**
  * scrollEffect Module
  * --------------------
- * Implements two distinct scroll-reactive systems:
+ * Implements scroll-reactive systems:
  * 
- * 1. SPEED SYSTEM (like car velocity):
- *    - Gradual build-up and slow decrease
- *    - Used for rumble/shake effects
- *    - Ramps up over time and decreases slowly
- * 
- * 2. SCROLL PATTERN:
+ * 1. SCROLL PATTERN:
  *    - Animates pattern elements based on scroll acceleration
  *    - Creates seamless looping background patterns that respond to scrolling
+ * 
+ * 2. TURNSTYLE:
+ *    - Rotates elements with .turnstyle class based on scroll acceleration
+ *    - Creates rotation effects that respond to scrolling
  */
 
 import { scrollTracker } from './scrollTracker.js';
 
-// Updated configuration for scroll effects (removed rubberBand)
-export const scrollConfig = {
-  rumble: {
-    enabled: true,
-    minIntensity: 0,       // Minimum rumble intensity
-    maxIntensity: 10       // Maximum rumble intensity (px)
-  },
+// Consolidated configuration for all scroll effects
+export const scrollEffectConfig = {
+  // Rumble effect removed for performance
   pattern: {
     enabled: true,
-    accelerationFactor: 10  // How strongly patterns respond to scroll acceleration
+    accelerationMultiplier: 10  // How strongly patterns respond to scroll acceleration
+  },
+  turnstyle: {
+    enabled: true,
+    rotationMultiplier: 5,     // Controls rotation intensity
+    damping: 0.95             // Controls how quickly rotation slows down
   }
 };
 
-/**
- * Simplified RumbleEffect - uses normalized speed from scrollTracker
- */
-class RumbleEffect {
-  constructor(config) {
-    this.config = config;
-    this.intensity = 0;
-    // Only target the element with id '#rumble-wrapper'
-    this.element = document.querySelector('#rumble-wrapper'); // changed: removed fallback to document.documentElement
-  }
-  update({ normalizedAcceleration }) { // changed parameter from normalizedSpeed to normalizedAcceleration
-    if (!this.config.enabled || !this.element) return; // added: ensure element exists
-    // Compute intensity based directly on normalizedAcceleration
-    this.intensity = normalizedAcceleration * (this.config.maxIntensity - this.config.minIntensity) + this.config.minIntensity;
-    if (this.intensity >= 0.1) {
-      const offsetX = (Math.random() - 0.5) * this.intensity;
-      const offsetY = (Math.random() - 0.5) * this.intensity;
-      this.element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-    } else {
-      this.element.style.transform = '';
-    }
-  }
-  destroy() {
-    this.element.style.transform = '';
-  }
-}
+// For backwards compatibility
+export const scrollConfig = scrollEffectConfig;
 
 /**
- * Simplified PatternEffect - uses normalized acceleration from scrollTracker
+ * Pattern Effect - uses patterns from scroll acceleration from scrollTracker
+ * Based on implementation from scrollPattern.js
  */
+// Array to hold the state for each pattern element
+const patterns = [];
+
+// Holds the current normalized acceleration value from the ScrollTracker
+let currentAcceleration = 0;
+
 class PatternEffect {
   constructor(config) {
     this.config = config;
-    this.patternWrappers = [];
+    this.patterns = [];
+    this.lastTimestamp = null;
   }
   
   init() {
     if (!this.config.enabled) return;
-    // Find all wrappers containing the pattern element
-    this.patternWrappers = Array.from(document.querySelectorAll('.scroll-pattern-wrapper'));
-    this.patternWrappers.forEach(wrapper => {
-      // Use the element with the pattern texture or fallback to first child
-      let patternEl = wrapper.querySelector('.scroll-pattern-container') || wrapper.firstElementChild;
-      if (!patternEl) {
-        console.warn('PatternEffect: No pattern element found in wrapper');
-        return;
+    
+    // Select all wrappers with the .scroll-pattern-wrapper class
+    const wrappers = document.querySelectorAll('.scroll-pattern-wrapper');
+    
+    if (wrappers.length === 0) {
+      console.warn('No scroll pattern wrappers found in the document');
+      return;
+    }
+    
+    wrappers.forEach(wrapper => {
+      // Get the first pattern element from each wrapper
+      const pattern = wrapper.querySelector('.scroll-pattern');
+      if (pattern) {
+        // Set up the initial state for the pattern element
+        this.patterns.push({
+          wrapper,
+          pattern,
+          offset: 0 // initial offset in percentage
+        });
+        console.log('Pattern found and initialized for scrolling effect');
+      } else {
+        console.warn('Pattern element not found inside wrapper', wrapper);
       }
-      
-      patternEl.style.willChange = 'transform';
-      
-      // Calculate and store the actual width of the pattern element
-      const computedStyle = window.getComputedStyle(patternEl);
-      const patternWidth = parseFloat(computedStyle.width);
-      
-      // Create a clone for seamless looping if needed
-      if (!wrapper.querySelector('.scroll-pattern-clone')) {
-        const clone = patternEl.cloneNode(true);
-        clone.classList.add('scroll-pattern-clone');
-        clone.style.position = 'absolute';
-        clone.style.left = '100%';
-        clone.style.top = '0';
-        wrapper.style.position = 'relative';
-        wrapper.style.overflow = 'hidden';
-        wrapper.appendChild(clone);
-      }
-      
-      // Store pattern element, its width and current position
-      wrapper._patternData = { 
-        patternEl, 
-        position: 0,
-        width: patternWidth || 100 // Fallback to 100 if width calculation fails
-      };
     });
+
+    console.log(`Scroll pattern initialized with ${this.patterns.length} patterns`);
+    
+    // Start the animation loop using requestAnimationFrame
+    if (this.patterns.length > 0) {
+      requestAnimationFrame(this.animatePatterns.bind(this));
+    }
   }
   
-  update({ normalizedAcceleration }) {
-    if (!this.config.enabled) return;
-    // Clamp acceleration similar to lampEffect responsiveness
-    const effectiveAccel = Math.min(normalizedAcceleration, 1);
-    const movement = effectiveAccel * this.config.accelerationFactor;
-    
-    this.patternWrappers.forEach(wrapper => {
-      const data = wrapper._patternData;
-      if (!data) return;
-      
-      // Update position
-      data.position -= movement;
-      
-      // Check if we need to reset position for seamless loop
-      if (Math.abs(data.position) >= data.width) {
-        // Reset position while maintaining the exact fractional part for smoothness
-        data.position = data.position % data.width;
+  update({ normalizedAcceleration, normalizedSpeed }) {
+    // Use both acceleration and speed for smoother movement
+    currentAcceleration = normalizedAcceleration * 0.7 + normalizedSpeed * 0.3;
+  }
+  
+  animatePatterns(timestamp) {
+    if (!this.lastTimestamp) this.lastTimestamp = timestamp;
+    const dt = (timestamp - this.lastTimestamp) / 1000; // Convert milliseconds to seconds
+    this.lastTimestamp = timestamp;
+  
+    // Debug logging for acceleration values
+    if (this.patterns.length > 0 && currentAcceleration > 0.05) {
+      console.log(`Current acceleration: ${currentAcceleration}`);
+    }
+  
+    this.patterns.forEach(item => {
+      // Increase the offset based on current acceleration.
+      // Using modulo (%) ensures that once the offset reaches 50%, it wraps back to 0% to create a seamless loop.
+      // INVERTED: Added negative sign to reverse direction
+      item.offset = (item.offset - currentAcceleration * this.config.accelerationMultiplier * dt) % 50;
+      if (item.offset < 0) {
+        item.offset += 50;
       }
-      
-      // Apply the transform
-      data.patternEl.style.transform = `translateX(${data.position}px)`;
-      
-      // Also update clone if it exists
-      const clone = wrapper.querySelector('.scroll-pattern-clone');
-      if (clone) {
-        clone.style.transform = `translateX(${data.position}px)`;
-      }
+  
+      // Apply GPU-accelerated transform to move the pattern rightwards (inverted direction)
+      item.pattern.style.transform = `translate3d(-${item.offset}%, 0, 0)`;
     });
+  
+    // Continue the animation loop
+    requestAnimationFrame(this.animatePatterns.bind(this));
   }
   
   destroy() {
-    this.patternWrappers.forEach(wrapper => {
-      if (wrapper._patternData && wrapper._patternData.patternEl) {
-        wrapper._patternData.patternEl.style.transform = '';
-      }
-      // Remove clones if they exist
-      const clone = wrapper.querySelector('.scroll-pattern-clone');
-      if (clone) {
-        clone.remove();
+    this.patterns.forEach(item => {
+      if (item.pattern) {
+        item.pattern.style.transform = '';
       }
     });
+    this.patterns = [];
+  }
+}
+
+/**
+ * Turnstyle Effect - rotates elements with .turnstyle class based on scroll acceleration
+ */
+class TurnstyleEffect {
+  constructor(config) {
+    this.config = config || scrollEffectConfig.turnstyle;
+    this.turnstyles = [];
+    this.lastTimestamp = null;
+    this.currentRotation = 0;
+    this.targetRotation = 0;
+  }
+  
+  init() {
+    if (!this.config.enabled) return;
+    
+    // Select all elements with the .turnstyle class
+    this.turnstyles = Array.from(document.querySelectorAll('.turnstyle'));
+    
+    if (this.turnstyles.length === 0) {
+      console.warn('No turnstyle elements found in the document');
+      return;
+    }
+    
+    console.log(`Turnstyle effect initialized with ${this.turnstyles.length} elements`);
+    
+    // Start the animation loop using requestAnimationFrame
+    if (this.turnstyles.length > 0) {
+      requestAnimationFrame(this.animateTurnstyles.bind(this));
+    }
+  }
+  
+  update({ normalizedAcceleration, normalizedSpeed }) {
+    // Use the same acceleration formula as the pattern effect for consistency
+    this.targetRotation += (normalizedAcceleration * 0.7 + normalizedSpeed * 0.3) * this.config.rotationMultiplier;
+  }
+  
+  animateTurnstyles(timestamp) {
+    if (!this.lastTimestamp) this.lastTimestamp = timestamp;
+    const dt = (timestamp - this.lastTimestamp) / 1000; // Convert milliseconds to seconds
+    this.lastTimestamp = timestamp;
+    
+    // Smooth out the rotation for a more natural feel
+    this.currentRotation = this.currentRotation * this.config.damping + 
+                           this.targetRotation * (1 - this.config.damping);
+    
+    // Apply rotation to all turnstyle elements
+    this.turnstyles.forEach(element => {
+      element.style.transform = `rotate(${this.currentRotation}deg)`;
+    });
+    
+    // Continue the animation loop
+    requestAnimationFrame(this.animateTurnstyles.bind(this));
+  }
+  
+  destroy() {
+    this.turnstyles.forEach(element => {
+      element.style.transform = '';
+    });
+    this.turnstyles = [];
   }
 }
 
@@ -152,21 +192,29 @@ class PatternEffect {
  */
 class ScrollEffectManager {
   constructor() {
-    this.rumbleEffect = new RumbleEffect(scrollConfig.rumble);
-    this.patternEffect = new PatternEffect(scrollConfig.pattern);
+    // RumbleEffect removed
+    this.patternEffect = new PatternEffect(scrollEffectConfig.pattern);
+    this.turnstyleEffect = new TurnstyleEffect(scrollEffectConfig.turnstyle);
+    
+    console.log("ScrollEffectManager initialized with pattern and turnstyle effects");
   }
+  
   init() {
     this.patternEffect.init();
-    // Remove extra "scroll" subscription; use only normalizedUpdate for immediate responsiveness.
+    this.turnstyleEffect.init();
+    // Subscribe to scroll updates
     scrollTracker.on("normalizedUpdate", (data) => {
-      this.rumbleEffect.update(data);
+      // RumbleEffect update removed
       this.patternEffect.update(data);
+      this.turnstyleEffect.update(data);
     });
-    console.log("ScrollEffectManager initialized");
+    console.log("ScrollEffectManager initialized - rumble removed for performance");
   }
+  
   destroy() {
-    this.rumbleEffect.destroy();
+    // RumbleEffect destroy removed
     this.patternEffect.destroy();
+    this.turnstyleEffect.destroy();
   }
 }
 
