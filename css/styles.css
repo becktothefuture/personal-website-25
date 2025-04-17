@@ -375,7 +375,6 @@ body {
   width: 0.65em;
   height: 0.65em;
   background-color: var(--color-3); /* Use off color initially */
-  border-radius: 10em;
   animation: flicker 3s steps(6) infinite;
   aspect-ratio: 1 / 1;
   opacity: 1;

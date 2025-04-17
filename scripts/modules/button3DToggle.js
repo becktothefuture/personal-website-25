@@ -116,6 +116,10 @@ function handleButtonClick(event) {
   
   // This refers to the .btn-3d wrapper element that was clicked
   const buttonWrapper = this;
+  // Work out which variant modifier this button has
+  // (e.g. btn-3d--home, btn-3d--portfolio, btn-3d--contact)
+  const variant = buttonWrapper.dataset.variant;       // <‑‑ NEW
+
   
   // Don't do anything if button is already active
   if (buttonWrapper.classList.contains('btn-3d--active')) {
@@ -128,7 +132,10 @@ function handleButtonClick(event) {
 
   // Update button states
   deactivateAllButtons();
-  activateButton(buttonWrapper);
+  // Activate *all* buttons that share the same variant so each twin reacts
+  document
+    .querySelectorAll(`.btn-3d[data-variant="${variant}"]`)
+    .forEach(activateButton);                         
   
   // Handle screen transition
   updateScreenVisibility(previousScreen);
