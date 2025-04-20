@@ -11,9 +11,14 @@
 
 console.log("Video mask initialized");
 
-
 export function initVideoMask() {
     let resizeTimer;
+    const videoElements = document.querySelectorAll('.glass-video');
+    
+    // Apply pulsate-element class to all video elements
+    videoElements.forEach(video => {
+        video.classList.add('pulsate-element');
+    });
 
     function updateMask() {
         const target = document.querySelector('.display__top');
@@ -45,6 +50,4 @@ export function initVideoMask() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(updateMask, 100);
     });
-
- 
 }

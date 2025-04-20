@@ -5,6 +5,15 @@
 :root {
   --browser-color: #222;
 
+  /* Global animation variables */
+  --global-multiplier: 1;
+  --pulsate-duration: 5s;
+
+  /* Global pulsation controls */
+  --pulsate-min: 0.65;  /* Minimum value for the multiplier */
+  --pulsate-max: 1;     /* Maximum value for the multiplier */
+  --pulsate-rest: 0.75; /* Rest/default value for the multiplier */
+
   /* Animation settings */
   --breathe-duration: 3s;
   --animation-duration: 1s;
@@ -65,10 +74,10 @@
   --scanline-speed: 10s; /* min: 1s, max: 10s */
 
   /* Effect Intensities */
-  --scanline-opacity: 0.4; /* min: 0.2, max: 0.9 */
+  --scanline-opacity: 0.5; /* min: 0.2, max: 0.9 */
   --flicker-opacity: 0.9; /* min: 0.3, max: 1.0 */
   --glow-strength: 5vh; /* min: 10px, max: 100px */
-  --glow-spread: 25vh; /* min: 30px, max: 200px */
+  --glow-spread: 15vh; /* min: 30px, max: 200px */
 
   /* Derived Calculations */
   --glow-inner: calc(var(--glow-strength) * var(--crt-intensity));
@@ -88,7 +97,6 @@
   --cockpit-rotate-min: -0.1deg;
   --cockpit-rotate-max: 0.3deg;
 
-
   /* Overall animation settings */
   --starship-movement-duration: 30s;
   --z-movement-duration: 20s; /* Separate duration for z-movement */
@@ -101,15 +109,13 @@
 
   /* Widget  */
   --widget-animation-duration: 1.5s;
-  
 }
-
 
 svg path {
   vector-effect: non-scaling-stroke;
 }
 
-svg{
+svg {
   shape-rendering: geometricPrecision;
 }
 
@@ -124,7 +130,6 @@ svg{
   padding: 0;
 }
 
-
 body {
   font-variant-ligatures: common-ligatures;
   text-rendering: geometricPrecision;
@@ -133,6 +138,84 @@ body {
   min-height: 100svh;
   overscroll-behavior: none; /* Prevent overscroll */
   pointer-events: all;
+  transform-style: preserve-3d;
+}
+
+/***********************
+ * GLOBAL PULSATION    *
+ ***********************/
+
+/* Remove the global multiplier animation as it doesn't work across elements */
+.pulsate-opacity {
+  animation: pulsateOpacity var(--pulsate-duration) ease-in-out infinite;
+}
+
+.pulsate-brightness {
+  animation: pulsateBrightness var(--pulsate-duration) ease-in-out infinite;
+}
+
+.pulsate-contrast {
+  animation: pulsateContrast var(--pulsate-duration) ease-in-out infinite;
+}
+
+/* Define specific animations for each effect with the same timing */
+@keyframes pulsateOpacity {
+  0%, 100% {
+    opacity: var(--pulsate-rest);
+  }
+  50% {
+    opacity: var(--pulsate-max);
+  }
+  75% {
+    opacity: var(--pulsate-min);
+  }
+}
+
+@keyframes pulsateBrightness {
+  0%, 100% {
+    filter: brightness(calc(75% + (var(--pulsate-rest) * 25%)));
+  }
+  50% {
+    filter: brightness(calc(75% + (var(--pulsate-max) * 25%)));
+  }
+  75% {
+    filter: brightness(calc(75% + (var(--pulsate-min) * 25%)));
+  }
+}
+
+@keyframes pulsateContrast {
+  0%, 100% {
+    filter: contrast(calc(100% + ((1 - var(--pulsate-rest)) * 15%)));
+  }
+  50% {
+    filter: contrast(calc(100% + ((1 - var(--pulsate-max)) * 15%)));
+  }
+  75% {
+    filter: contrast(calc(100% + ((1 - var(--pulsate-min)) * 15%)));
+  }
+}
+
+/* Combined filter effects */
+.pulsate-video {
+  animation: pulsateVideo var(--pulsate-duration) ease-in-out infinite;
+}
+
+@keyframes pulsateVideo {
+  0%, 100% {
+    opacity: var(--pulsate-rest);
+    filter: contrast(calc(100% + ((1 - var(--pulsate-rest)) * 15%)))
+           brightness(calc(75% + (var(--pulsate-rest) * 25%)));
+  }
+  50% {
+    opacity: var(--pulsate-max);
+    filter: contrast(calc(100% + ((1 - var(--pulsate-max)) * 15%)))
+           brightness(calc(75% + (var(--pulsate-max) * 25%)));
+  }
+  75% {
+    opacity: var(--pulsate-min);
+    filter: contrast(calc(100% + ((1 - var(--pulsate-min)) * 15%)))
+           brightness(calc(75% + (var(--pulsate-min) * 25%)));
+  }
 }
 
 /******************
@@ -207,30 +290,31 @@ body {
   }
 }
 
-
 /******************
  * PROJECT IMAGES *
  ******************/
- .portfolio-card__image {
-  background-size: 400% 100%;       
+
+.portfolio-card__image {
+  background-size: 400% 100%;
   background-position: 0 0;
 }
 
-.portfolio-card:hover > .portfolio-card__image{
+.portfolio-card:hover > .portfolio-card__image {
   animation: playSprite 1s steps(3) infinite;
 }
 
 @keyframes playSprite {
-  0% { background-position: 0% 0; }
-  100%   { background-position: 100% 0; }
-
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
 }
+
 /******************
  * WIDGET EFFECTS *
  ******************/
-
-
-
 
 @keyframes widgetIntro {
   0% {
@@ -273,7 +357,7 @@ body {
 }
 
 .widget-hidden {
-  opacity:0;
+  opacity: 0;
 }
 
 .widget-intro {
@@ -558,35 +642,45 @@ body {
  * 3D BUTTONS *
  ***************/
 
-
-
- .btn-3d{
+.btn-3d {
   /* in webflow */
- }
+}
 
- .btn-3d__glow{
+
+
+.btn-3d__glow {
   opacity: 0;
+  transition: 120ms ease-in-out;
 }
 
-.btn-3d__button--front,
-.btn-3d__button--sides {
+.btn-3d__lamp{
+  opacity:0;
+  transition: 120ms ease-in-out;
+}
+
+.btn-3d__front,
+.btn-3d__side {
   background-color: var(--buttons);
+  transition: 120ms ease-in-out;
 }
 
-
-.btn-3d--active{
-  transform: translateZ(calc(var(--button-depth) * -0.5));
+.btn-3d--active .btn-3d__button{
+  transform: translateZ(calc(var(--button-depth) * -0.75));
 }
 
-.btn-3d--active .btn-3d__button--front,
-.btn-3d--active .btn-3d__button--sides {
+.btn-3d--active .btn-3d__front,
+.btn-3d--active .btn-3d__side {
+  background-color: red;
   animation: oscillateColor 2s ease-in-out infinite;
 }
 
-.btn-3d--active > .btn-3d__glow {
+.btn-3d--active .btn-3d__glow {
   animation: buttonGlow 2s ease-in-out infinite;
 }
 
+.btn-3d--active .btn-3d__lamp {
+  opacity:100;
+}
 
 
 @keyframes oscillateColor {
@@ -612,7 +706,6 @@ body {
     opacity: 0.25;
   }
 }
-
 
 /*********
  * CLOCK *
@@ -656,11 +749,8 @@ body {
  * MAIN WRAPPER *
  ****************/
 
-
-
-
 .page-intro {
-  animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards
+  animation: mainWrapperIntro 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 @keyframes mainWrapperIntro {
@@ -693,7 +783,6 @@ body {
   transform-style: preserve-3d;
 }
 
-
 @keyframes verticalJitter {
   0%,
   100% {
@@ -721,7 +810,6 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(var(--crt-primary-color), 0.01);
-  mix-blend-mode: overlay;
   animation: flickerAnimation var(--flicker-speed) infinite;
   opacity: var(--flicker-opacity);
 }
@@ -729,34 +817,27 @@ body {
 @keyframes flickerAnimation {
   0% {
     opacity: calc(var(--flicker-opacity) * 0.3);
-    transform: translateX(0);
   }
   10% {
     opacity: calc(var(--flicker-opacity) * 0.75);
   }
   25% {
     opacity: calc(var(--flicker-opacity) * 1);
-    transform: translateX(0);
   }
   40% {
     opacity: calc(var(--flicker-opacity) * 0.2);
-    transform: translateX(-1px);
   }
   55% {
     opacity: calc(var(--flicker-opacity) * 0.9);
-    transform: translateX(1px);
   }
   70% {
     opacity: calc(var(--flicker-opacity) * 0.4);
-    transform: translateX(-1px);
   }
   85% {
     opacity: calc(var(--flicker-opacity) * 1);
-    transform: translateX(1px);
   }
   100% {
     opacity: calc(var(--flicker-opacity) * 0.5);
-    transform: translateX(0);
   }
 }
 
@@ -774,19 +855,15 @@ body {
 @keyframes glowJitter {
   0%,
   100% {
-    transform: translate(0, 0);
     opacity: 0.9;
   }
   25% {
-    transform: translate(0px, -1px);
     opacity: 1;
   }
   50% {
-    transform: translate(-1px, 1px);
     opacity: 0.97;
   }
   75% {
-    transform: translate(1px, 1px);
     opacity: 0.87;
   }
 }
@@ -803,7 +880,7 @@ body {
     rgba(0, 0, 0, 0.2) 1px,
     transparent 2px
   );
-  opacity: 0.4;
+  opacity: 1;
   z-index: 100;
 }
 
@@ -820,8 +897,8 @@ body {
     /* Using actual RGB values from --color-1 (#9ce0a9) */ transparent 1.1px,
     transparent 4px
   );
-  opacity: 0.3;
-  animation: scanlinesMove 4s linear infinite;
+  opacity: 1;
+  animation: scanlinesMove 0.2s linear infinite;
   z-index: 101;
 }
 
@@ -830,7 +907,7 @@ body {
     transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translate3d(0, 50%, 0);
+    transform: translate3d(0, 4px, 0);
   }
 }
 
@@ -851,29 +928,44 @@ body {
   transform: translateY(-50%); /* knob at the top */
 }
 
-
 /*********************
  * PERSPECTIVE SETUP *
  *********************/
 
-.page{
-  perspective: var(--perspective-depth);
-}
 
 /* Page rotation */
 .page__inner {
   backface-visibility: hidden;
   will-change: transform;
-  transform-style: preserve-3d; 
+  transform-style: preserve-3d;
 }
 
 /* Inner display rotation */
 .depth-wrapper {
   will-change: perspective-origin, transform;
   transform-style: preserve-3d;
-  perspective: var(--perspective-depth);
 }
 
+/* Ensure mouse tracking elements have proper 3D settings */
+#panel, #display, #reflection {
+  transform-style: preserve-3d;
+  transition: transform 0.05s linear;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Debug outlines to help see the elements (can be removed later) */
+#panel {
+  transform-origin: center center;
+}
+
+#display {
+  transform-origin: center center;
+}
+
+#reflection {
+  transform-origin: center center;
+}
 
 /**********************
  * BLINKING ANIMATION *
@@ -901,55 +993,53 @@ body {
  * DEVICES ICONS *
  *****************/
 
-
-.icon--devices__1{
+.icon--devices__1 {
   animation: blink 4s steps(2) forwards infinite;
 }
 
-
-.icon--devices__2{
+.icon--devices__2 {
   animation: blink 4s steps(2) forwards infinite;
   animation-delay: 1s;
 }
 
-
-.icon--devices__3{
+.icon--devices__3 {
   animation: blink 4s steps(2) forwards infinite;
   animation-delay: 2s;
 }
-
 
 /*****************
  * THRUSTER LAMP *
  *****************/
 
 #thruster-lamp {
-  box-shadow: 
-    0 0 calc(2.5px + (var(--lamp-brightness) * 4px)) calc(1.5px + (var(--lamp-brightness) * 2px)) rgba(255,253,234,calc(0.8 * var(--lamp-brightness))),
-    0 0 calc(5px + (var(--lamp-brightness) * 7.5px)) calc(2.5px + (var(--lamp-brightness) * 4px)) rgba(255,55,0,calc(0.7 * var(--lamp-brightness))),
-    0 0 calc(10px + (var(--lamp-brightness) * 15px)) calc(5px + (var(--lamp-brightness) * 7.5px)) rgba(255,55,0,calc(0.5 * var(--lamp-brightness)));
+  box-shadow: 0 0 calc(2.5px + (var(--lamp-brightness) * 4px))
+      calc(1.5px + (var(--lamp-brightness) * 2px))
+      rgba(255, 253, 234, calc(0.8 * var(--lamp-brightness))),
+    0 0 calc(5px + (var(--lamp-brightness) * 7.5px))
+      calc(2.5px + (var(--lamp-brightness) * 4px))
+      rgba(255, 55, 0, calc(0.7 * var(--lamp-brightness))),
+    0 0 calc(10px + (var(--lamp-brightness) * 15px))
+      calc(5px + (var(--lamp-brightness) * 7.5px))
+      rgba(255, 55, 0, calc(0.5 * var(--lamp-brightness)));
   opacity: calc(0 + (var(--lamp-brightness) * 1));
   pointer-events: none;
   transition: box-shadow 0.15s ease-out, opacity 0.16s ease-out;
 }
 
-
 /**************************
  * VIEWS TOGGLE ANIMATION *
  **************************/
 
-
-.home-content{
-  transform-style: preserve-3d;    /* Maintain the 3D context for children */
+.home-content {
+  transform-style: preserve-3d; /* Maintain the 3D context for children */
 }
 
-.hub-grid__item{
+.hub-grid__item {
   backface-visibility: hidden;
   transform: translateZ(0); /* Kickstarts the GPU for smoother transforms */
 }
 
-
- /* Active view: fully visible, interactive, and with a smooth fade-in effect */
+/* Active view: fully visible, interactive, and with a smooth fade-in effect */
 .view--active {
   opacity: 1;
   visibility: visible;
@@ -965,7 +1055,6 @@ body {
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
-
 
 /*****************
  * TUNNEL EFFECT *
@@ -1009,8 +1098,6 @@ body {
 .rectangle {
   animation: pullIn var(--anim-duration) linear infinite;
 }
-
-
 
 /******************
  * RESIZE OVERLAY *
@@ -1127,54 +1214,53 @@ body {
  * PULSATING LIGHT    *
  ***********************/
 
-#light {
-  animation: pulsateLight 5s ease-in-out infinite;
-  will-change: filter; /* Optimize animation performance */
+
+
+.light--1 {
+  animation: oscillateOpacity-1 2s ease-in-out infinite;
+  will-change: opacity;
 }
 
-@keyframes pulsateLight {
-  0%,
-  100% {
-    filter: brightness(50%);
-  }
-  50% {
-    filter: brightness(60%);
-  }
-  75% {
-    filter: brightness(30%);
-  }
+.light--2 {
+  animation: oscillateOpacity-2 2s ease-in-out infinite;
+  animation-delay: 0.4s;
+  will-change: opacity;
 }
 
 
 /* Glass video */
 .glass-video {
-  -webkit-mask: radial-gradient(circle, black 65%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 0.5) 85%, transparent 95%);
-  mask: radial-gradient(circle, black 65%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 0.5) 85%, transparent 95%);
-  animation: pulsateLight-Video 5s ease-in-out infinite;
-  will-change: transform, filter; /* Add transform to optimize video movement */
-  transform-origin: center center; /* Ensure rotation happens from the center */
-  transition: none; /* Prevent conflicting with JS control */
+  -webkit-mask: radial-gradient(circle, black 55%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 75%, transparent 85%);
+  mask: radial-gradient(circle, black 55%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 75%, transparent 85%);
+  animation: oscillateOpacity-2 4s ease-in-out infinite; /* Apply opacity oscillation */
+  will-change: opacity, filter;
+  transform-origin: center center;
+  transition: none;
 }
 
-@keyframes pulsateLight-Video {
-  0%,
-  100% {
-    filter: brightness(50%);
+
+@keyframes oscillateOpacity-1 {
+  0%, 100% {
+    opacity: 0.25; 
   }
   50% {
-    filter: brightness(60%);
-  }
-  75% {
-    filter: brightness(30%);
+    opacity: 0.45;
   }
 }
 
+@keyframes oscillateOpacity-2 {
+  0%, 100% {
+    opacity: 0.35; 
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
 
 
 /*******************
  * PORTFOLIO CARDS *
  *******************/
-
 
 .portfolio-card {
   position: relative;
@@ -1182,7 +1268,7 @@ body {
 }
 
 /* Default state: no animation and hidden opacity */
-.portfolio-card::before{
+.portfolio-card::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1196,11 +1282,10 @@ body {
 }
 
 /* On hover: show and animate the border */
-.portfolio-card:hover::before{
+.portfolio-card:hover::before {
   opacity: 1;
   animation: pulse-border 0.5s linear infinite;
 }
-
 
 @keyframes pulse-border {
   0% {
@@ -1250,12 +1335,9 @@ body {
   animation-delay: var(--interference-delay);
 }
 
-
-
 /********************************
  * SOUND CONTROL ICON ANIMATION *
  ********************************/
-
 
 .sound-control__icon-wrapper {
   display: inline-block;
@@ -1263,8 +1345,12 @@ body {
 }
 
 @keyframes verticalMotion {
-  from { transform: translateY(-2px); }
-  to { transform: translateY(2px); }
+  from {
+    transform: translateY(-2px);
+  }
+  to {
+    transform: translateY(2px);
+  }
 }
 
 .sound-control__icon {
@@ -1274,6 +1360,33 @@ body {
 }
 
 @keyframes horizontalMotion {
-  from { transform: translateX(-2px) rotate(-2deg); }
-  to { transform: translateX(2px) rotate(2deg); }
+  from {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  to {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+/********************
+ * SPRITE ANIMATION *
+ ********************/
+
+.sprite-container {
+  width: 82px; /* Responsive width */
+  height: 66px; /* Height is 1/8 of the width for proper 8:1 aspect ratio */
+  overflow: hidden;
+  position: relative;
+}
+
+.sprite-animation {
+  width: 500%; 
+  height: 100%;
+  position: absolute;
+  animation: runCycle 1s steps(5) infinite;
+}
+
+@keyframes runCycle {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); } /* Move 7/8 of the width (100% - one frame) */
 }

@@ -33,6 +33,10 @@
 import './modules/browserTheme.js';
 console.log('Browser theme initialized via self-initialization');
 
+// Import scrollTracker module first - it needs to be initialized before dependent modules
+import { scrollTracker } from './modules/scrollTracker.js';
+console.log('Scroll tracker initialized via self-initialization');
+
 // Import the new viewToggle module
 import initViewToggle from './modules/viewToggle.js';
 
@@ -40,11 +44,11 @@ import initViewToggle from './modules/viewToggle.js';
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
 import { initStarfieldThruster } from './modules/starfieldThruster.js';
-import { initCursorEffects } from './modules/cursorEffects.js'; 
-import { initcursorTracker } from './modules/cursorTracker.js';
+import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowercase 'c' to match export
 import { initscrollEffect } from './modules/scrollEffect.js';
+import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initLampEffect } from './modules/lampEffect.js';
-// import { init3DButtons } from './modules/button3DToggle.js';
+import { init3DButtons } from './modules/button3DToggle.js';  // Uncommented
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
@@ -58,7 +62,7 @@ import {
 } from './modules/processorAnimations.js';
 import { initDiffusionText } from './modules/diffusionText.js';
 import { initInterference } from './modules/interference.js';
-import './modules/scrollTracker.js';
+// import { init } from './modules/widgetAnimations.js';
 
 // Start preloading button sounds immediately for instant availability
 buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
@@ -96,14 +100,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 2: MODULE INITIALIZATION
         //--------------------------------------
+        // Initialize tracking modules FIRST (cursor, scroll effects)
+        initcursorTracker(); // Fix - using lowercase 'c' to match export
+        // scrollTracker is already initialized on import, don't call it as a function
+        initscrollEffect();
+        
         // Initialize all other modules after sound choice is confirmed
         initResizeOverlay(); 
         initStarfieldThruster();
-        initCursorEffects(); 
-        initcursorTracker();
-        initscrollEffect();
+        initCursorEffects();
         initLampEffect();
-        // init3DButtons(); // Commented out as requested
+        init3DButtons(); // Uncommented as this may be needed for functionality
         initLightGrids();
         initDateDisplay();
         initMarqueeContent();

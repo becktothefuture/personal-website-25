@@ -23,13 +23,13 @@ import { scrollTracker } from './scrollTracker.js';
 export const starConfig = {
   baseSpeed: 3,      
   numStars: 300,
-  maxDepth: 3000,
-  perspective: 400,
+  maxDepth: 5000,
+  perspective: 500,
   fieldSize: 3000,
-  pointSizeFactor: 4,
+  pointSizeFactor: 10,
   starColor: [0.8, 1.0, 0.8],
   adaptivePerformance: false,
-  accelerationMultiplier: 10  // Changed from speedMultiplier to accelerationMultiplier
+  accelerationMultiplier: 13  // Changed from speedMultiplier to accelerationMultiplier
 };
 
 class StarfieldThruster {

@@ -1,7 +1,7 @@
 /**
- * Perspective Controller Module
+ * Cursor Effects Module
  * -----------------------------
- * Controls the 3D perspective movement of the page based on either:
+ * Controls the 3D perspective movement of elements based on:
  * 1. Mouse position (for devices with mouse/pointer)
  * 2. Automatic animations (for touch devices)
  * 
@@ -10,46 +10,48 @@
 
 import { cursorXPercent, cursorYPercent } from './cursorTracker.js';
 
-// Updated configuration: removed perspective depth and shift factors; added separate rotation ranges
-export const perspectiveConfig = {
-  // Page rotation configuration
-  pageRotation: {
-    maxTiltX: 1,
-    maxTiltY: 2
+// Configuration for element transformations
+export const transformConfig = {
+  // Configuration for panel element
+  panel: {
+    rotateXRange: 2,  // -5% to 5% rotation on X axis
+    rotateYRange: 2   // -5% to 5% rotation on Y axis
   },
-  // Depth wrapper rotation configuration
-  depthRotation: {
-    maxTiltX: 2,
-    maxTiltY: 4
+  // Configuration for display element
+  display: {
+    rotateXRange: 3,  // -4% to 4% rotation on X axis
+    rotateYRange: 3   // -4% to 4% rotation on Y axis
   },
-  // Page scaling
-  scaleRange: 0.01,
-  
-  // Video effects remain unchanged
-  video: {
-    translateX: 3,
-    translateY: 2,
-    maxRotationX: 1, 
-    maxRotationY: 2,
-    inverted: true
+  // Configuration for reflection element
+  reflection: {
+    translateXRange: 6,  // -10% to 10% translation on X axis
+    translateYRange: 3,  // -10% to 10% translation on Y axis
+    rotateXRange: -4,     // Synchronized with panel rotation
+    rotateYRange: 2,     // Synchronized with panel rotation
+    inverted: true        // Move in opposite direction
   },
   
   // Animation settings
-  smoothFactor: 0.1,
+  smoothFactor: 0.2,      // Lower values create smoother, slower transitions
+  updateInterval: 10,     // Update interval in ms (throttle for performance)
   animation: {
-    duration: '0.5s',
-    easing: 'ease-in-out',
+    duration: '0.3s',
+    easing: 'ease-out',   // Using ease-out for more natural movement
     touchDuration: '40s'
   }
 };
 
-class PerspectiveController {
-  #pageWrapper = null;
-  #depthWrapper = null;
-  #glassVideo = null;
+class CursorEffectsController {
+  // Private class fields
+  #panel = null;
+  #display = null;
+  #reflection = null;
   #isMouseDevice = false;
   #isInitialized = false;
   #animationFrameId = null;
+  #lastUpdateTime = 0;
+  #debugElement = null;
+  #isDebugging = true; // Set to true to enable debug mode
   
   constructor() {
     this.#detectDeviceType();
@@ -61,14 +63,25 @@ class PerspectiveController {
   init() {
     if (this.#isInitialized) return;
     
-    // Find and cache required DOM elements
-    this.#pageWrapper = document.querySelector('.page__inner');
-    this.#depthWrapper = document.querySelector('.depth-wrapper');
-    this.#glassVideo = document.querySelector('.glass-video');
+    // Find and cache required DOM elements - using getElementById for better performance
+    this.#panel = document.getElementById('panel');
+    this.#display = document.getElementById('display');
+    this.#reflection = document.getElementById('reflection');
     
-    if (!this.#pageWrapper || !this.#depthWrapper) {
-      console.error('Required DOM elements not found for perspective control');
-      return;
+    // Setup debugging if enabled
+    if (this.#isDebugging) {
+      this.#setupDebugMode();
+    }
+    
+    // Check if elements exist
+    const missingElements = [];
+    if (!this.#panel) missingElements.push('#panel');
+    if (!this.#display) missingElements.push('#display');
+    if (!this.#reflection) missingElements.push('#reflection');
+    
+    if (missingElements.length > 0) {
+      console.warn(`Elements not found for cursor effects: ${missingElements.join(', ')}`);
+      // Continue anyway - some elements might be added dynamically later
     }
     
     // Initialize based on device type
@@ -79,19 +92,93 @@ class PerspectiveController {
     }
     
     this.#isInitialized = true;
-    console.log(`Perspective controller initialized in ${this.#isMouseDevice ? 'mouse' : 'touch'} mode`);
+    console.log(`Cursor effects initialized in ${this.#isMouseDevice ? 'mouse' : 'touch'} mode`);
     
-    // Handle resize events
+    // Handle resize events with passive listener for better performance
     window.addEventListener('resize', this.#handleResize.bind(this), { passive: true });
+    
+    // Log initial state
+    console.log('Cursor effects targeting:', 
+      this.#panel ? '#panel' : 'panel not found', 
+      this.#display ? '#display' : 'display not found', 
+      this.#reflection ? '#reflection' : 'reflection not found'
+    );
+  }
+  
+  /**
+   * Setup debug mode with visual feedback
+   */
+  #setupDebugMode() {
+    // Create debug element if it doesn't exist
+    if (!this.#debugElement) {
+      this.#debugElement = document.createElement('div');
+      this.#debugElement.id = 'cursor-effects-debug';
+      this.#debugElement.style.position = 'fixed';
+      this.#debugElement.style.bottom = '10px';
+      this.#debugElement.style.left = '10px';
+      this.#debugElement.style.padding = '10px';
+      this.#debugElement.style.background = 'rgba(0,0,0,0.7)';
+      this.#debugElement.style.color = '#9ce0a9';
+      this.#debugElement.style.fontFamily = 'monospace';
+      this.#debugElement.style.fontSize = '12px';
+      this.#debugElement.style.zIndex = '9999';
+      this.#debugElement.style.maxWidth = '300px';
+      this.#debugElement.style.maxHeight = '150px';
+      this.#debugElement.style.overflow = 'auto';
+      document.body.appendChild(this.#debugElement);
+    }
+    
+    // Debug toggle button
+    const toggleButton = document.createElement('button');
+    toggleButton.textContent = 'Toggle Debug';
+    toggleButton.style.position = 'fixed';
+    toggleButton.style.bottom = '10px';
+    toggleButton.style.right = '10px';
+    toggleButton.style.zIndex = '9999';
+    toggleButton.addEventListener('click', () => {
+      this.#debugElement.style.display = this.#debugElement.style.display === 'none' ? 'block' : 'none';
+    });
+    document.body.appendChild(toggleButton);
+  }
+  
+  /**
+   * Update debug information
+   */
+  #updateDebugInfo(data) {
+    if (!this.#isDebugging || !this.#debugElement) return;
+    
+    this.#debugElement.innerHTML = `
+      <strong>Cursor Effects Debug:</strong><br>
+      Mode: ${this.#isMouseDevice ? 'Mouse' : 'Touch'}<br>
+      Initialized: ${this.#isInitialized}<br>
+      Panel: ${this.#panel ? 'Found' : 'Not Found'}<br>
+      Display: ${this.#display ? 'Found' : 'Not Found'}<br>
+      Reflection: ${this.#reflection ? 'Found' : 'Not Found'}<br>
+      Cursor X: ${(cursorXPercent * 100).toFixed(2)}%<br>
+      Cursor Y: ${(cursorYPercent * 100).toFixed(2)}%<br>
+      ${data ? `<br><strong>Transforms:</strong><br>
+      Panel: rotateX=${data.panel?.rotateX.toFixed(2)}deg, rotateY=${data.panel?.rotateY.toFixed(2)}deg<br>
+      Display: rotateX=${data.display?.rotateX.toFixed(2)}deg, rotateY=${data.display?.rotateY.toFixed(2)}deg<br>
+      Reflection: translateX=${data.reflection?.translateX.toFixed(2)}%, translateY=${data.reflection?.translateY.toFixed(2)}%, rotateX=${data.reflection?.rotateX.toFixed(2)}deg, rotateY=${data.reflection?.rotateY.toFixed(2)}deg` : ''}
+    `;
   }
   
   /**
    * Detect if user is on a mouse device or touch device
    */
   #detectDeviceType() {
-    this.#isMouseDevice = 
-      window.matchMedia('(pointer: fine)').matches && 
-      !('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    // Simplified detection that prioritizes mouse input devices
+    // This improves compatibility across devices that have both touch and mouse capabilities
+    this.#isMouseDevice = true; // Default to mouse device for better compatibility
+    
+    // Only set to false if it's definitively a touch-only device
+    if ('ontouchstart' in window && 
+        navigator.maxTouchPoints > 0 && 
+        !window.matchMedia('(pointer: fine)').matches) {
+      this.#isMouseDevice = false;
+    }
+    
+    console.log(`Device detected as: ${this.#isMouseDevice ? 'mouse' : 'touch'} device`);
   }
   
   /**
@@ -100,18 +187,16 @@ class PerspectiveController {
   #setupTouchAnimation() {
     this.#clearStyles();
     
-    // Apply CSS animations from the stylesheet
-    this.#pageWrapper.style.animation = `pageWrapper-naturalMovement ${perspectiveConfig.animation.touchDuration} infinite`;
+    // Apply transitions for smooth movement
+    const transition = `transform ${transformConfig.animation.duration} ${transformConfig.animation.easing}`;
     
-    // Apply perspective value only for top wrapper
-    this.#depthWrapper.style.perspective = `${perspectiveConfig.perspectiveDepth}px`;
+    // Apply transitions to elements
+    if (this.#panel) this.#panel.style.transition = transition;
+    if (this.#display) this.#display.style.transition = transition;
+    if (this.#reflection) this.#reflection.style.transition = transition;
     
-    this.#depthWrapper.style.animation = `depthWrapper-naturalMovement ${perspectiveConfig.animation.touchDuration} infinite`;
-    
-    // Apply transitions
-    const transition = `all ${perspectiveConfig.animation.duration} ${perspectiveConfig.animation.easing}`;
-    this.#pageWrapper.style.transition = transition;
-    this.#depthWrapper.style.transition = transition;
+    // For touch devices, we could add automatic animations if needed
+    // Note: Currently no automatic animations are implemented to keep it simple
   }
   
   /**
@@ -119,6 +204,13 @@ class PerspectiveController {
    */
   #setupMouseControl() {
     this.#clearStyles();
+    
+    // Set will-change property for better performance
+    // This hints the browser to prepare for upcoming transforms
+    if (this.#panel) this.#panel.style.willChange = 'transform';
+    if (this.#display) this.#display.style.willChange = 'transform';
+    if (this.#reflection) this.#reflection.style.willChange = 'transform';
+    
     this.#startMouseControlLoop();
   }
   
@@ -126,67 +218,102 @@ class PerspectiveController {
    * Clear all animation styles
    */
   #clearStyles() {
-    this.#pageWrapper.style.animation = 'none';
-    this.#depthWrapper.style.animation = 'none';
+    // Reset all styles on elements
+    for (const element of [this.#panel, this.#display, this.#reflection]) {
+      if (element) {
+        element.style.animation = 'none';
+        element.style.transform = 'none';
+        element.style.transition = 'none';
+        element.style.willChange = 'auto';
+      }
+    }
   }
   
   /**
    * Animation loop for mouse-controlled movement
+   * Uses requestAnimationFrame with throttling for better performance
    */
   #startMouseControlLoop() {
-    // State for smooth interpolation: add separate 'depth' state for depth-wrapper rotation
+    // State objects to track current transform values
     const state = {
-      page: { rotateX: 0, rotateY: 0, scale: 1 },
-      depth: { rotateX: 0, rotateY: 0 },
-      video: { translateX: 0, translateY: 0, rotateX: 0, rotateY: 0 }
+      panel: { rotateX: 0, rotateY: 0 },
+      display: { rotateX: 0, rotateY: 0 },
+      reflection: { translateX: 0, translateY: 0, rotateX: 0, rotateY: 0 }
     };
     
     let lastTimestamp = 0;
     
     const animationStep = (timestamp) => {
+      // Calculate delta time with a cap to handle tab switches/sleeps
       const deltaTime = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 16.67, 2) : 1;
       lastTimestamp = timestamp;
       
+      // Always update debug info for every frame to ensure responsive UI
+      this.#updateDebugInfo(state);
+      
+      // Throttle updates for better performance
+      // Only update every transformConfig.updateInterval ms
+      if (timestamp - this.#lastUpdateTime < transformConfig.updateInterval) {
+        this.#animationFrameId = requestAnimationFrame(animationStep);
+        return;
+      }
+      
+      this.#lastUpdateTime = timestamp;
+      
+      // Normalize mouse position to range -1 to 1
       const mouseXNormalized = (cursorXPercent - 0.5) * 2;
       const mouseYNormalized = (cursorYPercent - 0.5) * 2;
       
-      // Calculate target values for page rotation using pageRotation config
-      const targetPageRotateX = mouseYNormalized * perspectiveConfig.pageRotation.maxTiltX;
-      const targetPageRotateY = -mouseXNormalized * perspectiveConfig.pageRotation.maxTiltY;
-      const targetScale = 1 + (-Math.abs(mouseXNormalized) - Math.abs(mouseYNormalized) + 1) * (perspectiveConfig.scaleRange / 2);
+      // Calculate transform values
       
-      // Calculate target values for depth-wrapper rotation using depthRotation config
-      const targetDepthRotateX = mouseYNormalized * perspectiveConfig.depthRotation.maxTiltX;
-      const targetDepthRotateY = -mouseXNormalized * perspectiveConfig.depthRotation.maxTiltY;
+      // Panel rotation
+      const targetPanelRotateX = mouseYNormalized * transformConfig.panel.rotateXRange;
+      const targetPanelRotateY = -mouseXNormalized * transformConfig.panel.rotateYRange;
       
-      // Video movement/rotation remain unchanged
-      const videoInversionFactor = perspectiveConfig.video.inverted ? -1 : 1;
-      const targetVideoTranslateX = mouseXNormalized * perspectiveConfig.video.translateX * videoInversionFactor;
-      const targetVideoTranslateY = mouseYNormalized * perspectiveConfig.video.translateY * videoInversionFactor;
-      const targetVideoRotateX = -mouseYNormalized * perspectiveConfig.video.maxRotationX;
-      const targetVideoRotateY = -mouseXNormalized * perspectiveConfig.video.maxRotationY;
+      // Display rotation (synced with panel but with different range)
+      const targetDisplayRotateX = mouseYNormalized * transformConfig.display.rotateXRange;
+      const targetDisplayRotateY = -mouseXNormalized * transformConfig.display.rotateYRange;
       
-      const smoothFactor = perspectiveConfig.smoothFactor * deltaTime;
+      // Reflection translation (opposite direction if inverted is true)
+      const reflectionInversionFactor = transformConfig.reflection.inverted ? -1 : 1;
+      const targetReflectionTranslateX = mouseXNormalized * transformConfig.reflection.translateXRange * reflectionInversionFactor;
+      const targetReflectionTranslateY = mouseYNormalized * transformConfig.reflection.translateYRange * reflectionInversionFactor;
       
-      // Interpolate page state
-      this.#smoothInterpolate(state.page, 'rotateX', targetPageRotateX, smoothFactor);
-      this.#smoothInterpolate(state.page, 'rotateY', targetPageRotateY, smoothFactor);
-      this.#smoothInterpolate(state.page, 'scale', targetScale, smoothFactor);
+      // Reflection rotation (synchronized with panel rotation)
+      const targetReflectionRotateX = targetPanelRotateX;
+      const targetReflectionRotateY = targetPanelRotateY;
       
-      // Interpolate depth-wrapper state
-      this.#smoothInterpolate(state.depth, 'rotateX', targetDepthRotateX, smoothFactor);
-      this.#smoothInterpolate(state.depth, 'rotateY', targetDepthRotateY, smoothFactor);
+      // Calculate smooth interpolation factor
+      const smoothFactor = transformConfig.smoothFactor * deltaTime;
       
-      // Interpolate video state
-      this.#smoothInterpolate(state.video, 'translateX', targetVideoTranslateX, smoothFactor);
-      this.#smoothInterpolate(state.video, 'translateY', targetVideoTranslateY, smoothFactor);
-      this.#smoothInterpolate(state.video, 'rotateX', targetVideoRotateX, smoothFactor);
-      this.#smoothInterpolate(state.video, 'rotateY', targetVideoRotateY, smoothFactor);
+      // Interpolate values for smooth transitions
+      // Panel
+      this.#smoothInterpolate(state.panel, 'rotateX', targetPanelRotateX, smoothFactor);
+      this.#smoothInterpolate(state.panel, 'rotateY', targetPanelRotateY, smoothFactor);
       
-      // Apply transformations
-      this.#applyPageTransforms(state.page);
-      this.#applyVideoTransforms(state.video);
-      this.#applyDepthWrapperTransforms(state.depth);
+      // Display
+      this.#smoothInterpolate(state.display, 'rotateX', targetDisplayRotateX, smoothFactor);
+      this.#smoothInterpolate(state.display, 'rotateY', targetDisplayRotateY, smoothFactor);
+      
+      // Reflection
+      this.#smoothInterpolate(state.reflection, 'translateX', targetReflectionTranslateX, smoothFactor);
+      this.#smoothInterpolate(state.reflection, 'translateY', targetReflectionTranslateY, smoothFactor);
+      this.#smoothInterpolate(state.reflection, 'rotateX', targetReflectionRotateX, smoothFactor);
+      this.#smoothInterpolate(state.reflection, 'rotateY', targetReflectionRotateY, smoothFactor);
+      
+      // Apply transformations to DOM elements
+      this.#applyPanelTransforms(state.panel);
+      this.#applyDisplayTransforms(state.display);
+      this.#applyReflectionTransforms(state.reflection);
+      
+      // Log current transform values every second (not every frame to avoid console spam)
+      if (Math.floor(timestamp / 1000) !== Math.floor(lastTimestamp / 1000)) {
+        console.log('Current transforms:', {
+          panel: { ...state.panel },
+          display: { ...state.display },
+          reflection: { ...state.reflection },
+        });
+      }
       
       this.#animationFrameId = requestAnimationFrame(animationStep);
     };
@@ -195,7 +322,7 @@ class PerspectiveController {
   }
   
   /**
-   * Smoothly interpolate a value
+   * Smoothly interpolate a value for fluid animation
    */
   #smoothInterpolate(obj, key, targetValue, smoothFactor) {
     if (obj[key] === undefined) obj[key] = 0;
@@ -203,30 +330,29 @@ class PerspectiveController {
   }
   
   /**
-   * Apply transforms to page wrapper
+   * Apply transforms to panel element
    */
-  #applyPageTransforms({ rotateX, rotateY, scale }) {
-    if (this.#pageWrapper) {
-      this.#pageWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
+  #applyPanelTransforms({ rotateX, rotateY }) {
+    if (this.#panel) {
+      this.#panel.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }
   }
   
   /**
-   * Apply transforms to video element
+   * Apply transforms to display element
    */
-  #applyVideoTransforms({ translateX, translateY, rotateX, rotateY }) {
-    if (this.#glassVideo) {
-      this.#glassVideo.style.transform = 
-        `translate(${translateX}%, ${translateY}%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  #applyDisplayTransforms({ rotateX, rotateY }) {
+    if (this.#display) {
+      this.#display.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }
   }
   
   /**
-   * Apply perspective transforms to depth wrapper
+   * Apply transforms to reflection element
    */
-  #applyDepthWrapperTransforms({ rotateX, rotateY }) {
-    if (this.#depthWrapper) {
-      this.#depthWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  #applyReflectionTransforms({ translateX, translateY, rotateX, rotateY }) {
+    if (this.#reflection) {
+      this.#reflection.style.transform = `translate(${translateX}%, ${translateY}%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }
   }
   
@@ -237,6 +363,7 @@ class PerspectiveController {
     const wasMouseDevice = this.#isMouseDevice;
     this.#detectDeviceType();
     
+    // Reinitialize if device type changes
     if (wasMouseDevice !== this.#isMouseDevice) {
       this.#isInitialized = false;
       this.#cancelAnimation();
@@ -259,24 +386,16 @@ class PerspectiveController {
    */
   updateConfig(newConfig) {
     // Deep merge for nested objects
-    if (newConfig.baseOrigin) {
-      perspectiveConfig.baseOrigin = {
-        ...perspectiveConfig.baseOrigin,
-        ...newConfig.baseOrigin
-      };
-      delete newConfig.baseOrigin;
+    for (const key of Object.keys(newConfig)) {
+      if (typeof newConfig[key] === 'object' && transformConfig[key]) {
+        transformConfig[key] = {
+          ...transformConfig[key],
+          ...newConfig[key]
+        };
+      } else {
+        transformConfig[key] = newConfig[key];
+      }
     }
-    
-    if (newConfig.video) {
-      perspectiveConfig.video = {
-        ...perspectiveConfig.video,
-        ...newConfig.video
-      };
-      delete newConfig.video;
-    }
-    
-    // Shallow merge for everything else
-    Object.assign(perspectiveConfig, newConfig);
     
     if (this.#isInitialized) {
       this.#isInitialized = false;
@@ -296,20 +415,16 @@ class PerspectiveController {
 }
 
 // Singleton instance
-let perspectiveControllerInstance = null;
+let cursorEffectsInstance = null;
 
 /**
- * Initialize the perspective controller
- * @returns {PerspectiveController} The controller instance
+ * Initialize the cursor effects controller
+ * @returns {CursorEffectsController} The controller instance
  */
-export function initPerspectiveController() {
-  if (!perspectiveControllerInstance) {
-    perspectiveControllerInstance = new PerspectiveController();
-    perspectiveControllerInstance.init();
-  }
-  return perspectiveControllerInstance;
-}
-
 export function initCursorEffects() {
-  return initPerspectiveController();
+  if (!cursorEffectsInstance) {
+    cursorEffectsInstance = new CursorEffectsController();
+    cursorEffectsInstance.init();
+  }
+  return cursorEffectsInstance;
 }

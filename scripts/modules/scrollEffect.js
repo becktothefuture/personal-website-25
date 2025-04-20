@@ -19,7 +19,7 @@ export const scrollEffectConfig = {
   // Rumble effect removed for performance
   pattern: {
     enabled: true,
-    accelerationMultiplier: 10  // How strongly patterns respond to scroll acceleration
+    accelerationMultiplier: 30  // How strongly patterns respond to scroll acceleration
   },
   turnstyle: {
     enabled: true,
