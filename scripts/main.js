@@ -23,10 +23,10 @@
  * - scrollEffect.js: Creates physical scrolly/shake effects based on scroll velocity
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
- * - buttonToggle.js: Manages 3D button toggling with only one active at a time
+ * - buttonToggle.js: Manages 3D button toggling with only one active at a time AND view switching 
  * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
  * - widgetAnimations.js: Handles widget animations for view transitions
- * - viewToggle.js: Toggles between different views without removing them from DOM
+ * - viewToggle.js: DEPRECATED: Functionality moved to buttonToggle.js
  */
 
 // Import browser theme module - this module self-initializes on import
@@ -37,8 +37,10 @@ console.log('Browser theme initialized via self-initialization');
 import { scrollTracker } from './modules/scrollTracker.js';
 console.log('Scroll tracker initialized via self-initialization');
 
-// Import the new viewToggle module
-import initViewToggle from './modules/viewToggle.js';
+// Import the buttonToggle module which now handles all view toggling
+import { init3DButtons } from './modules/buttonToggle.js';
+// DEPRECATED: viewToggle.js functionality moved to buttonToggle.js
+// import initViewToggle from './modules/viewToggle.js';
 
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
@@ -48,7 +50,6 @@ import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowerc
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initLampEffect } from './modules/lampEffect.js';
-import { init3DButtons } from './modules/buttonToggle.js';  // Uncommented
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
@@ -62,14 +63,14 @@ import {
 } from './modules/processorAnimations.js';
 import { initDiffusionText } from './modules/diffusionText.js';
 import { initInterference } from './modules/interference.js';
-// import { init } from './modules/widgetAnimations.js';
 
 // Start preloading button sounds immediately for instant availability
-buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', err));
+// Import DOMPurify for sanitizing user input
+// DOMPurify is a library for sanitizing HTML and preventing XSS attacks
+import DOMPurify from 'dompurify';
 
+buttonSounds.preload().catch(err => console.warn('Early button sound preload failed:', DOMPurify.sanitize(err.toString())));
 
-
-// We don't need to call initBrowserTheme() here anymore as it self-initialized on import
 
 /********************************
  * MAIN INITIALIZATION SEQUENCE *
@@ -79,9 +80,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
-        // Initialize view toggle first, before any other UI components
-        console.log('Initializing view toggle system');
-        initViewToggle();
+        // Initialize buttonToggle first, which now handles all view toggling
+        console.log('Initializing button toggle system (includes view switching)');
+        init3DButtons();
+        
+        // DEPRECATED: viewToggle.js functionality moved to buttonToggle.js
+        // console.log('Initializing view toggle system');
+        // initViewToggle();
         
         // Initialize widget animations commented out
         // console.log('Initializing widget system for proper Lottie initialization');
@@ -110,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initStarfieldThruster();
         initCursorEffects();
         initLampEffect();
-        init3DButtons(); // Uncommented as this may be needed for functionality
+        // init3DButtons already called above
         initLightGrids();
         initDateDisplay();
         initMarqueeContent();
@@ -128,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------
-        // Removed showHomeView call since we're using viewToggle instead
+        // Button toggle handles showing the home view
 
     } catch (error) {
         console.error('Error in main initialization sequence:', error);

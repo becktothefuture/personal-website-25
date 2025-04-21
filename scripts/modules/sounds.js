@@ -746,12 +746,18 @@ function updateSoundParameters() {
     animationFrameId = requestAnimationFrame(updateSoundParameters);
     return;
   }
-  // Ensure scrollTracker.getConfig is defined; if not, throw an error.
-  if (typeof scrollTracker.getConfig !== 'function') {
-    throw new Error("scrollTracker.getConfig is not a function");
+  // Ensure scrollTracker.getConfig is defined; if not, use default values.
+  let topSpeed = 300; // Default value
+  if (typeof scrollTracker.getConfig === 'function') {
+    try {
+      topSpeed = scrollTracker.getConfig().topSpeed;
+    } catch (error) {
+      console.warn("Error accessing scrollTracker.getConfig().topSpeed:", error);
+      // Continue with default value
+    }
+  } else {
+    console.warn("scrollTracker.getConfig is not a function, using default topSpeed value");
   }
-  
-  const topSpeed = scrollTracker.getConfig().topSpeed;
   const speedRatio = Math.min(Math.max(scrollSpeed, 0) / topSpeed, 1.0);
   const timeInSec = audioContext.currentTime;
   

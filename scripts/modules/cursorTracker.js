@@ -76,6 +76,8 @@ function initializeElements() {
   // Get reference to cursor value element
   cursorValueElement = document.getElementById('cursor-value');
 
+  // All elements are optional, so we'll always return true
+  // This prevents initialization failures when elements don't exist
   return true;
 }
 
@@ -300,3 +302,5 @@ export function initcursorTracker() {
 }
 
 export { cursorXPercent, cursorYPercent };
+
+

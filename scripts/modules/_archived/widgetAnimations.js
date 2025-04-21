@@ -6,8 +6,8 @@
  * Ensures proper Lottie initialization and sound synchronization.
  */
 
-import { buttonSounds } from './sounds.js';
-import { applyInterference, removeInterference } from './interference.js';
+import { buttonSounds } from '../sounds.js';
+import { applyInterference, removeInterference } from '../interference.js';
 
 // Simple animation delay
 const WIDGET_DELAY = 50; // ms between widgets
