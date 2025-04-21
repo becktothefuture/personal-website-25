@@ -697,13 +697,13 @@ body {
 
 @keyframes buttonGlow {
   0% {
-    opacity: 0.25;
+    opacity: 0.15;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.20;
   }
   100% {
-    opacity: 0.25;
+    opacity: 0.15;
   }
 }
 
@@ -1214,16 +1214,18 @@ body {
  * PULSATING LIGHT    *
  ***********************/
 
-
-
 .light--1 {
-  animation: oscillateOpacity-1 2s ease-in-out infinite;
+  animation: oscillateOpacity-1 5s ease-in-out infinite;
   will-change: opacity;
 }
 
 .light--2 {
-  animation: oscillateOpacity-2 2s ease-in-out infinite;
-  animation-delay: 0.4s;
+  animation: oscillateOpacity-2 5s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.outer-wall--light{
+  animation: oscillateOpacity-2 5s ease-in-out infinite;
   will-change: opacity;
 }
 
@@ -1250,10 +1252,10 @@ body {
 
 @keyframes oscillateOpacity-2 {
   0%, 100% {
-    opacity: 0.35; 
+    opacity: 0.6; 
   }
   50% {
-    opacity: 0.75;
+    opacity: 0.95;
   }
 }
 

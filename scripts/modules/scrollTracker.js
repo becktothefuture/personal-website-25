@@ -79,16 +79,17 @@ class EventEmitter {
 // Streamlined ScrollTracker: tracks normalized speed and acceleration from scroll events.
 class ScrollTracker extends EventEmitter {
   #config = {
-    scrollScalingFactor: 100,  // Lower value increases sensitivity
-    speedDecayRate: 1,  // Higher value increases speed decay
-    accelerationDecayRate: 6,  // Higher value increases acceleration decay
-    maxSpeed: 1.0      // Maximum normalized speed (0-1)
+    scrollScalingFactor: 150,  // Higher value reduces sensitivity (was 100)
+    speedDecayRate: 1.5,       // Higher value increases speed decay (was 1)
+    accelerationDecayRate: 9,  // Higher value increases acceleration decay (was 6)
+    maxSpeed: 1.0              // Maximum normalized speed (0-1)
   };
 
   // State values (normalized 0 to 1).
   #state = {
     speed: 0,
-    acceleration: 0
+    acceleration: 0,
+    lastImpulse: 0 // Added to track the last impulse for reference
   };
 
   // Conversion factors and constants
@@ -122,24 +123,41 @@ class ScrollTracker extends EventEmitter {
     event.preventDefault();
     const delta = event.deltaY;
     // Use raw impulse without capping and always positive
-    const impulse = Math.abs(delta) / this.#config.scrollScalingFactor;
+    const rawImpulse = Math.abs(delta) / this.#config.scrollScalingFactor;
     
-    // Both scroll directions create positive acceleration.
-    this.#state.acceleration = impulse;
-    this.emit("scroll", { normalizedAcceleration: this.#state.acceleration, normalizedSpeed: this.#state.speed });
+    // Apply smoothing to the impulse for a more gradual effect
+    // Note: we're storing the raw value for debugging
+    this.#state.lastImpulse = rawImpulse;
+    
+    // Apply additional dampening to the acceleration for smoother movement
+    this.#state.acceleration = rawImpulse * 0.85; // Reduce impact of each scroll event by 15%
+    
+    this.emit("scroll", { 
+      normalizedAcceleration: this.#state.acceleration, 
+      normalizedSpeed: this.#state.speed,
+      lastImpulse: this.#state.lastImpulse 
+    });
   }
   
   update() {
     const dt = 0.016; // ~60fps
-    // Integrate acceleration to update speed
-    this.#state.speed += this.#state.acceleration * dt;
+    
+    // Integrate acceleration to update speed with smoother ramping
+    const accelerationImpact = this.#state.acceleration * dt;
+    // Apply a more gradual acceleration curve for smoother starts
+    this.#state.speed += accelerationImpact * (1 - this.#state.speed * 0.5);
+    
     // Cap speed at max value
     this.#state.speed = Math.min(this.#state.speed, this.#config.maxSpeed);
-    // Ensure speed is never negative.
+    // Ensure speed is never negative
     this.#state.speed = Math.max(this.#state.speed, 0);
-    // Apply friction decay to speed (simulate resistance)
-    this.#state.speed *= (1 - dt * this.#config.speedDecayRate);
-    // Exponential decay on acceleration
+    
+    // Apply friction decay to speed with improved dampening formula
+    // This provides stronger dampening at higher speeds
+    const dampFactor = 1 - dt * (this.#config.speedDecayRate * (1 + this.#state.speed));
+    this.#state.speed *= dampFactor;
+    
+    // Exponential decay on acceleration (higher value = faster decay)
     this.#state.acceleration *= Math.exp(-this.#config.accelerationDecayRate * dt);
     
     // Calculate pixels per second first (our base measurement)
@@ -204,6 +222,17 @@ class ScrollTracker extends EventEmitter {
 
   getPixelsPerSecond() {
     return this.#state.speed * this.#conversion.pixelsPerSecond;
+  }
+  
+  // Add method to get current state values for debugging/display
+  getState() {
+    return {
+      speed: this.#state.speed,
+      acceleration: this.#state.acceleration,
+      lastImpulse: this.#state.lastImpulse,
+      velocityMS: this.getPixelsPerSecond() / this.#conversion.pixelsPerInch / 39.37, // m/s
+      velocityKMH: this.getKilometersPerHour()
+    };
   }
 }
 

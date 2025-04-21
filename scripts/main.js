@@ -23,7 +23,7 @@
  * - scrollEffect.js: Creates physical scrolly/shake effects based on scroll velocity
  * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
- * - button3DToggle.js: Manages 3D button toggling with only one active at a time
+ * - buttonToggle.js: Manages 3D button toggling with only one active at a time
  * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
  * - widgetAnimations.js: Handles widget animations for view transitions
  * - viewToggle.js: Toggles between different views without removing them from DOM
@@ -48,7 +48,7 @@ import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowerc
 import { initscrollEffect } from './modules/scrollEffect.js';
 import { initCursorEffects } from './modules/cursorEffects.js'; 
 import { initLampEffect } from './modules/lampEffect.js';
-import { init3DButtons } from './modules/button3DToggle.js';  // Uncommented
+import { init3DButtons } from './modules/buttonToggle.js';  // Uncommented
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';

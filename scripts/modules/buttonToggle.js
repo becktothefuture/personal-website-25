@@ -50,6 +50,12 @@ function initializeButtons() {
   // Listen for intro complete event to activate home button
   document.addEventListener('intro:complete', activateHomeButton);
   
+  // Automatically activate the home button at startup
+  const homeButton = document.getElementById('home-button');
+  if (homeButton) {
+    activateButton(homeButton);
+  }
+  
   console.log('3D button toggle initialized');
 }
 
@@ -95,7 +101,7 @@ function activateHomeButton() {
     
     // Animate widgets with delay to ensure screen is visible
     setTimeout(() => {
-      animateViewTransition('#home-view', true).then(() => {
+      animateViewTransition(null, '#home-view', homeButton).then(() => {
         transitionInProgress = false;
       });
       buttonSounds.play('confirm', 0.8);

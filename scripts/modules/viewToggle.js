@@ -109,8 +109,8 @@ function debounce(func, wait) {
       }
     });
   
-    // Set the initial view (e.g. home view) after Webflow has loaded the page.
+    // Set the initial view to home view after Webflow has loaded the page.
     // This ensures that all Lottie animations in every view are initialised on page load.
     console.log("Setting initial view to 'home'");
-    toggleView('contact');
+    toggleView('home');
   }
