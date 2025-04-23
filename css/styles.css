@@ -3,7 +3,6 @@
 ========================================================= */
 
 :root {
-  --browser-color: #222;
 
   /* Global animation variables */
   --global-multiplier: 1;
@@ -108,7 +107,8 @@
   --page-rotate-y: 4deg;
 
   /* Widget  */
-  --widget-animation-duration: 1.5s;
+  --widget-animation-duration: 200ms; /* Stagger duration */
+  --widget-outro-fade-duration: 200ms; /* Fade duration for individual widget */
 }
 
 svg path {
@@ -338,17 +338,14 @@ body {
   0% {
     opacity: 1;
   }
-  25% {
-    opacity: 0.4;
+  33% {
+    opacity: 0.5; /* Step 1 */
   }
-  50% {
-    opacity: 0.8;
-  }
-  75% {
-    opacity: 0.6;
+  66% {
+    opacity: 0.2; /* Step 2 */
   }
   100% {
-    opacity: 0;
+    opacity: 0;   /* Step 3 (final state) */
   }
 }
 
@@ -365,7 +362,7 @@ body {
 }
 
 .widget-outro {
-  animation: widgetOutro var(--widget-animation-duration) steps(4) forwards;
+  animation: widgetOutro var(--widget-outro-fade-duration) steps(3) forwards;
 }
 
 /********************
@@ -645,8 +642,6 @@ body {
 .btn-3d {
   /* in webflow */
 }
-
-
 
 .btn-3d__glow {
   opacity: 0;
@@ -972,7 +967,7 @@ body {
  **********************/
 
 .blink-1 {
-  animation: blink 1s steps(2) forwards infinite;
+  animation: blink 1s steps(2) infinite;
 }
 
 .blink-2 {
@@ -982,7 +977,7 @@ body {
 
 @keyframes blink {
   0% {
-    opacity: 0.4;
+    opacity: 0.5;
   }
   100% {
     opacity: 1;
@@ -1039,21 +1034,26 @@ body {
   transform: translateZ(0); /* Kickstarts the GPU for smoother transforms */
 }
 
-/* Active view: fully visible, interactive, and with a smooth fade-in effect */
+/* Active view: fully visible, interactive */
 .view--active {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transition: opacity 0.3s ease;
+  position: relative; /* Or static, depending on layout needs */
+  transition: none; /* Ensure instant switch */
   transform: translateZ(0); /* Ensure GPU acceleration */
 }
 
-/* Hidden view: fully transparent, non-interactive, yet still present in the DOM */
+/* Hidden view: fully transparent, non-interactive */
 .view--hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  position: absolute; /* Take out of flow */
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: none; /* Ensure instant switch */
 }
 
 /*****************
@@ -1224,10 +1224,6 @@ body {
   will-change: opacity;
 }
 
-.outer-wall--light{
-  animation: oscillateOpacity-2 5s ease-in-out infinite;
-  will-change: opacity;
-}
 
 
 /* Glass video */

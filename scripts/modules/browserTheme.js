@@ -15,21 +15,21 @@
  * This module self-initializes immediately upon import.
  */
 
-console.log('Browser Theme Module Loading - Immediate Initialization');
+console.log('Browser Theme Module: Script start');
 
 const userAgent = navigator.userAgent.toLowerCase();
 const prefersDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
 
 // Presets for colors applied to --browser-color
 const COLOR_PRESETS = {
-    chrome: { light: "#ffffff", dark: "#3c3c3c" },
+    chrome: { light: "#ffffff", dark: "#3c3c3c" }, // Correct dark color
     safari: { light: "#f3f3f2", dark: "#242424" },
     firefox: { light: "#f5f5f5", dark: "#2e2e2e" },
     edge: { light: "#f3f2f1", dark: "#323130" },
     opera: { light: "#fafafa", dark: "#3b3b3b" },
     brave: { light: "#ffffff", dark: "#2d2d2d" },
     arc: { light: "#e8e8e8", dark: "#292a2b" },
-    default: { light: "#ffffff", dark: "#1b1c1c" }
+    default: { light: "#ffffff", dark: "#1b1c1c" } // Fallback dark color
 };
 
 // Presets for the hairline colors (optional)
@@ -46,64 +46,96 @@ const COLOR_LINE_PRESETS = {
 
 // Detect user's browser
 function detectBrowser() {
+    let detected = "default"; // Start with default
     if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
-        return "brave";
+        detected = "brave";
     }
-    if (userAgent.includes("arc")) {
-        return "arc";
+    // Check for Arc specifically before Chrome
+    else if (userAgent.includes("arc")) {
+        detected = "arc";
     }
-    if (userAgent.includes("chrome") && !userAgent.includes("edge") && !userAgent.includes("opr")) {
-        return "chrome";
+    // Check for Edge specifically before Chrome
+    else if (userAgent.includes("edg")) {
+        detected = "edge";
     }
-    if (userAgent.includes("safari") && !userAgent.includes("chrome")) {
-        return "safari";
+    // Check for Opera specifically before Chrome
+    else if (userAgent.includes("opr") || userAgent.includes("opera")) {
+        detected = "opera";
     }
-    if (userAgent.includes("firefox")) {
-        return "firefox";
+    // Check for Chrome, ensuring it's not Edge, Opera, or Brave masquerading
+    else if (userAgent.includes("chrome") && !userAgent.includes("edg") && !userAgent.includes("opr") && !(navigator.brave && typeof navigator.brave.isBrave === 'function')) {
+        detected = "chrome";
     }
-    if (userAgent.includes("edg")) {
-        return "edge";
+    // Check for Safari, ensuring it's not Chrome or others
+    else if (userAgent.includes("safari") && !userAgent.includes("chrome") && !userAgent.includes("chromium")) {
+        detected = "safari";
     }
-    if (userAgent.includes("opera") || userAgent.includes("opr")) {
-        return "opera";
+    // Check for Firefox
+    else if (userAgent.includes("firefox")) {
+        detected = "firefox";
     }
-    return "default";
+    console.log(`Browser Theme Module: Detected browser as: ${detected}`);
+    return detected;
 }
 
 // Apply color settings based on detected browser & theme
-function applyBrowserColors() {
+function applyBrowserColors(eventSource = "initial") {
+    console.log(`Browser Theme Module: applyBrowserColors called from ${eventSource}`);
     const browser = detectBrowser();
-    const mode = prefersDarkMode.matches ? "dark" : "light";
+    const isDark = prefersDarkMode.matches;
+    const mode = isDark ? "dark" : "light";
+    console.log(`Browser Theme Module: Mode detected as: ${mode}`);
 
     // Get color from preset
-    const browserColor = (COLOR_PRESETS[browser] || COLOR_PRESETS.default)[mode];
-    const lineColor = (COLOR_LINE_PRESETS[browser] || COLOR_LINE_PRESETS.default)[mode];
+    const browserPreset = COLOR_PRESETS[browser] || COLOR_PRESETS.default;
+    const linePreset = COLOR_LINE_PRESETS[browser] || COLOR_LINE_PRESETS.default;
 
-    // Instead of applying inline styles directly, set a CSS custom property
-    document.documentElement.style.setProperty('--browser-color', browserColor);
-    document.documentElement.style.setProperty('--browser-line-color', lineColor);
-    
-    console.log(`Applied browser color ${browserColor} as CSS variable --browser-color`);
+    const browserColor = browserPreset[mode];
+    const lineColor = linePreset[mode];
 
-    // Keep updating the meta theme-color tag if it exists
+    console.log(`Browser Theme Module: Selected browser color for ${browser} (${mode}): ${browserColor}`);
+    console.log(`Browser Theme Module: Selected line color for ${browser} (${mode}): ${lineColor}`);
+
+    // Apply CSS custom properties to the root element with !important
+    document.documentElement.style.setProperty('--browser-color', browserColor, 'important');
+    document.documentElement.style.setProperty('--browser-line-color', lineColor, 'important');
+    console.log(`Browser Theme Module: Set --browser-color to ${browserColor} !important`);
+    console.log(`Browser Theme Module: Set --browser-line-color to ${lineColor} !important`);
+
+    // Update meta theme-color tag
     const metaThemeColor = document.getElementById('theme-color-meta');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', browserColor);
+        console.log(`Browser Theme Module: Updated meta theme-color to ${browserColor}`);
+    } else {
+        console.warn('Browser Theme Module: Meta theme-color tag not found.');
     }
 }
 
-// Self-initialize when this module is loaded
-applyBrowserColors();
-prefersDarkMode.addEventListener("change", applyBrowserColors);
+// --- Initialization --- 
 
-// Also run when DOM is loaded to make sure elements are available
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyBrowserColors);
-} else {
-    // DOM is already ready, apply again to be sure
-    setTimeout(applyBrowserColors, 0);
+// 1. Apply immediately on script load
+console.log('Browser Theme Module: Applying colors on initial script execution.');
+applyBrowserColors("script load");
+
+// 2. Add listener for system theme changes
+prefersDarkMode.addEventListener("change", () => applyBrowserColors("theme change"));
+console.log('Browser Theme Module: Added listener for theme changes.');
+
+// 3. Ensure application after DOM is fully loaded
+function onDOMLoaded() {
+    console.log('Browser Theme Module: DOMContentLoaded event fired. Applying colors again.');
+    applyBrowserColors("DOMContentLoaded");
 }
 
-console.log('Browser Theme Module Loaded - Browser and Dark Mode Status:');
-console.log('Browser:', detectBrowser());
-console.log('Dark Mode:', prefersDarkMode.matches);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onDOMLoaded);
+} else {
+    // DOM is already ready, call the function directly (or with a tiny delay if needed)
+    console.log('Browser Theme Module: DOM already loaded. Applying colors immediately.');
+    onDOMLoaded(); 
+}
+
+console.log('Browser Theme Module: Initialization complete.');
+console.log('Browser Theme Module: Initial Browser:', detectBrowser());
+console.log('Browser Theme Module: Initial Dark Mode:', prefersDarkMode.matches);

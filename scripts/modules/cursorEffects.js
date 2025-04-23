@@ -24,10 +24,8 @@ export const transformConfig = {
   },
   // Configuration for reflection element
   reflection: {
-    translateXRange: 6,  // -10% to 10% translation on X axis
-    translateYRange: 3,  // -10% to 10% translation on Y axis
-    rotateXRange: -4,     // Synchronized with panel rotation
-    rotateYRange: 2,     // Synchronized with panel rotation
+    translateXRange: 2,  // -10% to 10% translation on X axis
+    translateYRange: 2,  // -10% to 10% translation on Y axis
     inverted: true        // Move in opposite direction
   },
   
@@ -50,9 +48,7 @@ class CursorEffectsController {
   #isInitialized = false;
   #animationFrameId = null;
   #lastUpdateTime = 0;
-  #debugElement = null;
-  #isDebugging = true; // Set to true to enable debug mode
-  
+
   constructor() {
     this.#detectDeviceType();
   }
@@ -67,11 +63,6 @@ class CursorEffectsController {
     this.#panel = document.getElementById('panel');
     this.#display = document.getElementById('display');
     this.#reflection = document.getElementById('reflection');
-    
-    // Setup debugging if enabled
-    if (this.#isDebugging) {
-      this.#setupDebugMode();
-    }
     
     // Check if elements exist
     const missingElements = [];
@@ -103,64 +94,6 @@ class CursorEffectsController {
       this.#display ? '#display' : 'display not found', 
       this.#reflection ? '#reflection' : 'reflection not found'
     );
-  }
-  
-  /**
-   * Setup debug mode with visual feedback
-   */
-  #setupDebugMode() {
-    // Create debug element if it doesn't exist
-    if (!this.#debugElement) {
-      this.#debugElement = document.createElement('div');
-      this.#debugElement.id = 'cursor-effects-debug';
-      this.#debugElement.style.position = 'fixed';
-      this.#debugElement.style.bottom = '10px';
-      this.#debugElement.style.left = '10px';
-      this.#debugElement.style.padding = '10px';
-      this.#debugElement.style.background = 'rgba(0,0,0,0.7)';
-      this.#debugElement.style.color = '#9ce0a9';
-      this.#debugElement.style.fontFamily = 'monospace';
-      this.#debugElement.style.fontSize = '12px';
-      this.#debugElement.style.zIndex = '9999';
-      this.#debugElement.style.maxWidth = '300px';
-      this.#debugElement.style.maxHeight = '150px';
-      this.#debugElement.style.overflow = 'auto';
-      document.body.appendChild(this.#debugElement);
-    }
-    
-    // Debug toggle button
-    const toggleButton = document.createElement('button');
-    toggleButton.textContent = 'Toggle Debug';
-    toggleButton.style.position = 'fixed';
-    toggleButton.style.bottom = '10px';
-    toggleButton.style.right = '10px';
-    toggleButton.style.zIndex = '9999';
-    toggleButton.addEventListener('click', () => {
-      this.#debugElement.style.display = this.#debugElement.style.display === 'none' ? 'block' : 'none';
-    });
-    document.body.appendChild(toggleButton);
-  }
-  
-  /**
-   * Update debug information
-   */
-  #updateDebugInfo(data) {
-    if (!this.#isDebugging || !this.#debugElement) return;
-    
-    this.#debugElement.innerHTML = `
-      <strong>Cursor Effects Debug:</strong><br>
-      Mode: ${this.#isMouseDevice ? 'Mouse' : 'Touch'}<br>
-      Initialized: ${this.#isInitialized}<br>
-      Panel: ${this.#panel ? 'Found' : 'Not Found'}<br>
-      Display: ${this.#display ? 'Found' : 'Not Found'}<br>
-      Reflection: ${this.#reflection ? 'Found' : 'Not Found'}<br>
-      Cursor X: ${(cursorXPercent * 100).toFixed(2)}%<br>
-      Cursor Y: ${(cursorYPercent * 100).toFixed(2)}%<br>
-      ${data ? `<br><strong>Transforms:</strong><br>
-      Panel: rotateX=${data.panel?.rotateX.toFixed(2)}deg, rotateY=${data.panel?.rotateY.toFixed(2)}deg<br>
-      Display: rotateX=${data.display?.rotateX.toFixed(2)}deg, rotateY=${data.display?.rotateY.toFixed(2)}deg<br>
-      Reflection: translateX=${data.reflection?.translateX.toFixed(2)}%, translateY=${data.reflection?.translateY.toFixed(2)}%, rotateX=${data.reflection?.rotateX.toFixed(2)}deg, rotateY=${data.reflection?.rotateY.toFixed(2)}deg` : ''}
-    `;
   }
   
   /**
@@ -238,7 +171,7 @@ class CursorEffectsController {
     const state = {
       panel: { rotateX: 0, rotateY: 0 },
       display: { rotateX: 0, rotateY: 0 },
-      reflection: { translateX: 0, translateY: 0, rotateX: 0, rotateY: 0 }
+      reflection: { translateX: 0, translateY: 0 }
     };
     
     let lastTimestamp = 0;
@@ -247,9 +180,6 @@ class CursorEffectsController {
       // Calculate delta time with a cap to handle tab switches/sleeps
       const deltaTime = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 16.67, 2) : 1;
       lastTimestamp = timestamp;
-      
-      // Always update debug info for every frame to ensure responsive UI
-      this.#updateDebugInfo(state);
       
       // Throttle updates for better performance
       // Only update every transformConfig.updateInterval ms
@@ -278,11 +208,7 @@ class CursorEffectsController {
       const reflectionInversionFactor = transformConfig.reflection.inverted ? -1 : 1;
       const targetReflectionTranslateX = mouseXNormalized * transformConfig.reflection.translateXRange * reflectionInversionFactor;
       const targetReflectionTranslateY = mouseYNormalized * transformConfig.reflection.translateYRange * reflectionInversionFactor;
-      
-      // Reflection rotation (synchronized with panel rotation)
-      const targetReflectionRotateX = targetPanelRotateX;
-      const targetReflectionRotateY = targetPanelRotateY;
-      
+
       // Calculate smooth interpolation factor
       const smoothFactor = transformConfig.smoothFactor * deltaTime;
       
@@ -298,9 +224,7 @@ class CursorEffectsController {
       // Reflection
       this.#smoothInterpolate(state.reflection, 'translateX', targetReflectionTranslateX, smoothFactor);
       this.#smoothInterpolate(state.reflection, 'translateY', targetReflectionTranslateY, smoothFactor);
-      this.#smoothInterpolate(state.reflection, 'rotateX', targetReflectionRotateX, smoothFactor);
-      this.#smoothInterpolate(state.reflection, 'rotateY', targetReflectionRotateY, smoothFactor);
-      
+
       // Apply transformations to DOM elements
       this.#applyPanelTransforms(state.panel);
       this.#applyDisplayTransforms(state.display);
@@ -350,12 +274,12 @@ class CursorEffectsController {
   /**
    * Apply transforms to reflection element
    */
-  #applyReflectionTransforms({ translateX, translateY, rotateX, rotateY }) {
+  #applyReflectionTransforms({ translateX, translateY }) {
     if (this.#reflection) {
-      this.#reflection.style.transform = `translate(${translateX}%, ${translateY}%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      this.#reflection.style.transform = `translate(${translateX}%, ${translateY}%)`;
     }
   }
-  
+
   /**
    * Handle window resize events
    */
