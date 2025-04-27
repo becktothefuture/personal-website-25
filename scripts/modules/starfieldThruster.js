@@ -206,8 +206,9 @@ class StarfieldThruster {
     const parent = canvas.parentElement;
     if (!parent) return;
     
-    const displayWidth = parent.clientWidth;
-    const displayHeight = parent.clientHeight;
+    // Fallback to full window if parent size is zero
+    const displayWidth = parent.clientWidth > 0 ? parent.clientWidth : window.innerWidth;
+    const displayHeight = parent.clientHeight > 0 ? parent.clientHeight : window.innerHeight;
     
     // Only update canvas dimensions if they've actually changed
     // This prevents unnecessary resets of the WebGL context
@@ -269,6 +270,8 @@ class StarfieldThruster {
   
   #drawScene() {
     const gl = this.#gl;
+    // Skip drawing if resolution isn't set
+    if (this.#resolution[0] === 0 || this.#resolution[1] === 0) return;
     // Set clear color with alpha 0 (transparent)
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);

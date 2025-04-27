@@ -39,8 +39,8 @@ import { scrollTracker } from './modules/scrollTracker.js';
 console.log('Scroll tracker initialized via self-initialization');
 
 // Import smooth scroll module - needs to be initialized right after scrollTracker
-import { initSmoothScroll } from './modules/smoothScroll.js';
-console.log('Imported smooth scroll module');
+// import { initSmoothScroll } from './modules/smoothScroll.js';
+// console.log('Imported smooth scroll module');
 
 // Import the buttonToggle module which now handles all view toggling
 import { init3DButtons } from './modules/buttonToggle.js';
@@ -108,8 +108,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // STEP 2: MODULE INITIALIZATION
         //--------------------------------------
         // Initialize smooth scrolling FIRST as it affects all scroll events
-        initSmoothScroll();
-        console.log('Smooth scrolling initialized with Lenis.js');
+        // initSmoothScroll();
+        // console.log('Smooth scrolling initialized with Lenis.js');
         
         // Initialize tracking modules (cursor, scroll effects)
         initcursorTracker(); // Fix - using lowercase 'c' to match export

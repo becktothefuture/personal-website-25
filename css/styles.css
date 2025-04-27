@@ -132,13 +132,11 @@ svg {
 
 body {
   font-variant-ligatures: common-ligatures;
-  text-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
   word-spacing: 0.04em;
   overflow: hidden;
-  min-height: 100svh;
   overscroll-behavior: none; /* Prevent overscroll */
   pointer-events: all;
-  transform-style: preserve-3d;
 }
 
 /***********************
@@ -1184,7 +1182,7 @@ body {
 /* Wall animation styles */
 .wall {
   /* Default state is managed by inline style in JavaScript */
-  transform: translateZ(calc(-1 * var(--wall-depth)));
+  /* transform: translateZ(calc(-1 * var(--wall-depth))); */
   transition: transform 0s;
 }
 
@@ -1387,4 +1385,20 @@ body {
 @keyframes runCycle {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); } /* Move 7/8 of the width (100% - one frame) */
+}
+
+/* Performance: Limit nested 3D stacking contexts by flattening deeper layers */
+.display,
+#display,
+#reflection,
+.home-content {
+  transform-style: flat !important;
+  perspective: none !important;
+}
+
+.view--active,
+.view--hidden {
+  /* single-layer GPU promotion only */
+  transform: translateZ(0) !important;
+  will-change: transform;
 }

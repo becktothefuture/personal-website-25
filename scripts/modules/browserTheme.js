@@ -102,14 +102,16 @@ function applyBrowserColors(eventSource = "initial") {
     console.log(`Browser Theme Module: Set --browser-color to ${browserColor} !important`);
     console.log(`Browser Theme Module: Set --browser-line-color to ${lineColor} !important`);
 
-    // Update meta theme-color tag
-    const metaThemeColor = document.getElementById('theme-color-meta');
-    if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', browserColor);
-        console.log(`Browser Theme Module: Updated meta theme-color to ${browserColor}`);
-    } else {
-        console.warn('Browser Theme Module: Meta theme-color tag not found.');
+    // Update or create meta theme-color tag
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+        metaThemeColor = document.createElement('meta');
+        metaThemeColor.name = 'theme-color';
+        document.head.appendChild(metaThemeColor);
+        console.log('Browser Theme Module: Created meta theme-color tag.');
     }
+    metaThemeColor.setAttribute('content', browserColor);
+    console.log(`Browser Theme Module: Updated meta theme-color to ${browserColor}`);
 }
 
 // --- Initialization --- 

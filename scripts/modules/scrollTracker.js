@@ -59,32 +59,36 @@ class ScrollTracker extends EventEmitter {
     secondsPerHour: 3600 // 1 hour = 3,600 seconds
   };
 
-  // Scroll monitoring DOM elements.
-  #mphDisplay = document.getElementById('scroll-value-milesPerHour');
-  #kphDisplay = document.getElementById('scroll-value-kmPerHour');
-  #pxpsDisplay = document.getElementById('scroll-value-pxPerSecond');
-
   constructor() {
     super();
     this.init();
   }
   
   init() {
-    // Only attach wheel event listener if not using Lenis
-    // Lenis will call onLenisScroll instead
-    window.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
-    requestAnimationFrame(this.update.bind(this));
-    
-    console.log('ScrollTracker initialized - listening for wheel events');
+      // Throttle wheel events: batch deltaY and process once per animation frame
+      let wheelTicking = false;
+      let wheelDelta = 0;
+      window.addEventListener("wheel", event => {
+        // Only prevent default when NOT using Lenis (let Lenis handle it otherwise)
+        if (!this.#state.usingLenis && typeof event.preventDefault === 'function') {
+          event.preventDefault();
+        }
+        wheelDelta = event.deltaY;
+        if (!wheelTicking) {
+          wheelTicking = true;
+          requestAnimationFrame(() => {
+            this.onWheel({ deltaY: wheelDelta });
+            wheelTicking = false;
+          });
+        }
+      }, { passive: false });
+      requestAnimationFrame(this.update.bind(this));
+      
+      console.log('ScrollTracker initialized - listening for wheel events');
   }
   
   // This method is called by native wheel events
   onWheel(event) {
-    // Don't prevent default if using Lenis - let Lenis handle the scrolling
-    if (!this.#state.usingLenis) {
-      event.preventDefault();
-    }
-    
     const delta = event.deltaY;
     // Use raw impulse without capping and always positive
     const rawImpulse = Math.abs(delta) / this.#config.scrollScalingFactor;
@@ -161,11 +165,6 @@ class ScrollTracker extends EventEmitter {
     // Convert pixels per second to kilometers per hour
     // (px/s) ÷ (px/in) ÷ (in/km) × (s/h) = km/h
     const kph = pxps / this.#conversion.pixelsPerInch / this.#conversion.inchesPerKm * this.#conversion.secondsPerHour;
-    
-    // Update displays with fixed precision format (000.00)
-    if(this.#mphDisplay) this.#mphDisplay.textContent = this.formatSpeed(mph);
-    if(this.#kphDisplay) this.#kphDisplay.textContent = this.formatSpeed(kph);
-    if(this.#pxpsDisplay) this.#pxpsDisplay.textContent = this.formatSpeed(pxps);
     
     // Emit update event.
     this.emit("normalizedUpdate", { 
