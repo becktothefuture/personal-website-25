@@ -39,7 +39,7 @@ let speed = 0,
     displayedSpeed = 0,
     totalDistance = 0;
 
-    let clickCount = 0;
+let clickCount = 0;
 let speedDecayStart = null,
     initialSpeed = 0;
 let smoothedSpeedKmh = 0,
@@ -56,11 +56,16 @@ dpi_x *= 5 / 6.5; // Adjusted based on measurement
 let miniMap = null, cursorDot = null;
 let clickCounterElement = null, distanceValueM = null, distanceValueMiles = null;
 let cursorValueElement = null;
+let isInitialized = false; // Flag to prevent multiple initializations
 
-// Initialize DOM elements
-function initializeElements() {
-  // Elements will be queried lazily in update functions
-  return true; // Indicate successful (potential) initialization
+// Initialize DOM elements lazily
+function ensureElementsInitialized() {
+  if (!miniMap) miniMap = document.getElementById('mini-map');
+  if (!cursorDot) cursorDot = document.getElementById('cursor-dot');
+  if (!clickCounterElement) clickCounterElement = document.getElementById('click-counter');
+  if (!distanceValueM) distanceValueM = document.getElementById('distance-value-m');
+  if (!distanceValueMiles) distanceValueMiles = document.getElementById('distance-value-miles');
+  if (!cursorValueElement) cursorValueElement = document.getElementById('cursor-value');
 }
 
 /***********
@@ -79,8 +84,7 @@ function updateCursorPosition() {
 
 // Update cursor value display with formatted percentages
 function updateCursorValueDisplay() {
-  // Lazily query the element if not found yet
-  if (!cursorValueElement) cursorValueElement = document.getElementById('cursor-value');
+  // Element ensured by animationLoop
   if (!cursorValueElement) return;
   
   // Format percentages to 2 decimal places
@@ -148,11 +152,7 @@ function formatSpeed(speed) {
 
 // Update DOM elements with tracking data
 function updateDebugDisplay() {
-  // Lazily query elements if not found yet
-  if (!clickCounterElement) clickCounterElement = document.getElementById('click-counter');
-  if (!distanceValueM) distanceValueM = document.getElementById('distance-value-m');
-  if (!distanceValueMiles) distanceValueMiles = document.getElementById('distance-value-miles');
-
+  // Elements ensured by animationLoop
   // Update speed values with formatted values
   if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
   // Also format distance values consistently
@@ -161,76 +161,72 @@ function updateDebugDisplay() {
 }
 
 
+// **Shared Pointer Move Logic**
+function handlePointerMove(x, y) {
+  const currentTime = performance.now();
+  
+  // Calculate percentages
+  cursorXPercent = x / window.innerWidth;
+  cursorYPercent = y / window.innerHeight;
+
+  // Calculate speed and distance metrics
+  if (prevMouseX !== null && prevMouseY !== null && prevTime !== null) {
+    const dx = x - prevMouseX;
+    const dy = y - prevMouseY;
+    const dt = (currentTime - prevTime) / 1000;
+
+    if (dt > 0) {
+      const distance = Math.hypot(dx, dy);
+      speed = distance / dt; // Raw speed calculation
+      totalDistance += distance;
+    } else {
+      speed = 0; // Avoid division by zero if dt is too small or zero
+    }
+  } else {
+      speed = 0; // No previous point to calculate speed from
+  }
+
+  // Store current values for next frame/calculation
+  prevMouseX = x;
+  prevMouseY = y;
+  prevTime = currentTime;
+}
+
 // **Mouse tracking – Event Handlers**
 function setupEventHandlers() {
-  // Throttle mousemove and touchmove events
-  let mouseMoveTicking = false;
-  let lastMouseMoveEvent = null;
-  let touchMoveTicking = false;
-  let lastTouchMoveEvent = null;
-   function updateMouseMetrics(x, y, currentTime) {
-     if (prevMouseX !== null && prevMouseY !== null && prevTime !== null) {
-       const dx = x - prevMouseX;
-       const dy = y - prevMouseY;
-       const dt = (currentTime - prevTime) / 1000;
+  let ticking = false;
+  let lastEvent = null;
 
-       if (dt > 0) {
-         const distance = Math.hypot(dx, dy);
-         speed = distance / dt;
-         totalDistance += distance;
-       }
-     }
-   }
+  function requestTick() {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        if (lastEvent) {
+          if (lastEvent.type === 'mousemove') {
+            handlePointerMove(lastEvent.clientX, lastEvent.clientY);
+          } else if (lastEvent.type === 'touchmove' && lastEvent.touches.length > 0) {
+            const touch = lastEvent.touches[0];
+            handlePointerMove(touch.clientX, touch.clientY);
+          }
+          lastEvent = null; // Clear last event after processing
+        }
+        ticking = false;
+      });
+    }
+    ticking = true;
+  }
 
   // Event Listeners
   document.addEventListener("mousemove", e => {
-    lastMouseMoveEvent = e;
-    if (!mouseMoveTicking) {
-      mouseMoveTicking = true;
-      requestAnimationFrame(() => {
-        const ev = lastMouseMoveEvent;
-        const mouseX = ev.clientX;
-        const mouseY = ev.clientY;
-        const currentTime = performance.now();
-        // Calculate percentages
-        cursorXPercent = mouseX / window.innerWidth;
-        cursorYPercent = mouseY / window.innerHeight;
-        updateMouseMetrics(mouseX, mouseY, currentTime);
-        // Store current values for next frame
-        prevMouseX = mouseX;
-        prevMouseY = mouseY;
-        prevTime = currentTime;
-        mouseMoveTicking = false;
-      });
-    }
+    lastEvent = e;
+    requestTick();
   });
 
   // Touch event handlers for mobile devices
   document.addEventListener("touchmove", e => {
     // Prevent scrolling while tracking touch
     e.preventDefault();
-    lastTouchMoveEvent = e;
-    if (!touchMoveTicking) {
-      touchMoveTicking = true;
-      requestAnimationFrame(() => {
-        const ev = lastTouchMoveEvent;
-        if (ev.touches.length > 0) {
-          const touch = ev.touches[0];
-          const touchX = touch.clientX;
-          const touchY = touch.clientY;
-          const currentTime = performance.now();
-          // Calculate percentages
-          cursorXPercent = touchX / window.innerWidth;
-          cursorYPercent = touchY / window.innerHeight;
-          updateMouseMetrics(touchX, touchY, currentTime);
-          // Store current values for next frame
-          prevMouseX = touchX;
-          prevMouseY = touchY;
-          prevTime = currentTime;
-        }
-        touchMoveTicking = false;
-      });
-    }
+    lastEvent = e;
+    requestTick();
   }, { passive: false });
 
   document.addEventListener("touchstart", (e) => {
@@ -250,56 +246,73 @@ function setupEventHandlers() {
       
       // Count touch start as a click
       clickCount++;
+      // Update click counter display immediately
+      if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
     }
   });
 
   document.addEventListener("touchend", () => {
     // Handle touch end similar to mouseout
-    speed = 0;
-    prevMouseX = null;
-    prevMouseY = null;
-    prevTime = null;
+    speed = 0; // Reset speed immediately
+    // Keep prevX/Y/Time for potential immediate next move, reset handled by mouseout/next move
   });
 
   // Reset tracking when mouse leaves window
-  document.addEventListener("mouseout", () => {
-    speed = 0;
-    prevMouseX = null;
-    prevMouseY = null;
-    prevTime = null;
+  document.addEventListener("mouseout", (e) => {
+    // Check if the mouse truly left the window, not just moving over child elements
+    if (!e.relatedTarget && !e.toElement) {
+        speed = 0;
+        // Consider resetting prevMouseX/Y/Time here if needed, but might cause jump on re-entry
+        // prevMouseX = null;
+        // prevMouseY = null;
+        // prevTime = null;
+    }
   });
 
-  // Click tracking - keep the existing click handler
-  document.addEventListener("click", () => clickCount++);
-  // Remove duplicate touchstart click counter as we've integrated it above
+  // Click tracking
+  document.addEventListener("click", () => {
+      clickCount++;
+      // Update click counter display immediately
+      if (clickCounterElement) clickCounterElement.textContent = clickCount.toString();
+  });
 }
+
 
 // **Animation loop**
 function animationLoop() {
-  // Lazily query minimap elements if not found yet
-  if (!miniMap) miniMap = document.getElementById('mini-map');
-  if (!cursorDot) cursorDot = document.getElementById('cursor-dot');
+  // Ensure DOM elements are available
+  ensureElementsInitialized();
 
-  updateCursorPosition();
-  updateMouseSpeed();
+  // Update calculations
+  updateMouseSpeed(); // Updates displayedSpeed based on raw speed
   updateDistanceMetrics();
+
+  // Update visuals
+  updateCursorPosition();
   updateDebugDisplay();
-  updateCursorValueDisplay(); // Add call to update cursor value display
+  updateCursorValueDisplay(); 
+
+  // Log cursor position
+  console.log(`Cursor Position: X=${(cursorXPercent * 100).toFixed(2)}%, Y=${(cursorYPercent * 100).toFixed(2)}%`);
+  
   requestAnimationFrame(animationLoop);
 }
 
 // **Initialization**
 export function initcursorTracker() {
+  if (isInitialized) {
+      console.log("Mouse tracker already initialized.");
+      return;
+  }
   console.log("Initializing mouse tracker...");
 
-  if (!initializeElements()) {
-    console.error("Failed to initialize mouse tracker");
-    return;
-  }
+  // Initial check for essential elements (optional, depends on requirements)
+  // ensureElementsInitialized(); 
 
   setupEventHandlers();
   animationLoop();
 
+  isInitialized = true; // Set flag
   console.log("Mouse tracker initialized successfully");
 }
 

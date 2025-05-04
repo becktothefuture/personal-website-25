@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified Loader Demo</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .content {
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 20vh;
+        }
+        
+        .content.visible {
+            display: block;
+        }
+        
+        button {
+            background: #333;
+            color: white;
+            border: 0;
+            padding: 10px 20px;
+            margin: 20px 10px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        /* Loader styles */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: "UncutSans-Regular", sans-serif;
+        }
+        
+        .loader-graphic {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+        }
+        
+        #loading-text {
+            font-size: 16px;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            min-height: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader elements -->
+    <div class="loader">
+        <div class="loader-graphic">
+            <svg viewBox="0 0 100 100" width="100%" height="100%">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="30 15">
+                    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="12s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="50" cy="50" r="30" fill="none" stroke="#fff" stroke-width="0.75" stroke-dasharray="20 10">
+                    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="-360 50 50" dur="8s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="50" cy="50" r="2" fill="#fff" />
+            </svg>
+        </div>
+        <div id="loading-text"></div>
+    </div>
+      
+    <!-- Content that will be shown once loaded -->
+    <div id="main-content" class="content">
+        <h1>Website Content</h1>
+        <p>This content appears after the loader completes or is dismissed.</p>
+        <button id="show-loader-btn">Show Loader Again</button>
+        <button id="hide-loader-btn">Hide Loader</button>
+    </div>
+    
+    <script type="module">
+        import { showLoader, hideLoader } from './scripts/modules/loader.js';
+        
+        // Function to show/hide elements
+        function showContent() {
+            document.getElementById('main-content').classList.add('visible');
+            document.querySelector('.loader').style.display = 'none';
+        }
+        
+        function showLoaderElement() {
+            document.getElementById('main-content').classList.remove('visible');
+            document.querySelector('.loader').style.display = 'flex';
+        }
+        
+        // Start loader immediately
+        showLoader();
+        
+        // Simulate Webflow load completion (for demo purposes)
+        setTimeout(() => {
+            hideLoader();
+            showContent();
+        }, 15000); // Simulate a 15-second load time
+        
+        // Buttons to control loader
+        document.getElementById('show-loader-btn').addEventListener('click', () => {
+            showLoaderElement();
+            showLoader();
+        });
+        
+        document.getElementById('hide-loader-btn').addEventListener('click', () => {
+            hideLoader();
+            showContent();
+        });
+    </script>
+</body>
+</html>

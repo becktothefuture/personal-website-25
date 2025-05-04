@@ -47,6 +47,9 @@ import { init3DButtons } from './modules/buttonToggle.js';
 // DEPRECATED: viewToggle.js functionality moved to buttonToggle.js
 // import initViewToggle from './modules/viewToggle.js';
 
+// Correct import statement for loader.js
+import { showLoader, hideLoader } from './modules/loader.js';
+
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
