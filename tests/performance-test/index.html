@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Optimization Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    #panel {
+      width: 300px;
+      height: 200px;
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      margin: 20px auto;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    #reflection {
+      width: 200px;
+      height: 100px;
+      background: rgba(255,255,255,0.2);
+      margin: 20px auto;
+      border-radius: 50%;
+    }
+    #depth-wrapper {
+      width: 250px;
+      height: 150px;
+      background: linear-gradient(45deg, #f6d365, #fda085);
+      margin: 20px auto;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .metrics {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .metric-label {
+      font-weight: bold;
+    }
+    .fps-meter {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    #test-button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #test-button:hover {
+      background: #45a049;
+    }
+    #device-info {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    .test-result {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .pass {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .fail {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center;">Performance Optimization Test</h1>
+  
+  <div id="device-info"></div>
+  
+  <div class="metrics">
+    <div class="metric-row">
+      <span class="metric-label">Distance (meters):</span>
+      <span id="distance-value-m">000.00</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Distance (miles):</span>
+      <span id="distance-value-miles">000.00</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Click counter:</span>
+      <span id="click-counter">0</span>
+    </div>
+  </div>
+  
+  <div id="panel"></div>
+  <div id="reflection"></div>
+  <div id="depth-wrapper"></div>
+  
+  <div id="test-results"></div>
+  
+  <button id="test-button">Run Performance Tests</button>
+  
+  <div class="fps-meter">FPS: <span id="fps">60</span></div>
+  
+  <script type="module">
+    // Import the modules we want to test
+    import { initcursorTracker } from '../../scripts/modules/cursorTracker.js';
+    import { initCursorEffects } from '../../scripts/modules/cursorEffects.js';
+    
+    // FPS counter implementation
+    const fpsCounter = {
+      fps: 0,
+      frames: 0,
+      lastTime: performance.now(),
+      
+      tick() {
+        this.frames++;
+        const now = performance.now();
+        const elapsed = now - this.lastTime;
+        
+        if (elapsed >= 1000) {
+          this.fps = Math.round((this.frames * 1000) / elapsed);
+          this.frames = 0;
+          this.lastTime = now;
+          document.getElementById('fps').textContent = this.fps;
+        }
+        
+        requestAnimationFrame(() => this.tick());
+      }
+    };
+    
+    // Start FPS counter
+    fpsCounter.tick();
+    
+    // Detect device type
+    function detectDeviceType() {
+      const isTouchDevice = 'ontouchstart' in window && 
+                            navigator.maxTouchPoints > 0 && 
+                            !window.matchMedia('(pointer: fine)').matches;
+      
+      document.getElementById('device-info').textContent = 
+        `Detected device type: ${isTouchDevice ? 'Touch device' : 'Mouse device'}`;
+      
+      return !isTouchDevice;
+    }
+    
+    // Initialize modules
+    initcursorTracker();
+    initCursorEffects();
+    
+    // Test functions
+    const tests = {
+      testFPS() {
+        return {
+          name: "FPS Test",
+          pass: fpsCounter.fps >= 30,
+          message: `Current FPS: ${fpsCounter.fps} - ${fpsCounter.fps >= 30 ? 'Good' : 'Performance issue detected'}`
+        };
+      },
+      
+      testCursorTrackerExports() {
+        // Import again to test exports
+        return import('../../scripts/modules/cursorTracker.js').then(module => {
+          return {
+            name: "Cursor Tracker Exports",
+            pass: typeof module.cursorXPercent === 'number' && typeof module.cursorYPercent === 'number',
+            message: `Cursor Tracker exports cursorXPercent and cursorYPercent as expected`
+          };
+        });
+      },
+      
+      testTouchDetection() {
+        const isMouseDevice = detectDeviceType();
+        return {
+          name: "Touch Detection",
+          pass: true, // Always pass, this is informational
+          message: `Device detection working: ${isMouseDevice ? 'Mouse' : 'Touch'} device detected`
+        };
+      }
+    };
+    
+    // Run tests when button is clicked
+    document.getElementById('test-button').addEventListener('click', async () => {
+      const resultsContainer = document.getElementById('test-results');
+      resultsContainer.innerHTML = '<h2>Test Results:</h2>';
+      
+      // Run each test
+      for (const [name, testFn] of Object.entries(tests)) {
+        try {
+          const result = await testFn();
+          const resultElement = document.createElement('div');
+          resultElement.className = `test-result ${result.pass ? 'pass' : 'fail'}`;
+          resultElement.innerHTML = `<strong>${result.name}:</strong> ${result.message}`;
+          resultsContainer.appendChild(resultElement);
+        } catch (error) {
+          const errorElement = document.createElement('div');
+          errorElement.className = 'test-result fail';
+          errorElement.innerHTML = `<strong>${name}:</strong> Error - ${error.message}`;
+          resultsContainer.appendChild(errorElement);
+        }
+      }
+      
+      // Create a summary
+      const summaryElement = document.createElement('div');
+      const allPassed = Array.from(resultsContainer.querySelectorAll('.test-result')).every(el => el.classList.contains('pass'));
+      summaryElement.className = `test-result ${allPassed ? 'pass' : 'fail'}`;
+      summaryElement.innerHTML = `<strong>Summary:</strong> ${allPassed ? 'All tests passed!' : 'Some tests failed.'}`;
+      resultsContainer.appendChild(summaryElement);
+    });
+  </script>
+</body>
+</html>

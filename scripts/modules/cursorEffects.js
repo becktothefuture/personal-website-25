@@ -1,41 +1,39 @@
 /**
- * Cursor Effects Module
+ * Cursor Effects Module - Optimized Version
  * -----------------------------
- * Controls the 3D perspective movement of elements based on:
- * 1. Mouse position (for devices with mouse/pointer)
- * 2. Automatic animations (for touch devices)
- * 
- * @requires ./cursorTracker.js
+ * Controls the 3D perspective movement of elements with performance optimizations:
+ * 1. Automatically disabled on touch devices
+ * 2. Heavily throttled updates
+ * 3. Simplified DOM operations
  */
 
 import { cursorXPercent, cursorYPercent } from './cursorTracker.js';
 
-// Configuration for element transformations
+// Configuration for element transformations - more conservative values
 export const transformConfig = {
   // Configuration for panel element
   panel: {
-    rotateXRange: 2,  // -2 to 2 deg rotation on X axis
-    rotateYRange: 2   // -2 to 2 deg rotation on Y axis
+    rotateXRange: 1.5,  // Reduced from 2 to 1.5 deg
+    rotateYRange: 1.5   // Reduced from 2 to 1.5 deg
   },
   // Configuration for reflection element
   reflection: {
-    translateXRange: 2,  // -2% to 2% translation on X axis
-    translateYRange: 2,  // -2% to 2% translation on Y axis
-    inverted: true        // Move in opposite direction
+    translateXRange: 1.5, // Reduced from 2 to 1.5%
+    translateYRange: 1.5, // Reduced from 2 to 1.5%
+    inverted: true       // Move in opposite direction
   },
-  // Configuration for depth-wrapper element (NEW)
+  // Configuration for depth-wrapper element
   depthWrapper: {
-    rotateXRange: 1.5, // -1.5 to 1.5 deg rotation on X axis
-    rotateYRange: 1.5  // -1.5 to 1.5 deg rotation on Y axis
+    rotateXRange: 1,    // Reduced from 1.5 to 1 deg
+    rotateYRange: 1     // Reduced from 1.5 to 1 deg
   },
 
-  // Animation settings
-  smoothFactor: 0.1,      // Adjusted for slightly faster response
-  updateInterval: 10,     // Update interval in ms (throttle for performance)
+  // Animation settings - increased for better performance
+  smoothFactor: 0.05,   // Lower for smoother but slower transitions
+  updateInterval: 100,  // Increased from 10ms to 100ms for significant throttling
   animation: {
-    duration: '0.3s',
-    easing: 'ease-out',   // Using ease-out for more natural movement
-    touchDuration: '40s'
+    duration: '0.5s',   // Longer animation for smoother feel
+    easing: 'ease-out',
   }
 };
 
@@ -43,7 +41,7 @@ class CursorEffectsController {
   // Private class fields
   #panel = null;
   #reflection = null;
-  #depthWrapper = null; // NEW: Add depthWrapper element
+  #depthWrapper = null;
   #isMouseDevice = false;
   #isInitialized = false;
   #animationFrameId = null;
@@ -59,90 +57,80 @@ class CursorEffectsController {
   init() {
     if (this.#isInitialized) return;
 
+    // If it's a touch device, don't initialize animation effects
+    if (!this.#isMouseDevice) {
+      console.log('Cursor effects disabled on touch device');
+      return;
+    }
+
     // Find and cache required DOM elements - using getElementById for better performance
     this.#panel = document.getElementById('panel');
     this.#reflection = document.getElementById('reflection');
-    this.#depthWrapper = document.getElementById('depth-wrapper'); // NEW: Find depthWrapper
+    this.#depthWrapper = document.getElementById('depth-wrapper');
 
     // Check if elements exist
     const missingElements = [];
     if (!this.#panel) missingElements.push('#panel');
     if (!this.#reflection) missingElements.push('#reflection');
-    if (!this.#depthWrapper) missingElements.push('#depth-wrapper'); // NEW: Check depthWrapper
+    if (!this.#depthWrapper) missingElements.push('#depth-wrapper');
 
     if (missingElements.length > 0) {
       console.warn(`Elements not found for cursor effects: ${missingElements.join(', ')}`);
-      // Continue anyway - elements might be added dynamically or queried lazily
     }
 
-    // Initialize based on device type
-    if (this.#isMouseDevice) {
+    // Only initialize mouse control on mouse devices with detected elements
+    if (this.#panel || this.#reflection || this.#depthWrapper) {
       this.#setupMouseControl();
+      this.#isInitialized = true;
+      console.log('Cursor effects initialized in mouse mode');
     } else {
-      this.#setupTouchAnimation();
+      console.log('No elements found for cursor effects, initialization skipped');
     }
 
-    this.#isInitialized = true;
-    console.log(`Cursor effects initialized in ${this.#isMouseDevice ? 'mouse' : 'touch'} mode`);
-
-    // Handle resize events with passive listener for better performance
-    window.addEventListener('resize', this.#handleResize.bind(this), { passive: true });
-
-    // Log initial state
-    console.log('Cursor effects targeting:',
-      this.#panel ? '#panel' : 'panel not found',
-      this.#reflection ? '#reflection' : 'reflection not found',
-      this.#depthWrapper ? '#depth-wrapper' : 'depth-wrapper not found' // NEW: Log depthWrapper
-    );
+    // Handle window resize with debounce for better performance
+    const debouncedResize = this.#debounce(this.#handleResize.bind(this), 250);
+    window.addEventListener('resize', debouncedResize, { passive: true });
   }
 
   /**
    * Detect if user is on a mouse device or touch device
    */
   #detectDeviceType() {
-    // Simplified detection that prioritizes mouse input devices
-    // This improves compatibility across devices that have both touch and mouse capabilities
-    this.#isMouseDevice = true; // Default to mouse device for better compatibility
+    // For consistent results, use the same detection logic as cursorTracker.js
+    this.#isMouseDevice = true; // Default to mouse device
 
-    // Only set to false if it's definitively a touch-only device
+    // Set to false if it's a touch-only device
     if ('ontouchstart' in window &&
         navigator.maxTouchPoints > 0 &&
         !window.matchMedia('(pointer: fine)').matches) {
       this.#isMouseDevice = false;
     }
 
-    console.log(`Device detected as: ${this.#isMouseDevice ? 'mouse' : 'touch'} device`);
+    console.log(`Cursor effects device detection: ${this.#isMouseDevice ? 'mouse' : 'touch'} device`);
   }
 
   /**
-   * Apply CSS animations for touch devices
+   * Debounce function to prevent excessive function calls
    */
-  #setupTouchAnimation() {
-    this.#clearStyles();
-
-    // Apply transitions for smooth movement
-    const transition = `transform ${transformConfig.animation.duration} ${transformConfig.animation.easing}`;
-
-    // Apply transitions to elements
-    if (this.#panel) this.#panel.style.transition = transition;
-    if (this.#reflection) this.#reflection.style.transition = transition;
-    if (this.#depthWrapper) this.#depthWrapper.style.transition = transition; // NEW: Apply to depthWrapper
-
-    // For touch devices, we could add automatic animations if needed
-    // Note: Currently no automatic animations are implemented to keep it simple
+  #debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
   }
 
   /**
-   * Set up mouse-controlled movement
+   * Set up mouse-controlled movement with performance optimizations
    */
   #setupMouseControl() {
     this.#clearStyles();
 
     // Set will-change property for better performance
-    // This hints the browser to prepare for upcoming transforms
+    // Only set on elements that exist to avoid unnecessary DOM operations
     if (this.#panel) this.#panel.style.willChange = 'transform';
     if (this.#reflection) this.#reflection.style.willChange = 'transform';
-    if (this.#depthWrapper) this.#depthWrapper.style.willChange = 'transform'; // NEW: Apply to depthWrapper
+    if (this.#depthWrapper) this.#depthWrapper.style.willChange = 'transform';
 
     this.#startMouseControlLoop();
   }
@@ -151,8 +139,7 @@ class CursorEffectsController {
    * Clear all animation styles
    */
   #clearStyles() {
-    // Reset all styles on elements
-    // NEW: Added this.#depthWrapper to the list
+    // Reset all styles on elements that exist
     for (const element of [this.#panel, this.#reflection, this.#depthWrapper]) {
       if (element) {
         element.style.animation = 'none';
@@ -164,15 +151,14 @@ class CursorEffectsController {
   }
 
   /**
-   * Animation loop for mouse-controlled movement
-   * Uses requestAnimationFrame with throttling for better performance
+   * Animation loop for mouse-controlled movement - optimized for performance
    */
   #startMouseControlLoop() {
     // State objects to track current transform values
     const state = {
       panel: { rotateX: 0, rotateY: 0 },
       reflection: { translateX: 0, translateY: 0 },
-      depthWrapper: { rotateX: 0, rotateY: 0 } // NEW: Add state for depthWrapper
+      depthWrapper: { rotateX: 0, rotateY: 0 }
     };
 
     let lastTimestamp = 0;
@@ -182,8 +168,7 @@ class CursorEffectsController {
       const deltaTime = lastTimestamp ? Math.min((timestamp - lastTimestamp) / 16.67, 2) : 1;
       lastTimestamp = timestamp;
 
-      // Throttle updates for better performance
-      // Only update every transformConfig.updateInterval ms
+      // Heavily throttle updates for improved performance
       if (timestamp - this.#lastUpdateTime < transformConfig.updateInterval) {
         this.#animationFrameId = requestAnimationFrame(animationStep);
         return;
@@ -191,67 +176,82 @@ class CursorEffectsController {
 
       this.#lastUpdateTime = timestamp;
 
-      // Lazily query elements if not found during init
-      if (!this.#panel) this.#panel = document.getElementById('panel');
-      if (!this.#reflection) this.#reflection = document.getElementById('reflection');
-      if (!this.#depthWrapper) this.#depthWrapper = document.getElementById('depth-wrapper'); // NEW: Lazy query depthWrapper
-
       // Normalize mouse position to range -1 to 1
       const mouseXNormalized = (cursorXPercent - 0.5) * 2;
       const mouseYNormalized = (cursorYPercent - 0.5) * 2;
 
       // Calculate transform values
+      if (this.#panel) {
+        // Panel rotation
+        const targetPanelRotateX = mouseYNormalized * transformConfig.panel.rotateXRange;
+        const targetPanelRotateY = -mouseXNormalized * transformConfig.panel.rotateYRange;
+        
+        // Interpolate values for smooth transitions
+        this.#smoothInterpolate(state.panel, 'rotateX', targetPanelRotateX, transformConfig.smoothFactor * deltaTime);
+        this.#smoothInterpolate(state.panel, 'rotateY', targetPanelRotateY, transformConfig.smoothFactor * deltaTime);
+        
+        // Apply transforms
+        this.#applyPanelTransforms(state.panel);
+      }
 
-      // Panel rotation
-      const targetPanelRotateX = mouseYNormalized * transformConfig.panel.rotateXRange;
-      const targetPanelRotateY = -mouseXNormalized * transformConfig.panel.rotateYRange;
+      if (this.#reflection) {
+        // Reflection translation
+        const reflectionInversionFactor = transformConfig.reflection.inverted ? -1 : 1;
+        const targetReflectionTranslateX = mouseXNormalized * transformConfig.reflection.translateXRange * reflectionInversionFactor;
+        const targetReflectionTranslateY = mouseYNormalized * transformConfig.reflection.translateYRange * reflectionInversionFactor;
+        
+        // Interpolate values
+        this.#smoothInterpolate(state.reflection, 'translateX', targetReflectionTranslateX, transformConfig.smoothFactor * deltaTime);
+        this.#smoothInterpolate(state.reflection, 'translateY', targetReflectionTranslateY, transformConfig.smoothFactor * deltaTime);
+        
+        // Apply transforms
+        this.#applyReflectionTransforms(state.reflection);
+      }
 
-      // Reflection translation (opposite direction if inverted is true)
-      const reflectionInversionFactor = transformConfig.reflection.inverted ? -1 : 1;
-      const targetReflectionTranslateX = mouseXNormalized * transformConfig.reflection.translateXRange * reflectionInversionFactor;
-      const targetReflectionTranslateY = mouseYNormalized * transformConfig.reflection.translateYRange * reflectionInversionFactor;
-
-      // NEW: DepthWrapper rotation
-      const targetDepthWrapperRotateX = mouseYNormalized * transformConfig.depthWrapper.rotateXRange;
-      const targetDepthWrapperRotateY = -mouseXNormalized * transformConfig.depthWrapper.rotateYRange;
-
-
-      // Calculate smooth interpolation factor
-      // Use a slightly different factor if needed, or keep it consistent
-      const smoothFactor = transformConfig.smoothFactor * deltaTime;
-
-      // Interpolate values for smooth transitions
-      // Panel
-      this.#smoothInterpolate(state.panel, 'rotateX', targetPanelRotateX, smoothFactor);
-      this.#smoothInterpolate(state.panel, 'rotateY', targetPanelRotateY, smoothFactor);
-
-      // Reflection
-      this.#smoothInterpolate(state.reflection, 'translateX', targetReflectionTranslateX, smoothFactor);
-      this.#smoothInterpolate(state.reflection, 'translateY', targetReflectionTranslateY, smoothFactor);
-
-      // NEW: DepthWrapper
-      this.#smoothInterpolate(state.depthWrapper, 'rotateX', targetDepthWrapperRotateX, smoothFactor);
-      this.#smoothInterpolate(state.depthWrapper, 'rotateY', targetDepthWrapperRotateY, smoothFactor);
-
-
-      // Apply transformations to DOM elements
-      this.#applyPanelTransforms(state.panel);
-      this.#applyReflectionTransforms(state.reflection);
-      this.#applyDepthWrapperTransforms(state.depthWrapper); // NEW: Apply depthWrapper transforms
-
-      // Log current transform values every second (removed previous debug logs)
-      // if (Math.floor(timestamp / 1000) !== Math.floor(lastTimestamp / 1000)) {
-      //   console.log('Current transforms:', {
-      //     panel: { ...state.panel },
-      //     reflection: { ...state.reflection },
-      //     depthWrapper: { ...state.depthWrapper } // NEW: Log depthWrapper state
-      //   });
-      // }
+      if (this.#depthWrapper) {
+        // DepthWrapper rotation
+        const targetDepthWrapperRotateX = mouseYNormalized * transformConfig.depthWrapper.rotateXRange;
+        const targetDepthWrapperRotateY = -mouseXNormalized * transformConfig.depthWrapper.rotateYRange;
+        
+        // Interpolate values
+        this.#smoothInterpolate(state.depthWrapper, 'rotateX', targetDepthWrapperRotateX, transformConfig.smoothFactor * deltaTime);
+        this.#smoothInterpolate(state.depthWrapper, 'rotateY', targetDepthWrapperRotateY, transformConfig.smoothFactor * deltaTime);
+        
+        // Apply transforms
+        this.#applyDepthWrapperTransforms(state.depthWrapper);
+      }
 
       this.#animationFrameId = requestAnimationFrame(animationStep);
     };
 
     this.#animationFrameId = requestAnimationFrame(animationStep);
+  }
+
+  /**
+   * Smoothly interpolate a value for fluid animation
+   */
+  #smoothInterpolate(obj, key, targetValue, smoothFactor) {
+    if (obj[key] === undefined) obj[key] = 0;
+    // Clamp smoothFactor to prevent overshooting with large deltaTime
+    const effectiveSmoothFactor = Math.min(smoothFactor, 1);
+    obj[key] += effectiveSmoothFactor * (targetValue - obj[key]);
+    // Snap to target when very close to prevent micro-movements
+    if (Math.abs(obj[key] - targetValue) < 0.001) {
+      obj[key] = targetValue;
+    }
+  }
+
+  /**
+   * Apply transforms to panel element
+   */
+  #applyPanelTransforms({ rotateX, rotateY }) {
+    this.#panel.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  }
+
+  /**
+   * Apply transforms to reflection element
+   */
+  #applyReflectionTransforms({ translateX, translateY }) {
   }
 
   /**
