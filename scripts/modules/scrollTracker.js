@@ -6,8 +6,6 @@
  * A module that provides scroll tracking functionality by monitoring wheel events and 
  * calculating normalized speed and acceleration values. This creates a physics-based
  * scroll experience that can be consumed by other components.
- * 
- * Now includes integration with Lenis.js for smooth scrolling
  */
 
 // Simple event emitter for decoupled communication
@@ -43,8 +41,7 @@ class ScrollTracker extends EventEmitter {
   #state = {
     speed: 0,
     acceleration: 0,
-    lastImpulse: 0, // Added to track the last impulse for reference
-    usingLenis: false // Flag to track if we're using Lenis for smooth scrolling
+    lastImpulse: 0  // Added to track the last impulse for reference
   };
 
   // Conversion factors and constants
@@ -69,10 +66,6 @@ class ScrollTracker extends EventEmitter {
       let wheelTicking = false;
       let wheelDelta = 0;
       window.addEventListener("wheel", event => {
-        // Only prevent default when NOT using Lenis (let Lenis handle it otherwise)
-        if (!this.#state.usingLenis && typeof event.preventDefault === 'function') {
-          event.preventDefault();
-        }
         wheelDelta = event.deltaY;
         if (!wheelTicking) {
           wheelTicking = true;
@@ -81,7 +74,7 @@ class ScrollTracker extends EventEmitter {
             wheelTicking = false;
           });
         }
-      }, { passive: false });
+      }, { passive: true });
       requestAnimationFrame(this.update.bind(this));
       
       console.log('ScrollTracker initialized - listening for wheel events');
@@ -107,53 +100,26 @@ class ScrollTracker extends EventEmitter {
     });
   }
   
-  // NEW: Method to receive scroll data from Lenis
-  onLenisScroll(data) {
-    // Mark that we're using Lenis for scrolling
-    this.#state.usingLenis = true;
-    
-    // Use velocity from Lenis directly when available
-    if (data.normalizedAcceleration !== undefined) {
-      this.#state.acceleration = data.normalizedAcceleration;
-    }
-    
-    // If Lenis provides a speed value, use it directly
-    if (data.normalizedSpeed !== undefined) {
-      this.#state.speed = Math.min(data.normalizedSpeed, this.#config.maxSpeed);
-    }
-    
-    this.emit("scroll", { 
-      normalizedAcceleration: this.#state.acceleration, 
-      normalizedSpeed: this.#state.speed,
-      lastImpulse: this.#state.lastImpulse,
-      usingLenis: true,
-      ...data // Include all Lenis data for consumers who need it
-    });
-  }
-  
   update() {
     const dt = 0.016; // ~60fps
     
-    // Only apply physics simulation if not directly using Lenis values
-    if (!this.#state.usingLenis) {
-      // Integrate acceleration to update speed with smoother ramping
-      const accelerationImpact = this.#state.acceleration * dt;
-      // Apply a more gradual acceleration curve for smoother starts
-      this.#state.speed += accelerationImpact * (1 - this.#state.speed * 0.5);
-      
-      // Cap speed at max value
-      this.#state.speed = Math.min(this.#state.speed, this.#config.maxSpeed);
-      // Ensure speed is never negative
-      this.#state.speed = Math.max(this.#state.speed, 0);
-      
-      // Apply friction decay to speed with improved dampening formula
-      // This provides stronger dampening at higher speeds
-      const dampFactor = 1 - dt * (this.#config.speedDecayRate * (1 + this.#state.speed));
-      this.#state.speed *= dampFactor;
-      
-      // Exponential decay on acceleration (higher value = faster decay)
-      this.#state.acceleration *= Math.exp(-this.#config.accelerationDecayRate * dt);
-    }
+    // Integrate acceleration to update speed with smoother ramping
+    const accelerationImpact = this.#state.acceleration * dt;
+    // Apply a more gradual acceleration curve for smoother starts
+    this.#state.speed += accelerationImpact * (1 - this.#state.speed * 0.5);
+    
+    // Cap speed at max value
+    this.#state.speed = Math.min(this.#state.speed, this.#config.maxSpeed);
+    // Ensure speed is never negative
+    this.#state.speed = Math.max(this.#state.speed, 0);
+    
+    // Apply friction decay to speed with improved dampening formula
+    // This provides stronger dampening at higher speeds
+    const dampFactor = 1 - dt * (this.#config.speedDecayRate * (1 + this.#state.speed));
+    this.#state.speed *= dampFactor;
+    
+    // Exponential decay on acceleration (higher value = faster decay)
+    this.#state.acceleration *= Math.exp(-this.#config.accelerationDecayRate * dt);
     
     // Calculate pixels per second first (our base measurement)
     const pxps = this.#state.speed * this.#conversion.pixelsPerSecond;
@@ -221,8 +187,7 @@ class ScrollTracker extends EventEmitter {
       acceleration: this.#state.acceleration,
       lastImpulse: this.#state.lastImpulse,
       velocityMS: this.getPixelsPerSecond() / this.#conversion.pixelsPerInch / 39.37, // m/s
-      velocityKMH: this.getKilometersPerHour(),
-      usingLenis: this.#state.usingLenis
+      velocityKMH: this.getKilometersPerHour()
     };
   }
 }

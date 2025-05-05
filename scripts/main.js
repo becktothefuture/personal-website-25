@@ -38,7 +38,7 @@ console.log('Browser theme initialized via self-initialization');
 import { scrollTracker } from './modules/scrollTracker.js';
 console.log('Scroll tracker initialized via self-initialization');
 
-// Import smooth scroll module - needs to be initialized right after scrollTracker
+// Remove smooth scroll module - now handled by Webflow
 // import { initSmoothScroll } from './modules/smoothScroll.js';
 // console.log('Imported smooth scroll module');
 
@@ -112,10 +112,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 2: MODULE INITIALIZATION
         //--------------------------------------
-        // Initialize smooth scrolling FIRST as it affects all scroll events
-        // initSmoothScroll();
-        // console.log('Smooth scrolling initialized with Lenis.js');
-        
         // Initialize tracking modules (cursor, scroll effects)
         initcursorTracker(); // Fix - using lowercase 'c' to match export
         // scrollTracker is already initialized on import, don't call it as a function
