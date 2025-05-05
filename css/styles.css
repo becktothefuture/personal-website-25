@@ -59,52 +59,19 @@
   --speech-text: var(--color-1);
   --speech-border: var(--color-2);
 
-  /* Base Intensity Controls (min: 0.1, max: 5.0, default: 2.0) */
-  --crt-intensity: 3;
-  --crt-brightness: 2; /* min: 0.5, max: 3.0 */
-  --crt-contrast: 2; /* min: 0.8, max: 4.0 */
 
-  /* Color and Glow Settings */
-  --crt-primary-color: 156, 224, 169;
-  --ambient-glow: rgba(0, 0, 0, 0.466); /* min: 0.05, max: 0.6 */
+  /* CRT Effect Controls - Simplified */
+  --crt-color: var(--color-3);        /* Main glow color (corresponds to color-1) */
+  --crt-glow-strength: 50px;   /* Inner glow strength - increased from 15px */
+  --crt-glow-spread: 50px;     /* Outer glow spread - increased from 45px */
+  --flicker-speed: 0.s;      /* Speed of flicker animation */
+  --flicker-opacity: 0.9;      /* Opacity of flicker effect */
 
-  /* Animation Timing (in seconds) */
-  --flicker-speed: 0.01s; /* min: 0.05s, max: 2.0s */
-  --scanline-speed: 10s; /* min: 1s, max: 10s */
 
-  /* Effect Intensities */
-  --scanline-opacity: 0.5; /* min: 0.2, max: 0.9 */
-  --flicker-opacity: 0.9; /* min: 0.3, max: 1.0 */
-  --glow-strength: 5vh; /* min: 10px, max: 100px */
-  --glow-spread: 15vh; /* min: 30px, max: 200px */
-
-  /* Derived Calculations */
-  --glow-inner: calc(var(--glow-strength) * var(--crt-intensity));
-  --glow-outer: calc(var(--glow-spread) * var(--crt-intensity));
-
-  /* CRT Effect Controls */
-  --jitter-intensity: 0.45; /* min: 0.1, max: 2.0 */
-
-  /* Content Flicker Controls */
-  --content-flicker-speed: calc(var(--flicker-speed) * 1.5);
-  --content-flicker-opacity: 0.85;
-  --content-flicker-variance: 0.1;
-
-  /* Cockpit Vibration Controls */
-  --cockpit-translate-min: -1px;
-  --cockpit-translate-max: 1px;
-  --cockpit-rotate-min: -0.1deg;
-  --cockpit-rotate-max: 0.3deg;
 
   /* Overall animation settings */
   --starship-movement-duration: 30s;
   --z-movement-duration: 20s; /* Separate duration for z-movement */
-
-  /* Page – Translate */
-  --default-page-translate-z: -30px;
-  --page-translate-z: -70px;
-  --page-rotate-x: 6deg;
-  --page-rotate-y: 4deg;
 
   /* Widget  */
   --widget-animation-duration: 200ms; /* Stagger duration */
@@ -802,7 +769,7 @@ body {
 .flicker {
   position: fixed;
   inset: 0;
-  background: rgba(var(--crt-primary-color), 0.01);
+  background: rgba(156, 224, 169, 0.01); /* Direct rgba instead of var */
   animation: flickerAnimation var(--flicker-speed) infinite;
   opacity: var(--flicker-opacity);
 }
@@ -838,11 +805,13 @@ body {
   position: absolute;
   inset: -4px;
   background: transparent;
-  box-shadow: inset 0 0 var(--glow-inner) rgba(var(--crt-primary-color), 0.9),
-    inset 0 0 var(--glow-outer) rgba(var(--crt-primary-color), 0.1);
+  box-shadow: 
+    inset 0 0 var(--crt-glow-strength) var(--crt-color),
+    inset 0 0 var(--crt-glow-spread) var(--crt-color);
   pointer-events: none;
-  border-radius: var(--border-radius);
+  border-radius: 8px; /* Direct value instead of var */
   animation: glowJitter 0.1s infinite;
+  z-index: 50;
 }
 
 @keyframes glowJitter {
@@ -886,8 +855,8 @@ body {
   background: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    rgba(156, 224, 169, 0.3) 1px,
-    /* Using actual RGB values from --color-1 (#9ce0a9) */ transparent 1.1px,
+    rgba(156, 224, 169, 0.3) 1px, /* Direct RGBA instead of var */
+    transparent 1.1px,
     transparent 4px
   );
   opacity: 1;

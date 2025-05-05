@@ -48,7 +48,7 @@ import { init3DButtons } from './modules/buttonToggle.js';
 // import initViewToggle from './modules/viewToggle.js';
 
 // Correct import statement for loader.js
-import { showLoader, hideLoader } from './modules/loader.js';
+import { initLoadingText, stopAnimation } from './modules/loader.js';
 
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
@@ -83,6 +83,8 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Removed showLoader() call as it will be handled by Webflow
+        
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
         // Initialize buttonToggle first, which now handles all view toggling
@@ -137,8 +139,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         initDiffusionText();
         initInterference();
 
-
         console.log('All modules initialized');
+
+        // Removed hideLoader() call as it will be handled by Webflow
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------

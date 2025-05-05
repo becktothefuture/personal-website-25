@@ -1,66 +1,78 @@
 /**
- * Minimal Loader Module
+ * Loading Text Animation Module
  * 
- * Simple loading animation with dynamic text display that simulates 
- * computer initialization at variable speeds.
- * 
- * This script only handles text animation and targets an existing #loading-text element.
- * No DOM creation or styling is performed.
+ * Machine-like text animation that simulates a computer processing various tasks.
+ * Professional text for a design and technology-focused audience.
+ * No styling is applied - uses styles from Webflow.
  */
 
-// Single configuration object with message groups
-const loaderConfig = {
-  textGroups: [
+// Configuration with text groups and animation settings
+const textAnimConfig = {
+  groups: [
     {
-      title: "Initial System Check",
+      title: "Initialising",
       messages: [
-        "Verifying JS bundle size",
-        "Compressing hero image",
-        "Setting expectations"
+        "Parsing vectors",
+        "Mounting components",
+        "Scanning viewport",
+        "Calibrating display",
+        "Mapping inputs",
+        "Checking resolution",
+        "Loading typefaces"
       ],
-      speed: 280,
-      indicator: "dots" // Classic dots animation
+      speed: 140 // Quick technical messages
     },
     {
-      title: "Preparing Interface",
+      title: "Design System",
       messages: [
-        "Generating colour tokens",
-        "Polishing micro‑copy",
-        "Finessing tiny details"
+        "Setting constraints",
+        "Building grid",
+        "Parsing tokens",
+        "Optimising contrast",
+        "Loading variables",
+        "Applying spacing",
+        "Compiling themes"
       ],
-      speed: 950,
-      indicator: "percent" // Percentage counter
+      speed: 180 // Medium pace for design content
     },
     {
-      title: "Quality Sweep",
+      title: "Interface",
       messages: [
-        "Reviewing component rhythm",
-        "Testing type pairings",
-        "Balancing contrast levels"
+        "Crafting surfaces",
+        "Rendering states",
+        "Syncing microcopy",
+        "Applying shadows",
+        "Testing flows",
+        "Mapping gestures",
+        "Checking modals"
       ],
-      speed: 1450,
-      indicator: "blocks" // ASCII block animation
+      speed: 230 // Slower for UI elements
     },
     {
-      title: "Creative Loop",
+      title: "Experience",
       messages: [
-        "Sketching fresh variations",
-        "Letting ideas breathe",
-        "Listening to the whitespace"
+        "Timing animations",
+        "Setting transitions",
+        "Refining feedback",
+        "Smoothing scroll",
+        "Calculating easing",
+        "Mapping journeys",
+        "Polishing details"
       ],
-      speed: 420,
-      indicator: "spinner" // Text-based spinner
+      speed: 160 // Medium-fast for UX elements
     },
     {
-      title: "Technical Optimization",
+      title: "Launch",
       messages: [
-        "Scanning dependencies",
-        "Minifying resources",
-        "Optimizing render pipeline",
-        "Analyzing paint performance"
+        "Final checks",
+        "Caching assets",
+        "Optimising layers",
+        "Preparing handoff",
+        "Ready for users",
+        "Interface live",
+        "System online"
       ],
-      speed: 120, // Super fast processing
-      indicator: "none" // No animation, just rapid text changes
+      speed: 120 // Quick final messages
     }
   ]
 };
@@ -69,7 +81,6 @@ const loaderConfig = {
 let textElement = null;
 let currentGroupIndex = 0;
 let currentMessageIndex = 0;
-let indicatorFrame = 0;
 let activeTimer = null;
 let isActive = false;
 
@@ -81,224 +92,92 @@ function updateText() {
   
   clearTimeout(activeTimer);
   
-  const group = loaderConfig.textGroups[currentGroupIndex];
+  const group = textAnimConfig.groups[currentGroupIndex];
   
   // Check if we've completed messages for this group
   if (currentMessageIndex >= group.messages.length) {
-    // Move to next group immediately
     moveToNextGroup();
     return;
   }
   
+  // Simply display the text without any indicators
   const text = group.messages[currentMessageIndex];
+  textElement.textContent = text;
+  currentMessageIndex++;
   
-  // Choose animation style based on group indicator type
-  switch(group.indicator) {
-    case "dots":
-      textElement.textContent = text;
-      animateDots();
-      break;
-      
-    case "percent":
-      textElement.textContent = text;
-      animatePercentage();
-      break;
-      
-    case "blocks":
-      textElement.textContent = text;
-      animateBlocks();
-      break;
-      
-    case "spinner":
-      textElement.textContent = text;
-      animateSpinner();
-      break;
-      
-    case "none":
-    default:
-      // Just show the text and move quickly to next
-      textElement.textContent = text;
-      currentMessageIndex++;
-      
-      // For "none" type, use consistent speed with minimal randomness
-      const delay = group.speed * (0.9 + Math.random() * 0.2);
-      activeTimer = setTimeout(updateText, delay);
-      break;
-  }
-}
-
-/**
- * Classic dots animation (. .. ...)
- */
-function animateDots() {
-  if (!isActive || !textElement) return;
-  
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  const text = group.messages[currentMessageIndex];
-  
-  indicatorFrame = (indicatorFrame % 3) + 1;
-  const dots = ' ' + '.'.repeat(indicatorFrame);
-  textElement.textContent = text + dots;
-  
-  if (indicatorFrame === 3) {
-    currentMessageIndex++;
-    indicatorFrame = 0;
-    activeTimer = setTimeout(updateText, 800);
-  } else {
-    activeTimer = setTimeout(animateDots, 300);
-  }
-}
-
-/**
- * Percentage counter animation (25% 50% 75% 100%)
- */
-function animatePercentage() {
-  if (!isActive || !textElement) return;
-  
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  const text = group.messages[currentMessageIndex];
-  
-  indicatorFrame = (indicatorFrame % 4) + 1;
-  const percent = ' ' + ['25%', '50%', '75%', '100%'][indicatorFrame - 1];
-  textElement.textContent = text + percent;
-  
-  if (indicatorFrame === 4) {
-    currentMessageIndex++;
-    indicatorFrame = 0;
-    activeTimer = setTimeout(updateText, 800);
-  } else {
-    activeTimer = setTimeout(animatePercentage, 400);
-  }
-}
-
-/**
- * ASCII block loading animation (▓░░░, ▓▓░░, ▓▓▓░, ▓▓▓▓)
- */
-function animateBlocks() {
-  if (!isActive || !textElement) return;
-  
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  const text = group.messages[currentMessageIndex];
-  
-  indicatorFrame = (indicatorFrame % 4) + 1;
-  let blocks;
-  
-  switch(indicatorFrame) {
-    case 1: blocks = ' [▓░░░]'; break;
-    case 2: blocks = ' [▓▓░░]'; break;
-    case 3: blocks = ' [▓▓▓░]'; break;
-    case 4: blocks = ' [▓▓▓▓]'; break;
-  }
-  
-  textElement.textContent = text + blocks;
-  
-  if (indicatorFrame === 4) {
-    currentMessageIndex++;
-    indicatorFrame = 0;
-    activeTimer = setTimeout(updateText, 900);
-  } else {
-    activeTimer = setTimeout(animateBlocks, 500);
-  }
-}
-
-/**
- * Text spinner animation (/ - \ |)
- */
-function animateSpinner() {
-  if (!isActive || !textElement) return;
-  
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  const text = group.messages[currentMessageIndex];
-  
-  indicatorFrame = (indicatorFrame % 4) + 1;
-  const spinChars = ['/', '-', '\\', '|'];
-  const spinner = ' ' + spinChars[indicatorFrame - 1];
-  
-  textElement.textContent = text + spinner;
-  
-  if (indicatorFrame === 4) {
-    // Complete 2 full rotations before moving on
-    if (Math.random() > 0.5) {
-      currentMessageIndex++;
-      indicatorFrame = 0;
-      activeTimer = setTimeout(updateText, 600);
-    } else {
-      indicatorFrame = 0;
-      activeTimer = setTimeout(animateSpinner, 200);
-    }
-  } else {
-    activeTimer = setTimeout(animateSpinner, 200);
-  }
+  // Less randomness for more machine-like timing
+  const randomFactor = 0.9 + Math.random() * 0.2; // 0.9 to 1.1
+  const delay = group.speed * randomFactor;
+  activeTimer = setTimeout(updateText, delay);
 }
 
 /**
  * Moves to the next group of messages
  */
 function moveToNextGroup() {
-  if (!isActive || !textElement) return;
-  
   currentGroupIndex++;
   currentMessageIndex = 0;
-  indicatorFrame = 0;
   
-  // If we've completed all groups, loop back to first group
-  // (assuming this is an infinite loop until Webflow signals completion)
-  if (currentGroupIndex >= loaderConfig.textGroups.length) {
+  // Loop back to first group when complete
+  if (currentGroupIndex >= textAnimConfig.groups.length) {
     currentGroupIndex = 0;
   }
   
-  // Flash group title if available
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  if (group.title) {
-    textElement.textContent = group.title + '...';
-    
-    // Start next messages after showing title briefly
-    activeTimer = setTimeout(updateText, 1000);
-  } else {
-    // Start immediately if no title
-    updateText();
-  }
+  // Show group title with a machine-like prefix
+  const group = textAnimConfig.groups[currentGroupIndex];
+  textElement.textContent = "INIT: " + group.title;
+  
+  // Shorter pause between groups for more machine-like feel
+  activeTimer = setTimeout(updateText, 600);
 }
 
 /**
- * Shows the loader and begins text animation
+ * Initialize the loading text animation
+ * @param {string} elementId - ID of the text element to animate (default: 'loading-text')
  */
-export function showLoader() {
-  // Find existing loading-text element by ID - no DOM creation
-  textElement = document.getElementById('loading-text');
+export function initLoadingText(elementId = 'loading-text') {
+  // Clean up any existing animation
+  stopAnimation();
+  
+  // Target the text element - no styling is applied
+  textElement = document.getElementById(elementId);
   
   if (!textElement) {
-    console.error('#loading-text element not found in DOM');
-    return;
+    console.warn(`Loading text element with ID '${elementId}' not found`);
+    return false;
   }
   
   // Reset state
   currentGroupIndex = 0;
   currentMessageIndex = 0;
-  indicatorFrame = 0;
   isActive = true;
   
-  // Start with group title
-  const group = loaderConfig.textGroups[currentGroupIndex];
-  textElement.textContent = group.title + '...';
+  // Start with system startup message
+  textElement.textContent = "SYSTEM BOOT SEQUENCE INITIATED";
   
-  // Start the text animation
-  activeTimer = setTimeout(updateText, 1000);
+  // Quick transition to first group
+  activeTimer = setTimeout(() => {
+    textElement.textContent = "INIT: " + textAnimConfig.groups[0].title;
+    activeTimer = setTimeout(updateText, 600);
+  }, 800);
+  
+  return true;
 }
 
 /**
- * Hides the loader
+ * Stop the animation
  */
-export function hideLoader() {
-  // Just stop animations, don't manipulate DOM visibility
+export function stopAnimation() {
   isActive = false;
   clearTimeout(activeTimer);
-  
-  // Clear the text
   if (textElement) {
     textElement.textContent = '';
   }
 }
 
-// Export only what's needed
-export default { showLoader, hideLoader };
+// Auto-initialize when the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  initLoadingText();
+});
+
+export default { initLoadingText, stopAnimation };
