@@ -36,10 +36,12 @@ export function initLightGrid(selector = '.light-grid') {
       this.container = container;
       this.canvas = document.createElement('canvas');
       this.canvas.className = 'light-grid-canvas';
-      this.canvas.style.backgroundColor = 'transparent'; // Ensure canvas element background is transparent
+      this.canvas.style.backgroundColor = 'transparent';
       this.ctx = this.canvas.getContext('2d');
       container.appendChild(this.canvas);
       this.dots = [];
+      this.visualWidth = 0; // Initialize visual dimensions
+      this.visualHeight = 0; // Initialize visual dimensions
       if (!this.ctx) {
         console.error("Failed to get 2D context for grid canvas.");
       }
@@ -48,32 +50,30 @@ export function initLightGrid(selector = '.light-grid') {
 
     setup() {
       if (!this.ctx) return;
-      const rect = this.container.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
 
+      const dpr = window.devicePixelRatio || 1;
       const style = getComputedStyle(this.container);
+
       const paddingLeft = parseFloat(style.paddingLeft) || 0;
       const paddingRight = parseFloat(style.paddingRight) || 0;
       const paddingTop = parseFloat(style.paddingTop) || 0;
       const paddingBottom = parseFloat(style.paddingBottom) || 0;
 
-      const cssMinWidth = parseFloat(style.minWidth) || 0;
-      const cssMinHeight = parseFloat(style.minHeight) || 0;
+      // Visual dimensions (post-transform) for canvas element sizing and clearing
+      const visualRect = this.container.getBoundingClientRect();
+      this.visualWidth = visualRect.width;
+      this.visualHeight = visualRect.height;
 
-      // Canvas visual dimensions are based on actual bounding rect
-      this.width = rect.width;
-      this.height = rect.height;
-      this.canvas.width = this.width * dpr;
-      this.canvas.height = this.height * dpr;
+      this.canvas.width = this.visualWidth * dpr;
+      this.canvas.height = this.visualHeight * dpr;
       this.ctx.scale(dpr, dpr);
-      this.ctx.clearRect(0, 0, this.width, this.height); // Clear for new setup
 
-      // Layout dimensions for calculating cols/rows are based on max of visual or CSS min size
-      const layoutWidth = Math.max(this.width, cssMinWidth);
-      const layoutHeight = Math.max(this.height, cssMinHeight);
+      // Layout dimensions (pre-transform) using offsetWidth/Height for grid calculation
+      const layoutWidth = this.container.offsetWidth;
+      const layoutHeight = this.container.offsetHeight;
 
+      // Calculate content dimensions for dot layout based on untransformed size
       const contentWidthForLayout = Math.max(0, layoutWidth - paddingLeft - paddingRight);
-      const contentHeightForLayout = Math.max(0, layoutHeight - paddingTop - paddingBottom);
 
       if (spacing <= 0 || dotSize <= 0) {
         this.cols = 0;
