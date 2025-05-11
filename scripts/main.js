@@ -7,24 +7,20 @@
  * Modules and their responsibilities:
  * - browserTheme.js: Manages light/dark mode theme based on user preferences and system settings
  * - sounds.js: Handles sound system initialization, sound effects, and user audio preferences
- * - loader.js: Manages the display of loading text and animations.
+ * - intro.js: Controls the website intro/loading sequence animation
  * - resizeOverlay.js: Shows an overlay during browser resize to prevent layout jumps
  * - lightGrid.js: Manages light grid animations and responsive behaviors
  * - dateDisplay.js: Displays and updates formatted date information
  * - marqueeContent.js: Handles scrolling marquee text animations
  * - londonClock.js: Renders and updates an analog clock showing London time
+ * - flicker.js: Creates realistic flickering effects for UI elements
  * - robotAnimation.js: Controls the robot character animations and dialog system
+ * - widgetEffects.js: Manages interactive effects for various UI widgets
+ * - mousemonitors.js: Tracks mouse movement, speed and interaction metrics
  * - processorAnimations.js: Handles the multiple processor visualization animations
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * - buttonToggle.js: Manages 3D button toggling with only one active at a time AND view switching 
- * - cursorTracker.js: Tracks mouse movement, clicks, and distance.
- * - interference.js: Adds visual interference effects.
- * - intro.js: DEPRECATED: Controls the website intro/loading sequence animation
- * - starfieldThruster.js: DEPRECATED: Controls the animated starfield background with thruster effects
- * - flicker.js: DEPRECATED: Creates realistic flickering effects for UI elements
- * - widgetEffects.js: DEPRECATED: Manages interactive effects for various UI widgets
- * - mousemonitors.js: DEPRECATED: Tracks mouse movement, speed and interaction metrics
- * - widgetAnimations.js: DEPRECATED: Handles widget animations for view transitions
+ * - widgetAnimations.js: Handles widget animations for view transitions
  * - viewToggle.js: DEPRECATED: Functionality moved to buttonToggle.js
  */
 
@@ -51,6 +47,7 @@ import { init3DButtons } from './modules/buttonToggle.js';
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
+// import { initStarfieldThruster } from './modules/starfieldThruster.js'; // Removed as it's archived
 import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowercase 'c' to match export
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
@@ -110,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize all other modules after sound choice is confirmed
         initResizeOverlay(); 
+        // initStarfieldThruster(); // Removed as it's archived
         // init3DButtons already called above
         initLightGrids();
         initDateDisplay();
