@@ -36,6 +36,7 @@ export function initLightGrid(selector = '.light-grid') {
       this.container = container;
       this.canvas = document.createElement('canvas');
       this.canvas.className = 'light-grid-canvas';
+      this.canvas.style.backgroundColor = 'transparent'; // Ensure canvas element background is transparent
       this.ctx = this.canvas.getContext('2d');
       container.appendChild(this.canvas);
       this.dots = [];
