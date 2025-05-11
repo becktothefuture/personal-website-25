@@ -20,7 +20,7 @@ const textAnimConfig = {
         "Checking resolution",
         "Loading typefaces"
       ],
-      speed: 47 // Original: 140
+      speed: 80 // Original: 140
     },
     {
       title: "Design System",
@@ -33,7 +33,7 @@ const textAnimConfig = {
         "Applying spacing",
         "Compiling themes"
       ],
-      speed: 60 // Original: 180
+      speed: 80 // Original: 180
     },
     {
       title: "Interface",
@@ -46,7 +46,7 @@ const textAnimConfig = {
         "Mapping gestures",
         "Checking modals"
       ],
-      speed: 77 // Original: 230
+      speed: 120 // Original: 230
     },
     {
       title: "Experience",
@@ -59,7 +59,7 @@ const textAnimConfig = {
         "Mapping journeys",
         "Polishing details"
       ],
-      speed: 53 // Original: 160
+      speed: 80 // Original: 160
     },
     {
       title: "Launch",

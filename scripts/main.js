@@ -47,8 +47,7 @@ import { init3DButtons } from './modules/buttonToggle.js';
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
-// import { initStarfieldThruster } from './modules/starfieldThruster.js'; // Removed as it's archived
-import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowercase 'c' to match export
+import { initcursorTracker } from './modules/cursorTracker.js'; 
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
