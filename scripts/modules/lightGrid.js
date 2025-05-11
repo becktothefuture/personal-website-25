@@ -4,20 +4,6 @@
  * @param {string} selector CSS selector for container elements
  */
 export function initLightGrid(selector = '.light-grid') {
-  // Helper debounce function
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const context = this;
-      const later = () => {
-        timeout = null;
-        func.apply(context, args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
-
   const s = getComputedStyle(document.documentElement);
   const dotSize = parseFloat(s.getPropertyValue('--dot-size'));
   const spacing = parseFloat(s.getPropertyValue('--dot-spacing'));
@@ -53,8 +39,6 @@ export function initLightGrid(selector = '.light-grid') {
       this.ctx = this.canvas.getContext('2d');
       container.appendChild(this.canvas);
       this.dots = [];
-      this.onDots = [];
-      this.offDots = [];
       if (!this.ctx) {
         console.error("Failed to get 2D context for grid canvas.");
       }
@@ -65,46 +49,22 @@ export function initLightGrid(selector = '.light-grid') {
       if (!this.ctx) return;
       const rect = this.container.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-
-      // Get computed style for padding for this specific container
-      const style = getComputedStyle(this.container);
-      const paddingLeft = parseFloat(style.paddingLeft) || 0;
-      const paddingRight = parseFloat(style.paddingRight) || 0;
-      const paddingTop = parseFloat(style.paddingTop) || 0;
-      const paddingBottom = parseFloat(style.paddingBottom) || 0;
-      
-      // Overall canvas dimensions remain based on border-box (rect.width/height)
       this.width = rect.width;
       this.height = rect.height;
       this.canvas.width = this.width * dpr;
       this.canvas.height = this.height * dpr;
       this.ctx.scale(dpr, dpr);
 
-      // Calculate content dimensions available for dot layout (inside padding)
-      const contentWidth = Math.max(0, this.width - paddingLeft - paddingRight);
-      const contentHeight = Math.max(0, this.height - paddingTop - paddingBottom);
+      this.cols = Math.max(0, Math.floor((this.width - dotSize) / spacing) + 1);
+      this.rows = Math.max(0, Math.floor((this.height - dotSize) / spacing) + 1);
 
-      // Use dotSize and spacing from the outer scope (initLightGrid)
-      // Determine cols/rows based on content area, dotSize, and spacing
-      if (spacing <= 0 || dotSize <= 0 || contentWidth < dotSize || contentHeight < dotSize) {
-        this.cols = 0;
-        this.rows = 0;
-      } else {
-        // Space must be sufficient for at least one dot
-        this.cols = Math.floor((contentWidth - dotSize) / spacing) + 1;
-        this.rows = Math.floor((contentHeight - dotSize) / spacing) + 1;
-      }
-      
       const gridWidth = (this.cols > 0 ? (this.cols - 1) * spacing + dotSize : 0);
       const gridHeight = (this.rows > 0 ? (this.rows - 1) * spacing + dotSize : 0);
 
-      // Calculate offsets to center the grid within the content box
-      // offsetX/Y are relative to the canvas (0,0), which is top-left of the border-box
-      this.offsetX = paddingLeft + (contentWidth - gridWidth) / 2;
-      this.offsetY = paddingTop + (contentHeight - gridHeight) / 2;
+      this.offsetX = (this.width - gridWidth) / 2;
+      this.offsetY = (this.height - gridHeight) / 2;
 
-      this.dots.length = 0; // Clear existing dots
-      // totalPeriod is from the outer scope (initLightGrid)
+      this.dots.length = 0;
       for (let y = 0; y < this.rows; y++) {
         for (let x = 0; x < this.cols; x++) {
           const px = this.offsetX + x * spacing;
@@ -119,26 +79,22 @@ export function initLightGrid(selector = '.light-grid') {
       if (!this.ctx || this.cols === 0 || this.rows === 0) return;
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.width, this.height);
-      this.onDots.length = 0;
-      this.offDots.length = 0;
+      
+      // Pre-calculate singleCycleDuration
+      const singleCycleDuration = frameDuration * 2 * speed;
+      const onDuration = frameDuration * speed;
 
       for (const dot of this.dots) {
         const timeInPattern = (now + dot.delay) % totalPeriod;
-        const singleCycleDuration = frameDuration * 2 * speed;
         const timeInSingleCycle = timeInPattern % singleCycleDuration;
 
-        if (timeInSingleCycle < frameDuration * speed) {
-          this.onDots.push(dot);
+        if (timeInSingleCycle < onDuration) {
+          ctx.globalAlpha = maxOpacity;
         } else {
-          this.offDots.push(dot);
+          ctx.globalAlpha = minOpacity;
         }
+        ctx.drawImage(circleCache, dot.x, dot.y);
       }
-
-      ctx.globalAlpha = maxOpacity;
-      for (const d of this.onDots) ctx.drawImage(circleCache, d.x, d.y);
-
-      ctx.globalAlpha = minOpacity;
-      for (const d of this.offDots) ctx.drawImage(circleCache, d.x, d.y);
     }
   }
 
@@ -149,6 +105,19 @@ export function initLightGrid(selector = '.light-grid') {
   }
   const grids = gridElements.map(el => new Grid(el));
 
+  // Debounce function
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
   function animate(timestamp) {
     grids.forEach(g => g.draw(timestamp));
     requestAnimationFrame(animate);
@@ -156,10 +125,10 @@ export function initLightGrid(selector = '.light-grid') {
   requestAnimationFrame(animate);
 
   // Debounced resize handler
-  const debouncedGridSetup = debounce(() => {
+  const debouncedSetup = debounce(() => {
     grids.forEach(g => g.setup());
   }, 250); // 250ms delay
 
-  window.addEventListener('resize', debouncedGridSetup);
+  window.addEventListener('resize', debouncedSetup);
 }
 
