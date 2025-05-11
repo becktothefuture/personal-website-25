@@ -121,7 +121,7 @@ export function initLightGrid(selector = '.light-grid') {
         } else {
           ctx.globalAlpha = minOpacity;
         }
-        ctx.drawImage(circleCache, dot.x, dot.y);
+        ctx.drawImage(circleCache, dot.x, dot.y); // Corrected d.y to dot.y
       }
     }
   }
