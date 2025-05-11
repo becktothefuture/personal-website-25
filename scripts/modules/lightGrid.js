@@ -49,28 +49,55 @@ export function initLightGrid(selector = '.light-grid') {
       if (!this.ctx) return;
       const rect = this.container.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
+
+      const style = getComputedStyle(this.container);
+      const paddingLeft = parseFloat(style.paddingLeft) || 0;
+      const paddingRight = parseFloat(style.paddingRight) || 0;
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const paddingBottom = parseFloat(style.paddingBottom) || 0;
+
+      const cssMinWidth = parseFloat(style.minWidth) || 0;
+      const cssMinHeight = parseFloat(style.minHeight) || 0;
+
+      // Canvas visual dimensions are based on actual bounding rect
       this.width = rect.width;
       this.height = rect.height;
       this.canvas.width = this.width * dpr;
       this.canvas.height = this.height * dpr;
       this.ctx.scale(dpr, dpr);
+      this.ctx.clearRect(0, 0, this.width, this.height); // Clear for new setup
 
-      this.cols = Math.max(0, Math.floor((this.width - dotSize) / spacing) + 1);
-      this.rows = Math.max(0, Math.floor((this.height - dotSize) / spacing) + 1);
+      // Layout dimensions for calculating cols/rows are based on max of visual or CSS min size
+      const layoutWidth = Math.max(this.width, cssMinWidth);
+      const layoutHeight = Math.max(this.height, cssMinHeight);
+
+      const contentWidthForLayout = Math.max(0, layoutWidth - paddingLeft - paddingRight);
+      const contentHeightForLayout = Math.max(0, layoutHeight - paddingTop - paddingBottom);
+
+      if (spacing <= 0 || dotSize <= 0) {
+        this.cols = 0;
+        this.rows = 0;
+      } else {
+        this.cols = (contentWidthForLayout < dotSize) ? 0 : Math.max(1, Math.floor((contentWidthForLayout - dotSize) / spacing) + 1);
+        this.rows = (contentHeightForLayout < dotSize) ? 0 : Math.max(1, Math.floor((contentHeightForLayout - dotSize) / spacing) + 1);
+      }
 
       const gridWidth = (this.cols > 0 ? (this.cols - 1) * spacing + dotSize : 0);
       const gridHeight = (this.rows > 0 ? (this.rows - 1) * spacing + dotSize : 0);
 
-      this.offsetX = (this.width - gridWidth) / 2;
-      this.offsetY = (this.height - gridHeight) / 2;
+      // Offset calculations are based on centering the grid within the layout dimensions
+      this.offsetX = paddingLeft + (contentWidthForLayout - gridWidth) / 2;
+      this.offsetY = paddingTop + (contentHeightForLayout - gridHeight) / 2;
 
       this.dots.length = 0;
-      for (let y = 0; y < this.rows; y++) {
-        for (let x = 0; x < this.cols; x++) {
-          const px = this.offsetX + x * spacing;
-          const py = this.offsetY + y * spacing;
-          const delay = Math.random() * totalPeriod;
-          this.dots.push({ x: px, y: py, delay });
+      if (this.cols > 0 && this.rows > 0) {
+        for (let y = 0; y < this.rows; y++) {
+          for (let x = 0; x < this.cols; x++) {
+            const px = this.offsetX + x * spacing;
+            const py = this.offsetY + y * spacing;
+            const delay = Math.random() * totalPeriod;
+            this.dots.push({ x: px, y: py, delay });
+          }
         }
       }
     }
