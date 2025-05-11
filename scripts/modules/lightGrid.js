@@ -40,8 +40,8 @@ export function initLightGrid(selector = '.light-grid') {
       this.ctx = this.canvas.getContext('2d');
       container.appendChild(this.canvas);
       this.dots = [];
-      this.visualWidth = 0; // Initialize visual dimensions
-      this.visualHeight = 0; // Initialize visual dimensions
+      this.visualWidth = 0; // For actual canvas drawing dimensions
+      this.visualHeight = 0; // For actual canvas drawing dimensions
       if (!this.ctx) {
         console.error("Failed to get 2D context for grid canvas.");
       }
@@ -59,7 +59,7 @@ export function initLightGrid(selector = '.light-grid') {
       const paddingTop = parseFloat(style.paddingTop) || 0;
       const paddingBottom = parseFloat(style.paddingBottom) || 0;
 
-      // Visual dimensions (post-transform) for canvas element sizing and clearing
+      // Step 1: Determine visual dimensions (post-transform) for the canvas element itself.
       const visualRect = this.container.getBoundingClientRect();
       this.visualWidth = visualRect.width;
       this.visualHeight = visualRect.height;
@@ -67,26 +67,36 @@ export function initLightGrid(selector = '.light-grid') {
       this.canvas.width = this.visualWidth * dpr;
       this.canvas.height = this.visualHeight * dpr;
       this.ctx.scale(dpr, dpr);
+      // Clear the canvas based on its visual size.
+      this.ctx.clearRect(0, 0, this.visualWidth, this.visualHeight);
 
-      // Layout dimensions (pre-transform) using offsetWidth/Height for grid calculation
-      const layoutWidth = this.container.offsetWidth;
-      const layoutHeight = this.container.offsetHeight;
+      // Step 2: Determine layout dimensions for calculating dot columns, rows, and positions.
+      // These should reflect the "intended" untransformed size of the grid.
+      const cssMinWidth = parseFloat(style.minWidth) || 0;
+      const cssMinHeight = parseFloat(style.minHeight) || 0;
+      
+      const currentOffsetWidth = this.container.offsetWidth; // Element's layout width before its own transforms
+      const currentOffsetHeight = this.container.offsetHeight; // Element's layout height
 
-      // Calculate content dimensions for dot layout based on untransformed size
+      // Use the maximum of the element's current layout size and its CSS min-size.
+      // This allows CSS min-size to define the grid structure if offsetWidth/Height are small due to parent transforms.
+      const layoutWidth = Math.max(currentOffsetWidth, cssMinWidth);
+      const layoutHeight = Math.max(currentOffsetHeight, cssMinHeight);
+
       const contentWidthForLayout = Math.max(0, layoutWidth - paddingLeft - paddingRight);
-
-      if (spacing <= 0 || dotSize <= 0) {
+      const contentHeightForLayout = Math.max(0, layoutHeight - paddingTop - paddingBottom);
+      
+      if (spacing <= 0 || dotSize <= 0 || contentWidthForLayout < dotSize || contentHeightForLayout < dotSize) {
         this.cols = 0;
         this.rows = 0;
       } else {
-        this.cols = (contentWidthForLayout < dotSize) ? 0 : Math.max(1, Math.floor((contentWidthForLayout - dotSize) / spacing) + 1);
-        this.rows = (contentHeightForLayout < dotSize) ? 0 : Math.max(1, Math.floor((contentHeightForLayout - dotSize) / spacing) + 1);
+        this.cols = Math.max(0, Math.floor((contentWidthForLayout - dotSize) / spacing) + 1);
+        this.rows = Math.max(0, Math.floor((contentHeightForLayout - dotSize) / spacing) + 1);
       }
 
       const gridWidth = (this.cols > 0 ? (this.cols - 1) * spacing + dotSize : 0);
       const gridHeight = (this.rows > 0 ? (this.rows - 1) * spacing + dotSize : 0);
 
-      // Offset calculations are based on centering the grid within the layout dimensions
       this.offsetX = paddingLeft + (contentWidthForLayout - gridWidth) / 2;
       this.offsetY = paddingTop + (contentHeightForLayout - gridHeight) / 2;
 
@@ -104,11 +114,17 @@ export function initLightGrid(selector = '.light-grid') {
     }
 
     draw(now) {
-      if (!this.ctx || this.cols === 0 || this.rows === 0) return;
+      if (!this.ctx || this.cols === 0 || this.rows === 0) {
+        // If no columns or rows, ensure canvas is clear if it has visual dimensions
+        if (this.ctx && this.visualWidth > 0 && this.visualHeight > 0) {
+            this.ctx.clearRect(0, 0, this.visualWidth, this.visualHeight);
+        }
+        return;
+      }
       const ctx = this.ctx;
-      ctx.clearRect(0, 0, this.width, this.height);
+      // Clear using visual dimensions of the canvas
+      ctx.clearRect(0, 0, this.visualWidth, this.visualHeight);
       
-      // Pre-calculate singleCycleDuration
       const singleCycleDuration = frameDuration * 2 * speed;
       const onDuration = frameDuration * speed;
 
@@ -121,7 +137,7 @@ export function initLightGrid(selector = '.light-grid') {
         } else {
           ctx.globalAlpha = minOpacity;
         }
-        ctx.drawImage(circleCache, dot.x, dot.y); // Corrected d.y to dot.y
+        ctx.drawImage(circleCache, dot.x, dot.y);
       }
     }
   }
