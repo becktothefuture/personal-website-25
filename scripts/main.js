@@ -48,7 +48,7 @@ import { init3DButtons } from './modules/buttonToggle.js';
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
 import { initcursorTracker } from './modules/cursorTracker.js'; 
-import { initLightGrids } from './modules/lightGrid.js';
+import { initLightGrid } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
 import { initLondonClock } from './modules/londonClock.js';
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initResizeOverlay(); 
         // initStarfieldThruster(); // Removed as it's archived
         // init3DButtons already called above
-        initLightGrids();
+        initLightGrid();
         initDateDisplay();
         initMarqueeContent();
         initLondonClock();

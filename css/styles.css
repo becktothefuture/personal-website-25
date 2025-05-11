@@ -30,12 +30,22 @@
   --arrow-on-color: var(--color-1);
 
   /* Light panel settings */
-  --circle-size: 0.65em;
+  /* --circle-size: 0.65em; */ /* Removed old light grid variable */
 
   /* Grid settings */
-  --columns: 10;
-  --rows: 12;
-  --gap: 15px;
+  /* --columns: 10; */ /* Removed old light grid variable */
+  /* --rows: 12; */    /* Removed old light grid variable */
+  /* --gap: 15px; */   /* Removed old light grid variable */
+
+  /* New Light Grid Variables */
+  --dot-size: 10px;
+  --dot-spacing: 40px;
+  --flash-min-opacity: 0.2;
+  --flash-max-opacity: 1;
+  --fps: 1; /* Frames per second for light grid */
+  --cycle-multiplier: 5; /* Grid pattern length multiplier */
+  --speed-multiplier: 1.5; /* Slowdown multiplier for light grid */
+  --dot-color: limegreen; /* Dot colour for light grid */
 
   /* Carousel settings */
   --carousel-depth: 10em;
@@ -411,35 +421,22 @@ body {
  * LIGHT GRID *
  **************/
 
+/* NEW LIGHT GRID STYLES */
 .light-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--columns), 1fr);
-  grid-template-rows: repeat(var(--rows), 1fr);
-  gap: var(--gap);
+  position: relative;
+  background: #111; /* Example background, can be adjusted or removed if container has its own */
+  border: 1px solid #444; /* Example border, can be adjusted or removed */
+  flex-shrink: 0; /* Prevent shrinking in flex layouts if used as a flex item */
+  overflow: hidden; /* Important to contain the canvas */
+  /* Ensure width and height are set by the parent or specific instances */
+}
+
+canvas.light-grid-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-}
-
-.light-grid__circle {
-  width: 0.65em;
-  height: 0.65em;
-  background-color: var(--color-3); /* Use off color initially */
-  animation: flicker 3s steps(6) infinite;
-  aspect-ratio: 1 / 1;
-  opacity: 1;
-  will-change: opacity;
-}
-
-@keyframes flicker {
-  0% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.1;
-  }
 }
 
 /************
@@ -606,10 +603,6 @@ body {
 /***************
  * 3D BUTTONS *
  ***************/
-
-.btn-3d {
-  /* in webflow */
-}
 
 .btn-3d__glow {
   opacity: 0;
