@@ -175,9 +175,4 @@ export function stopAnimation() {
   }
 }
 
-// Auto-initialize when the DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  initLoadingText();
-});
-
 export default { initLoadingText, stopAnimation };

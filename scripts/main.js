@@ -7,57 +7,51 @@
  * Modules and their responsibilities:
  * - browserTheme.js: Manages light/dark mode theme based on user preferences and system settings
  * - sounds.js: Handles sound system initialization, sound effects, and user audio preferences
- * - intro.js: Controls the website intro/loading sequence animation
+ * - loader.js: Manages the display of loading text and animations.
  * - resizeOverlay.js: Shows an overlay during browser resize to prevent layout jumps
- * - starfieldThruster.js: Controls the animated starfield background with thruster effects
- * - scrollTracker.js: Tracks scrolling behavior and velocity, emitting events for other components
- * - smoothScroll.js: Implements smooth scrolling with Lenis.js for better scroll performance
  * - lightGrid.js: Manages light grid animations and responsive behaviors
  * - dateDisplay.js: Displays and updates formatted date information
  * - marqueeContent.js: Handles scrolling marquee text animations
  * - londonClock.js: Renders and updates an analog clock showing London time
- * - flicker.js: Creates realistic flickering effects for UI elements
  * - robotAnimation.js: Controls the robot character animations and dialog system
- * - widgetEffects.js: Manages interactive effects for various UI widgets
- * - mousemonitors.js: Tracks mouse movement, speed and interaction metrics
  * - processorAnimations.js: Handles the multiple processor visualization animations
- * - scrollEffect.js: Creates physical scrolly/shake effects based on scroll velocity
- * - lampEffect.js: Creates a decorative lamp visual effect that responds to page scrolling
  * - diffusionText.js: Creates text animation that "diffuses" between multiple phrases with character transitions
  * - buttonToggle.js: Manages 3D button toggling with only one active at a time AND view switching 
- * - scrollPattern.js: Creates and animates a pattern that moves based on scroll velocity
- * - widgetAnimations.js: Handles widget animations for view transitions
+ * - cursorTracker.js: Tracks mouse movement, clicks, and distance.
+ * - interference.js: Adds visual interference effects.
+ * - intro.js: DEPRECATED: Controls the website intro/loading sequence animation
+ * - starfieldThruster.js: DEPRECATED: Controls the animated starfield background with thruster effects
+ * - flicker.js: DEPRECATED: Creates realistic flickering effects for UI elements
+ * - widgetEffects.js: DEPRECATED: Manages interactive effects for various UI widgets
+ * - mousemonitors.js: DEPRECATED: Tracks mouse movement, speed and interaction metrics
+ * - widgetAnimations.js: DEPRECATED: Handles widget animations for view transitions
  * - viewToggle.js: DEPRECATED: Functionality moved to buttonToggle.js
  */
 
+/**
+ * Utility to detect Webflow environments
+ * Used to ensure compatibility with Webflow's preview/canvas mode
+ */
+export const webflowEnv = {
+  isPreviewMode: () => window.location.hostname.includes('canvas.webflow.com'),
+  isPublishedSite: () => window.location.hostname.includes('webflow.io'),
+  getSiteName: () => window.location.hostname.split('.')[0],
+  getAllowedDomains: () => ['.webflow.io', '.canvas.webflow.com']
+};
+
 // Import browser theme module - this module self-initializes on import
-import './modules/browserTheme.js';
-console.log('Browser theme initialized via self-initialization');
+import { applyBrowserColors, prefersDarkMode } from './modules/browserTheme.js';
 
-// Import scrollTracker module first - it needs to be initialized before dependent modules
-import { scrollTracker } from './modules/scrollTracker.js';
-console.log('Scroll tracker initialized via self-initialization');
-
-// Remove smooth scroll module - now handled by Webflow
-// import { initSmoothScroll } from './modules/smoothScroll.js';
-// console.log('Imported smooth scroll module');
+// Correct import statement for loader.js - moved up for early parsing
+import { initLoadingText, stopAnimation } from './modules/loader.js';
 
 // Import the buttonToggle module which now handles all view toggling
 import { init3DButtons } from './modules/buttonToggle.js';
-// DEPRECATED: viewToggle.js functionality moved to buttonToggle.js
-// import initViewToggle from './modules/viewToggle.js';
-
-// Correct import statement for loader.js
-import { initLoadingText, stopAnimation } from './modules/loader.js';
 
 // Import all other modules after browser theme
 import { initSoundSystem, EVENTS, buttonSounds } from './modules/sounds.js';
 import { initResizeOverlay } from './modules/resizeOverlay.js';
-import { initStarfieldThruster } from './modules/starfieldThruster.js';
 import { initcursorTracker } from './modules/cursorTracker.js'; // Fixed: lowercase 'c' to match export
-import { initscrollEffect } from './modules/scrollEffect.js';
-import { initCursorEffects } from './modules/cursorEffects.js'; 
-import { initLampEffect } from './modules/lampEffect.js';
 import { initLightGrids } from './modules/lightGrid.js';
 import { initDateDisplay } from './modules/dateDisplay.js';
 import { initMarqueeContent } from './modules/marqueeContent.js';
@@ -83,21 +77,20 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Removed showLoader() call as it will be handled by Webflow
+        // Initialize browser theme and loader text first.
+        console.log('Applying browser colors...');
+        applyBrowserColors('DOMContentLoaded');
+        console.log('Initializing loading text...');
+        initLoadingText();
+
+        // Add listener for system theme changes
+        prefersDarkMode.addEventListener("change", () => applyBrowserColors('systemChange'));
         
         // STEP 1: PREPARATION & SOUND SYSTEM
         //--------------------------------------
         // Initialize buttonToggle first, which now handles all view toggling
         console.log('Initializing button toggle system (includes view switching)');
         init3DButtons();
-        
-        // DEPRECATED: viewToggle.js functionality moved to buttonToggle.js
-        // console.log('Initializing view toggle system');
-        // initViewToggle();
-        
-        // Initialize widget animations commented out
-        // console.log('Initializing widget system for proper Lottie initialization');
-        // initWidgetAnimations();
         
         // Give Lottie more time to initialize properly before continuing
         console.log('Waiting for Lottie animations to initialize...');
@@ -112,16 +105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // STEP 2: MODULE INITIALIZATION
         //--------------------------------------
-        // Initialize tracking modules (cursor, scroll effects)
-        initcursorTracker(); // Fix - using lowercase 'c' to match export
-        // scrollTracker is already initialized on import, don't call it as a function
-        initscrollEffect();
+        // Initialize tracking modules (cursor)
+        initcursorTracker(); // Keep cursor tracker for clicks and distance tracking
         
         // Initialize all other modules after sound choice is confirmed
         initResizeOverlay(); 
-        initStarfieldThruster();
-        initCursorEffects();
-        initLampEffect();
         // init3DButtons already called above
         initLightGrids();
         initDateDisplay();
@@ -136,8 +124,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         initInterference();
 
         console.log('All modules initialized');
-
-        // Removed hideLoader() call as it will be handled by Webflow
 
         // STEP 3: UI REVEAL & INTERACTIONS
         //--------------------------------------

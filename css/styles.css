@@ -5,7 +5,6 @@
 :root {
 
   /* Global animation variables */
-  --global-multiplier: 1;
   --pulsate-duration: 5s;
 
   /* Global pulsation controls */
@@ -22,7 +21,9 @@
   --max-duration: 5.5s;
   --max-delay: 3s;
   --min-duration: 0.5s;
-  --max-duration: 2.5s;
+
+  /* For vertical jitter animation */
+  --jitter-intensity: 1; /* Added missing variable */
 
   /* Arrow colors */
   --arrow-off-color: var(--color-3);
@@ -59,15 +60,12 @@
   --speech-text: var(--color-1);
   --speech-border: var(--color-2);
 
-
   /* CRT Effect Controls - Simplified */
   --crt-color: var(--color-3);        /* Main glow color (corresponds to color-1) */
   --crt-glow-strength: 50px;   /* Inner glow strength - increased from 15px */
   --crt-glow-spread: 50px;     /* Outer glow spread - increased from 45px */
-  --flicker-speed: 0.s;      /* Speed of flicker animation */
+  --flicker-speed: 0.5s;      /* Speed of flicker animation - fixed missing value */
   --flicker-opacity: 0.9;      /* Opacity of flicker effect */
-
-
 
   /* Overall animation settings */
   --starship-movement-duration: 30s;
@@ -76,6 +74,12 @@
   /* Widget  */
   --widget-animation-duration: 200ms; /* Stagger duration */
   --widget-outro-fade-duration: 200ms; /* Fade duration for individual widget */
+
+  /* Text Selection - Disable */
+  --webkit-user-select: none;
+  --moz-user-select: none;
+  --ms-user-select: none;
+  user-select: none;
 }
 
 svg path {
@@ -97,12 +101,15 @@ svg {
   padding: 0;
 }
 
+html, body {
+  overflow: hidden;
+  overscroll-behavior: none; /* Prevent browser bounce on scroll */
+}
+
 body {
   font-variant-ligatures: common-ligatures;
   text-rendering: optimizeLegibility;
   word-spacing: 0.04em;
-  overflow: hidden;
-  overscroll-behavior: none; /* Prevent overscroll */
   pointer-events: all;
 }
 
@@ -312,10 +319,6 @@ body {
   100% {
     opacity: 0;   /* Step 3 (final state) */
   }
-}
-
-.widget-flicker {
-  animation: flicker var(--animation-duration) steps(4) infinite;
 }
 
 .widget-hidden {
@@ -630,7 +633,6 @@ body {
 
 .btn-3d--active .btn-3d__front,
 .btn-3d--active .btn-3d__side {
-  background-color: red;
   animation: oscillateColor 2s ease-in-out infinite;
 }
 
@@ -654,6 +656,7 @@ body {
     background-color: var(--light-2);
   }
 }
+
 
 @keyframes buttonGlow {
   0% {
@@ -934,19 +937,19 @@ body {
  **********************/
 
 .blink-1 {
-  animation: blink 1s steps(2) infinite;
+  animation: blink 1s linear infinite;
 }
 
 .blink-2 {
-  animation: blink 1s steps(2) backwards infinite;
+  animation: blink 1s linear backwards infinite;
   animation-delay: 0.5s;
 }
 
 @keyframes blink {
-  0% {
+  0%, 49% {
     opacity: 0.5;
   }
-  100% {
+  50%, 100% {
     opacity: 1;
   }
 }
@@ -1191,17 +1194,11 @@ body {
   will-change: opacity;
 }
 
-
-
-/* Glass video */
-.glass-video {
-  -webkit-mask: radial-gradient(circle, black 55%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 75%, transparent 85%);
-  mask: radial-gradient(circle, black 55%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 75%, transparent 85%);
-  animation: oscillateOpacity-2 4s ease-in-out infinite; /* Apply opacity oscillation */
-  will-change: opacity, filter;
-  transform-origin: center center;
-  transition: none;
+.light--4 {
+  animation: oscillateOpacity-4 0.1s infinite alternate;
 }
+
+
 
 
 @keyframes oscillateOpacity-1 {
@@ -1221,6 +1218,22 @@ body {
     opacity: 0.95;
   }
 }
+
+@keyframes oscillateOpacity-4 {
+  0%, 100% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  75% {
+    opacity: 0.5;
+  }
+}
+
 
 
 /*******************
