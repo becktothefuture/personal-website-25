@@ -30,22 +30,17 @@
   --arrow-on-color: var(--color-1);
 
   /* Light panel settings */
-  /* --circle-size: 0.65em; */ /* Removed old light grid variable */
 
-  /* Grid settings */
-  /* --columns: 10; */ /* Removed old light grid variable */
-  /* --rows: 12; */    /* Removed old light grid variable */
-  /* --gap: 15px; */   /* Removed old light grid variable */
 
   /* New Light Grid Variables */
   --dot-size: 10px;
-  --dot-spacing: 40px;
+  --dot-spacing: 20px;
   --flash-min-opacity: 0.2;
   --flash-max-opacity: 1;
   --fps: 1; /* Frames per second for light grid */
   --cycle-multiplier: 5; /* Grid pattern length multiplier */
   --speed-multiplier: 1.5; /* Slowdown multiplier for light grid */
-  --dot-color: limegreen; /* Dot colour for light grid */
+  --dot-color: var(--color-1); /* Dot colour for light grid */
 
   /* Carousel settings */
   --carousel-depth: 10em;
