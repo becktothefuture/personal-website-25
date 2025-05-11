@@ -20,7 +20,7 @@ const textAnimConfig = {
         "Checking resolution",
         "Loading typefaces"
       ],
-      speed: 140 // Quick technical messages
+      speed: 47 // Original: 140
     },
     {
       title: "Design System",
@@ -33,7 +33,7 @@ const textAnimConfig = {
         "Applying spacing",
         "Compiling themes"
       ],
-      speed: 180 // Medium pace for design content
+      speed: 60 // Original: 180
     },
     {
       title: "Interface",
@@ -46,7 +46,7 @@ const textAnimConfig = {
         "Mapping gestures",
         "Checking modals"
       ],
-      speed: 230 // Slower for UI elements
+      speed: 77 // Original: 230
     },
     {
       title: "Experience",
@@ -59,7 +59,7 @@ const textAnimConfig = {
         "Mapping journeys",
         "Polishing details"
       ],
-      speed: 160 // Medium-fast for UX elements
+      speed: 53 // Original: 160
     },
     {
       title: "Launch",
@@ -72,7 +72,7 @@ const textAnimConfig = {
         "Interface live",
         "System online"
       ],
-      speed: 120 // Quick final messages
+      speed: 40 // Original: 120
     }
   ]
 };
@@ -128,7 +128,7 @@ function moveToNextGroup() {
   textElement.textContent = "INIT: " + group.title;
   
   // Shorter pause between groups for more machine-like feel
-  activeTimer = setTimeout(updateText, 600);
+  activeTimer = setTimeout(updateText, 200); // Original: 600
 }
 
 /**
@@ -157,10 +157,19 @@ export function initLoadingText(elementId = 'loading-text') {
   
   // Quick transition to first group
   activeTimer = setTimeout(() => {
+    if (!isActive) return; // Check if animation was stopped before this timeout
     textElement.textContent = "INIT: " + textAnimConfig.groups[0].title;
-    activeTimer = setTimeout(updateText, 600);
-  }, 800);
+    activeTimer = setTimeout(updateText, 200); // Original: 600
+  }, 267); // Original: 800
   
+  // Stop animation when the page is fully loaded
+  const handlePageLoad = () => {
+    console.log('Loader: Page fully loaded, stopping animation.');
+    stopAnimation();
+    window.removeEventListener('load', handlePageLoad); // Clean up listener
+  };
+  window.addEventListener('load', handlePageLoad);
+
   return true;
 }
 
