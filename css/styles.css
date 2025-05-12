@@ -419,11 +419,9 @@ body {
 /* NEW LIGHT GRID STYLES */
 .light-grid {
   position: relative;
-  background: #111; /* Example background, can be adjusted or removed if container has its own */
-  border: 1px solid #444; /* Example border, can be adjusted or removed */
+  background: transparent; /* Example background, can be adjusted or removed if container has its own */
   flex-shrink: 0; /* Prevent shrinking in flex layouts if used as a flex item */
   overflow: hidden; /* Important to contain the canvas */
-  /* Ensure width and height are set by the parent or specific instances */
 }
 
 canvas.light-grid-canvas {
@@ -434,25 +432,6 @@ canvas.light-grid-canvas {
   height: 100%;
 }
 
-/************
- * MINI MAP *
- ************/
-
-.cursor-dot {
-  animation: cursor-dot-blink 1.5s infinite;
-}
-
-@keyframes cursor-dot-blink {
-  0%,
-  50%,
-  100% {
-    opacity: 1;
-  }
-  25%,
-  75% {
-    opacity: 0;
-  }
-}
 
 /***************************
  * ROTATING CUBE ANIMATION *
