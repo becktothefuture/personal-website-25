@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Radial Top-Right Click Line Effect</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
+    cursor: default;
+  }
+  .pixel-line {
+    position: absolute;
+    pointer-events: none;
+    background: #8FDCC3; /* mint green */
+    image-rendering: pixelated;
+    height: 2px;
+    transform-origin: 0 50%;
+    will-change: transform, left, top;
+    border-radius: 0;
+  }
+  .dg { z-index: 10000 !important; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+</head>
+<body>
+
+<script>
+(() => {
+  const linesPerClick = [10, 12, 15]; // more particles for explosion
+  let minLength = 8;   // shorter pixels
+  let maxLength = 22;
+  const lineThickness = 2;
+  let safeRadius = 34;            // inner radius to avoid cursor overlap
+  let animationDuration = 280;
+  let outerFactor = 1.1;      // length multiplier for outward travel
+
+  // Angular range for lines (140deg arc starting at 270deg = straight up)
+  // Angles in degrees: 270 to 410, wrap 360 for actual use
+  const startAngle = 195;        // centre on top‑left diagonal (≈225°)
+  let arcDegrees = 101;
+
+  let overshootScale = 1.2;
+  let lineColour = '#8FDCC3';
+
+  // --- Personality axes (0‑1) ---
+  let humanTechnical = 0.42;
+  let fastMeandering = 0.30;
+  let bouncyRigid    = 0.02;
+  let funSerious     = 0.68;
+
+  let mouseHeld = false;
+  const activeLines = new Set();
+
+  function computeDerived() {
+    // Geometry spread influenced by humanTechnical (wider for human)
+    arcDegrees = lerp(240, 60, humanTechnical); // wider fan = more “boom”
+
+    // Duration & distance vary with fastMeandering
+    animationDuration = lerp(200, 800, fastMeandering);
+    outerFactor       = lerp(1.0, 0.4, fastMeandering);
+
+    // Overshoot amplitude from bouncyRigid
+    overshootScale    = lerp(1.4, 1.05, bouncyRigid);   // used later
+
+    // Line count and colour tint change with funSerious
+    colourMint        = funSerious < 0.5 ? '#8FDCC3' : '#6fa59c';
+    lineColour        = colourMint;
+  }
+
+  // Linear interpolation helper
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // Call once to init
+  computeDerived();
+
+  /* ---------- dat.GUI ---------- */
+  const gui = new dat.GUI({ width: 300, name: 'ClickBurst' });
+  gui.open();   // keep it visible
+  gui.domElement.style.right = '0px';
+  gui.domElement.style.left  = 'auto';
+
+  const params = {
+    arcDegrees: 101,
+    minLength: 8,
+    maxLength: 22,
+    speed: 280,
+    innerRadius: 34,
+    outerFactor: 1.1,
+    humanTechnical: 0.42,
+    fastMeandering: 0.30,
+    bouncyRigid: 0.02,
+    funSerious: 0.68
+  };
+
+  // Geometry
+  const fGeo = gui.addFolder('Geometry');
+  fGeo.add(params, 'arcDegrees', 10, 180, 1).name('Arc (°)').onChange(v => arcDegrees = v);
+  fGeo.add(params, 'minLength', 1, 50, 1).name('Len Min').onChange(v => {
+    minLength = v;
+    if (maxLength < v) { maxLength = v; params.maxLength = v; fGeo.__controllers.forEach(c => c.updateDisplay()); }
+  });
+  fGeo.add(params, 'maxLength', 1, 100, 1).name('Len Max').onChange(v => maxLength = Math.max(v, minLength));
+  fGeo.add(params, 'innerRadius', 0, 50, 1).name('Inner Radius').onChange(v => safeRadius = v);
+  fGeo.open();
+
+  // Motion
+  const fMotion = gui.addFolder('Motion');
+  fMotion.add(params, 'speed', 50, 2000, 10).name('Duration (ms)').onChange(v => animationDuration = v);
+  fMotion.add(params, 'outerFactor', 0.1, 2, 0.05).name('Outer ×').onChange(v => outerFactor = v);
+  fMotion.open();
+
+  // Personality
+  const fMood = gui.addFolder('Personality');
+  fMood.add(params, 'humanTechnical', 0, 1, 0.01).name('Human ↔ Technical').onChange(v => { humanTechnical = v; computeDerived(); });
+  fMood.add(params, 'fastMeandering', 0, 1, 0.01).name('Fast ↔ Meander').onChange(v => { fastMeandering = v; computeDerived(); });
+  fMood.add(params, 'bouncyRigid',    0, 1, 0.01).name('Bouncy ↔ Rigid').onChange(v => { bouncyRigid = v; computeDerived(); });
+  fMood.add(params, 'funSerious',     0, 1, 0.01).name('Fun ↔ Serious').onChange(v => { funSerious = v; computeDerived(); });
+  fMood.open();
+
+  // Helper: get random number in [min, max]
+  function randomRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  // Convert angle > 360 back into [0,360)
+  function normalizeAngle(deg) {
+    return deg % 360;
+  }
+
+  // Create one line element
+  function createPixelLine(x, y, angle, length) {
+    const rad = angle * Math.PI / 180;
+    const thickness = Math.random() < 0.3 ? lineThickness * 2 : lineThickness; // 30 % chance double width
+    const offsetX = Math.cos(rad) * safeRadius;
+    const offsetY = Math.sin(rad) * safeRadius;
+
+    const line = document.createElement('div');
+    line.classList.add('pixel-line');
+    line.style.background = lineColour;
+    line.style.width  = length + 'px';        // length along X‑axis
+    line.style.height = thickness + 'px'; // fixed thickness
+    line.style.left   = (x + offsetX) + 'px';
+    line.style.top    = (y + offsetY - thickness / 2) + 'px';
+    line.style.transform = `rotate(${angle}deg) scaleX(0)`;
+    // tiny brightness jitter
+    if (Math.random() < 0.4) {
+      const h = Math.random() * 25 - 12; // ±12 %
+      line.style.filter = `brightness(${100 + h}%)`;
+    }
+    activeLines.add(line);
+    return line;
+  }
+
+  // Animate the line: scaleX from 0 to 1, fade out, move outward
+  function animatePixelLine(line, startX, startY, angle, length) {
+    const growTime = 120;           // ms to reach full length
+    const fadeTime = 160;           // fade‑out after release
+    const maxMove  = length * outerFactor * 1.6; // 60 % further for explosion
+    const rad      = angle * Math.PI / 180;
+    const offsetYcorr = -lineThickness / 2;
+
+    const t0 = performance.now();
+
+    function frame(now) {
+      const held = !line.dataset.released;
+      const dt   = now - t0;
+
+      if (held) {
+        // grow until full, then hold
+        const p = Math.min(dt / growTime, 1);
+        const scaleX = overshootScale * p;
+        const move   = maxMove * p;
+        const moveX  = Math.cos(rad) * move;
+        const moveY  = Math.sin(rad) * move;
+
+        line.style.transform = `rotate(${angle}deg) scaleX(${scaleX})`;
+        line.style.left  = (startX + moveX) + 'px';
+        line.style.top   = (startY + moveY + offsetYcorr) + 'px';
+
+        requestAnimationFrame(frame);
+        return;
+      }
+
+      // released: fade / shrink out
+      const relDt = dt - growTime;
+      if (relDt > fadeTime) {
+        activeLines.delete(line);
+        line.remove();
+        return;
+      }
+      const f = relDt / fadeTime; // 0‑1
+      const scaleX = overshootScale - (overshootScale) * f;
+      const move   = maxMove - maxMove * f;
+      const moveX  = Math.cos(rad) * move;
+      const moveY  = Math.sin(rad) * move;
+      line.style.opacity = 1 - f;
+      line.style.transform = `rotate(${angle}deg) scaleX(${scaleX})`;
+      line.style.left  = (startX + moveX) + 'px';
+      line.style.top   = (startY + moveY + offsetYcorr) + 'px';
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // On click event: generate lines within arc, randomize angle for wider fan
+  function onMouseDown(event) {
+    const x = event.clientX;
+    const y = event.clientY;
+    const count = linesPerClick[Math.floor(Math.random() * linesPerClick.length)];
+    for (let i = 0; i < count; i++) {
+      const angle = normalizeAngle(startAngle + Math.random() * arcDegrees);
+      const length = randomRange(minLength, maxLength);
+      const line = createPixelLine(x, y, angle, length);
+      document.body.appendChild(line);
+      animatePixelLine(line, x, y, angle, length);
+    }
+  }
+
+  // Button‑like sink and release for the whole page
+  document.body.addEventListener('mousedown', () => {
+    mouseHeld = true;
+    document.body.style.transform = 'translateY(2px)';
+    document.body.style.transition = 'transform 80ms ease-out';
+  });
+  document.body.addEventListener('mouseup', () => {
+    mouseHeld = false;
+    document.body.style.transform = '';
+    // trigger release animation for all active lines
+    activeLines.forEach(line => line.dataset.released = '1');
+  });
+
+  window.addEventListener('mousedown', onMouseDown);
+})();
+</script>
+
+</body>
+</html>

@@ -209,12 +209,29 @@ body {
 }
 
 .marquee-content.vertical {
-  animation: marquee-animation-vertical 20s steps(20) infinite;
+  animation: marquee-animation-vertical 30s steps(30) infinite;
 }
 
 .marquee-content::after {
   content: "";
 }
+
+
+
+.skill-block{
+  padding: 1em 1em;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%; 
+  height: auto;
+  text-align: center;
+  border-bottom: 2px solid var(--color-3);
+}
+
+
 
 @keyframes marquee-animation-horizontal {
   0% {
@@ -241,19 +258,35 @@ body {
  *********************/
 
 .pattern-wrapper > .pattern-vertical {
-  animation: scroll-vertical 1s steps(5) infinite;
+  animation: scroll-vertical 3s steps(10) infinite;
 }
 
 .pattern-wrapper > .pattern {
-  animation: scroll-horizontal 5s steps(5) infinite;
+  animation: scroll-horizontal 3s steps(3) infinite;
 }
 
-@keyframes scroll-horizontal {
+.pattern-wrapper > .pattern--lights {
+  animation: scroll-horizontal--lights 8s steps(5) infinite;
+}
+
+@keyframes scroll-horizontal--lights {
   0%,
   100% {
     transform: translateX(0%);
   }
   50% {
+    transform: translateX(-40%);
+  }
+}
+
+
+
+
+@keyframes scroll-horizontal {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
     transform: translateX(-50%);
   }
 }
@@ -578,62 +611,89 @@ canvas.light-grid-canvas {
  * 3D BUTTONS *
  ***************/
 
-.btn-3d__glow {
+.btn-3d__layer{
+  position: absolute;
+  inset: 0;
+  border-radius: var(--button-radius);
+  backface-visibility: hidden;
+
+  /* ——— background stack ——— */
+  background-image:
+    /* 1 ▸ highlight & swirl – sits ON TOP */
+    conic-gradient(
+      from 180deg at 47.23% 50.3%,          /* centre of the ellipse */
+      #0C0F0E   72.9263deg,
+      #2E2E2E  118.7677deg,
+      rgba(255,255,255,0.30) 176.6752deg,
+      rgba(255,255,255,0.30) 190.7057deg,
+      #3A3A3C  273.4615deg,
+      #0B0E0D  344.4231deg
+    )
+    /* 3 ▸ base colour – the last fallback */
+    #CBCBCB;
+  /* ———————————————————————— */
+}
+/* 6. Distribute 8 layers from 1px → var(--button-depth) */
+    .btn-3d__layer:nth-child(1) {
+      transform: translateZ(1px);
+    }
+    .btn-3d__layer:nth-child(2) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 1/7));
+    }
+    .btn-3d__layer:nth-child(3) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 2/7));
+    }
+    .btn-3d__layer:nth-child(4) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 3/7));
+    }
+    .btn-3d__layer:nth-child(5) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 4/7));
+    }
+    .btn-3d__layer:nth-child(6) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 5/7));
+    }
+    .btn-3d__layer:nth-child(7) {
+      transform: translateZ(calc(1px + (var(--button-depth) - 1px) * 6/7));
+    }
+    .btn-3d .layer:nth-child(8) {
+      transform: translateZ(var(--button-depth));
+    }
+    
+
+.btn-3d__glow{
   opacity: 0;
-  transition: 120ms ease-in-out;
 }
 
 .btn-3d__lamp{
-  opacity:0;
   transition: 120ms ease-in-out;
 }
-
-.btn-3d__front,
-.btn-3d__side {
-  background-color: var(--buttons);
-  transition: 120ms ease-in-out;
-}
-
 .btn-3d--active .btn-3d__button{
+  box-shadow: 0 20px 20px var(--light-1);
   transform: translateZ(calc(var(--button-depth) * -0.75));
 }
 
-.btn-3d--active .btn-3d__front,
-.btn-3d--active .btn-3d__side {
-  animation: oscillateColor 2s ease-in-out infinite;
+.btn-3d--active .btn-3d__icon{
+  color: var(--light-2);
+
 }
 
 .btn-3d--active .btn-3d__glow {
-  animation: buttonGlow 2s ease-in-out infinite;
+  animation: buttonGlow 1s ease-in-out infinite;
+  opacity: 1;
 }
 
-.btn-3d--active .btn-3d__lamp {
-  opacity:100;
-}
-
-
-@keyframes oscillateColor {
-  0% {
-    background-color: var(--light-2);
-  }
-  50% {
-    background-color: var(--light);
-  }
-  100% {
-    background-color: var(--light-2);
-  }
+.btn-3d--active .btn-3d__front {
+  animation: buttonGlow 1s ease-in-out infinite;
+  background-color: var(--light-1 );
 }
 
 
 @keyframes buttonGlow {
-  0% {
-    opacity: 0.15;
+  0%, 100% {
+    opacity: 0.75;
   }
   50% {
-    opacity: 0.20;
-  }
-  100% {
-    opacity: 0.15;
+    opacity: 1;
   }
 }
 
@@ -921,23 +981,6 @@ canvas.light-grid-canvas {
   }
 }
 
-/*****************
- * DEVICES ICONS *
- *****************/
-
-.icon--devices__1 {
-  animation: blink 4s steps(2) forwards infinite;
-}
-
-.icon--devices__2 {
-  animation: blink 4s steps(2) forwards infinite;
-  animation-delay: 1s;
-}
-
-.icon--devices__3 {
-  animation: blink 4s steps(2) forwards infinite;
-  animation-delay: 2s;
-}
 
 /*****************
  * THRUSTER LAMP *
@@ -1350,4 +1393,50 @@ canvas.light-grid-canvas {
   /* single-layer GPU promotion only */
   transform: translateZ(0) !important;
   will-change: transform;
+}
+
+
+
+/*********************************
+ * CENTER PROFILE TEXT ANIMATION *
+ *********************************/
+
+
+/*****************
+ * DEVICES ICONS *
+ *****************/
+
+
+/* The icon is offset outward from the centre */
+.icon--devices {
+  display: inline-block; 
+  animation: blink 4s steps(4) infinite; /* animation-delay defaults to 0s */
+}
+
+
+.icon--devices:nth-child(0) {
+    animation-delay: 0s;
+}
+
+.icon--devices:nth-child(1) {
+  animation-delay: 2s;
+}
+
+.icon--devices:nth-child(2) {
+  animation-delay: 4s;
+}
+
+
+
+.svg-fan{
+  animation: rotate 4s steps(12) infinite;
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
 }

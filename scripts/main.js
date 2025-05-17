@@ -108,7 +108,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         initResizeOverlay(); 
         // initStarfieldThruster(); // Removed as it's archived
         // init3DButtons already called above
-        initLightGrid();
+        
+        // Defer LightGrid initialization slightly to ensure view is ready
+        setTimeout(() => {
+            console.log('Attempting to initialize LightGrid...');
+            initLightGrid();
+            console.log('LightGrid initialization process completed.');
+        }, 100); // Small delay, e.g., 100ms
+
         initDateDisplay();
         initMarqueeContent();
         initLondonClock();

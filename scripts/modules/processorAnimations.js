@@ -118,7 +118,7 @@ export function initProcessorAnimation2() {
         setInterval(() => {
             element.textContent = frames[frameIndex];
             frameIndex = (frameIndex + 1) % frames.length;
-        }, 200);
+        }, 100);
     });
 }
 
@@ -136,7 +136,7 @@ export function initProcessorAnimation3() {
             str[pos2] = getRandomCharacter();
             str[pos3] = getRandomCharacter();
             element.textContent = str.join("");
-        }, 250);
+        }, 150);
     });
 }
 
@@ -152,7 +152,7 @@ export function initProcessorAnimation4() {
             const displayedText = PROCESSOR_TEXT.substring(index, index + 20);
             element.textContent = displayedText;
             index = (index + 1) % length;
-        }, 250);
+        }, 150);
     });
 }
 
