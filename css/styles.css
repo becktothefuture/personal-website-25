@@ -672,9 +672,13 @@ canvas.light-grid-canvas {
   transform: translateZ(calc(var(--button-depth) * -0.75));
 }
 
-.btn-3d--active .btn-3d__icon{
-  color: var(--light-2);
+.btn-3d--active .btn-3d__shadow{
+  opacity:0.5;
+}
 
+.btn-3d--active .btn-3d__icon{
+  color: white;
+  filter: drop-shadow( 0px 0px 10px white);
 }
 
 .btn-3d--active .btn-3d__glow {
