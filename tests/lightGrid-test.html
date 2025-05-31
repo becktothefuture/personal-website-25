@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Grid Test</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body { 
+            margin: 20px; 
+            background-color: #1a1a1a; 
+            color: #eee; 
+            font-family: sans-serif; 
+            padding-bottom: 50px; /* Ensure space to see all grids */
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-grid-wrapper {
+            border: 1px dashed #444;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #2a2a2a;
+        }
+        .light-grid {
+            border: 1px solid #666; /* Make canvas boundary visible */
+            /* Ensure the container itself has a display type that allows sizing */
+            display: block; 
+        }
+        .grid-info {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Light Grid Test Page</h1>
+
+    <div class="test-grid-wrapper">
+        <div class="grid-info">ID: grid1, Size: 200px x 200px, Data: 3x3</div>
+        <div id="grid1" class="light-grid" style="width: 200px; height: 200px;" data-cols="3" data-rows="3"></div>
+    </div>
+
+    <div class="test-grid-wrapper">
+        <div class="grid-info">ID: grid2, Size: 80vw x 150px, Data: 10x2</div>
+        <div id="grid2" class="light-grid" style="width: 80vw; height: 150px;" data-cols="10" data-rows="2"></div>
+    </div>
+
+    <div class="test-grid-wrapper">
+        <div class="grid-info">ID: grid3, Size: 20vw x 400px, Data: 2x8</div>
+        <div id="grid3" class="light-grid" style="width: 20vw; height: 400px;" data-cols="2" data-rows="8"></div>
+    </div>
+
+    <div class="test-grid-wrapper">
+        <div class="grid-info">ID: grid4, Size: 50vw x 50vh, Data: 7x7</div>
+        <div id="grid4" class="light-grid" style="width: 50vw; height: 50vh;" data-cols="7" data-rows="7"></div>
+    </div>
+    
+    <div class="test-grid-wrapper">
+        <div class="grid-info">ID: grid5 (no data attributes), Size: 300px x 100px, Expected Default: 5x5</div>
+        <div id="grid5" class="light-grid" style="width: 300px; height: 100px;"></div>
+    </div>
+
+    <script type="module">
+        // console.log('%c[lightGrid-test.html] Attempting to import initLightGrid...', 'color: blue; font-weight: bold;');
+        // import { initLightGrid } from '../scripts/modules/lightGrid.js';
+        // console.log('%c[lightGrid-test.html] initLightGrid imported successfully.', 'color: blue; font-weight: bold;');
+        
+        // // Ensure the DOM is fully loaded before initializing
+        // if (document.readyState === 'loading') {
+        //     document.addEventListener('DOMContentLoaded', () => {
+        //         console.log('%c[lightGrid-test.html] DOMContentLoaded event fired. Calling initLightGrid().', 'color: blue; font-weight: bold;');
+        //         initLightGrid();
+        //         console.log('%c[lightGrid-test.html] initLightGrid() call completed (after DOMContentLoaded).', 'color: blue; font-weight: bold;');
+        //     });
+        // } else {
+        //     console.log('%c[lightGrid-test.html] DOM already loaded. Calling initLightGrid() directly.', 'color: blue; font-weight: bold;');
+        //     initLightGrid();
+        //     console.log('%c[lightGrid-test.html] initLightGrid() call completed (DOM already loaded).', 'color: blue; font-weight: bold;');
+        // }
+    </script>
+    <script type="module" src="../scripts/main.js"></script>
+</body>
+</html>

@@ -73,6 +73,11 @@ buttonSounds.preload().catch(err => console.warn('Early button sound preload fai
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Call LightGrid initialization first
+        console.log('%c[main.js] Calling initLightGrid() EARLY in DOMContentLoaded', 'color: orange; font-weight: bold;');
+        initLightGrid();
+        console.log('%c[main.js] initLightGrid() EARLY call completed.', 'color: orange;');
+
         // Initialize browser theme and loader text first.
         console.log('Applying browser colors...');
         applyBrowserColors('DOMContentLoaded');
@@ -109,13 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // initStarfieldThruster(); // Removed as it's archived
         // init3DButtons already called above
         
-        // Defer LightGrid initialization slightly to ensure view is ready
-        setTimeout(() => {
-            console.log('Attempting to initialize LightGrid...');
-            initLightGrid();
-            console.log('LightGrid initialization process completed.');
-        }, 100); // Small delay, e.g., 100ms
-
         initDateDisplay();
         initMarqueeContent();
         initLondonClock();

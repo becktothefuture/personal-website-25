@@ -1,58 +1,10 @@
-/**
- * @module processorAnimations
- * @description A module that provides various text animation effects for UI elements.
- * These animations are designed to create dynamic, "processing" style visual feedback.
- * 
- * @example
- * // Import the animations you need
- * import { 
- *   initProcessorAnimation1, 
- *   initProcessorAnimation2 
- * } from './modules/processorAnimations.js';
- * 
- * // Initialize animations
- * document.addEventListener('DOMContentLoaded', () => {
- *   initProcessorAnimation1(); // Random character animation
- *   initProcessorAnimation2(); // Frame-based pattern animation
- * });
- * 
- * @usage
- * Add classes to HTML elements to apply animations:
- * - Use .processor1 for random character animations
- * - Use .processor2 for pattern-based animations
- * - Use .processor3 for masked character replacement
- * - Use .processor4 for scrolling text messages
- */
-
-
-console.log("Text processor module initialized");
-
-
-
-// Utility Functions
-function getRandomCharacter() {
-    const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()";
-    return characters.charAt(Math.floor(Math.random() * characters.length));
-}
-
-function generateRandomString(length) {
-    let result = "";
-    for (let i = 0; i < length; i++) {
-        result += getRandomCharacter();
-    }
-    return result;
-}
-
-
-
-// Animation Functions
 export function initProcessorAnimation1() {
     const className = '.processor1';
     const elements = document.querySelectorAll(className);
     elements.forEach((element) => {
         setInterval(() => {
             element.textContent = generateRandomString(10);
-        }, 150);
+        }, 50); // Reduced interval to 50ms
     });
 }
 
@@ -118,7 +70,7 @@ export function initProcessorAnimation2() {
         setInterval(() => {
             element.textContent = frames[frameIndex];
             frameIndex = (frameIndex + 1) % frames.length;
-        }, 100);
+        }, 30); // Reduced interval to 30ms
     });
 }
 
@@ -136,7 +88,7 @@ export function initProcessorAnimation3() {
             str[pos2] = getRandomCharacter();
             str[pos3] = getRandomCharacter();
             element.textContent = str.join("");
-        }, 150);
+        }, 50); // Reduced interval to 50ms
     });
 }
 
@@ -152,8 +104,6 @@ export function initProcessorAnimation4() {
             const displayedText = PROCESSOR_TEXT.substring(index, index + 20);
             element.textContent = displayedText;
             index = (index + 1) % length;
-        }, 150);
+        }, 50); // Reduced interval to 50ms
     });
 }
-
-

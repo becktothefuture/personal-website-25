@@ -187,12 +187,13 @@ export function initDiffusionText() {
   // Find target elements
   const textContainer = document.getElementById('diffusion-text');
   const authorContainer = document.getElementById('diffusion-text-author');
-  
+  const skillsContainer = document.getElementById('diffusion-text-skills'); // New container for skills
+
   if (!textContainer) {
     console.warn("No element with ID 'diffusion-text' found. Diffusion text animation not initialized.");
-    return null;
+    // return null; // Keep this commented or adjust if skills animation should run independently
   }
-  
+
   // Quote collection with text and authors
   const quotes = [
     {
@@ -228,28 +229,29 @@ export function initDiffusionText() {
       author: "– Charles Eames"
     }
   ];
-  
+
   // Extract quote texts for the main animator
   const quoteTexts = quotes.map(quote => quote.text);
-  
-  // Create and start the text animator
-  const textAnimator = new DiffusionTextAnimator({
-    texts: quoteTexts,
-    animateInDuration: 1500,
-    legiblePauseDuration: 2000,
-    animateOutDuration: 1500,
-    frameInterval: 200,
-    letterPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-=[]{}|;:,.<>/*‚·°‡›‹¬∆ƒ∂πø¥†®∑ */?/~`",
-    container: textContainer
-  });
-  
-  textAnimator.start();
-  
+
+  let textAnimator = null;
+  if (textContainer) {
+    textAnimator = new DiffusionTextAnimator({
+      texts: quoteTexts,
+      animateInDuration: 1500,
+      legiblePauseDuration: 2000,
+      animateOutDuration: 1500,
+      frameInterval: 200, // Original frame interval for quotes
+      letterPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-=[]{}|;:,.<>/*‚·°‡›‹¬∆ƒ∂πø¥†®∑ */?/~`",
+      container: textContainer
+    });
+    textAnimator.start();
+  }
+
   // If author container exists, create and start the author animator
   let authorAnimator = null;
-  if (authorContainer) {
+  if (authorContainer && textAnimator) {
     const authorTexts = quotes.map(quote => quote.author);
-    
+
     authorAnimator = new DiffusionTextAnimator({
       texts: authorTexts,
       animateInDuration: 1500,
@@ -279,9 +281,40 @@ export function initDiffusionText() {
     
     authorAnimator.start();
   }
-  
-  return { 
-    textAnimator, 
-    authorAnimator 
+
+  // --- New Skills Animator ---
+  let skillsAnimator = null;
+  if (skillsContainer) {
+    const skillTexts = [
+      "End-to-End Product Design (UX/UI/Code)",
+      "Strategic Thinking & Digital Vision",
+      "Front-End Development (HTML, CSS, JS, WebGL)",
+      "AI-Enhanced Design Workflows",
+      "Motion Design & Microinteraction Craft",
+      "Design Systems & Component Libraries",
+      "Typography & Visual Systems",
+      "Creative Technology & Prototyping",
+      "Team Leadership & Stakeholder Alignment",
+      "Inventive Problem Solving"
+    ];
+
+    skillsAnimator = new DiffusionTextAnimator({
+      texts: skillTexts,
+      animateInDuration: 1000, // Faster
+      legiblePauseDuration: 1000, // More frequent changes
+      animateOutDuration: 1000, // Faster
+      frameInterval: 100, // Smoother/faster animation steps
+      letterPool: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()+-=[]{}|;:,.<>/*‚·°‡›‹¬∆ƒ∂πø¥†®∑ */?/~`",
+      container: skillsContainer
+    });
+    skillsAnimator.start();
+  } else {
+    console.warn("No element with ID 'diffusion-text-skills' found. Skills diffusion text animation not initialized.");
+  }
+
+  return {
+    textAnimator,
+    authorAnimator,
+    skillsAnimator // Return the new animator as well
   };
 }

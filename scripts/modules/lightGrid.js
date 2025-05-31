@@ -1,213 +1,230 @@
 export function initLightGrid(selector = '.light-grid') {
-  const style = getComputedStyle(document.documentElement);
-  const dotSizeEm = 3; // Default dot size in em
-  const minOpacity = parseFloat(style.getPropertyValue('--flash-min-opacity')) || 0.2;
-  const maxOpacity = parseFloat(style.getPropertyValue('--flash-max-opacity')) || 1;
-  const fps = parseFloat(style.getPropertyValue('--fps')) || 30;
-  const multiplier = parseInt(style.getPropertyValue('--cycle-multiplier'), 10) || 3;
-  const speed = parseFloat(style.getPropertyValue('--speed-multiplier')) || 1;
-  const dotColor = style.getPropertyValue('--dot-color').trim() || '#00f';
+  console.log('%c[LightGrid.js] initLightGrid FUNCTION CALLED', 'color: #00ff00; font-weight: bold;');
 
-  const frameDuration = 1000 / fps;
-  const totalPeriod = frameDuration * 2 * multiplier * speed;
+  // New animation parameters for Nostromo-style blinking
+  const MIN_ON_DURATION_MS = 400;      // Min time a light stays fully on
+  const MAX_ON_DURATION_MS = 700;     // Max time a light stays fully on
+  const MIN_OFF_DURATION_MS = 500;    // Min time a light stays off (minOpacity)
+  const MAX_OFF_DURATION_MS = 4000;   // Max time a light stays off
+  
+  const FLICKER_PER_FRAME_CHANCE = 0.0002; // Reduced: Chance per frame for an "on" light to start flickering
+  const FLICKER_DURATION_MS = 180;       // How long a flicker sequence lasts
+  const FLICKER_INTERVAL_MS = 45;        // Time between on/off states during a flicker
+
+  const dotSizePx = 5;       // Fixed dot size - CHANGED
+  const minOpacity = 0.15;    // Base opacity for "off" or dim state
+  const maxOpacity = 0.9;     // Opacity for "on" state
 
   class Grid {
     constructor(container) {
       this.container = container;
+      console.log('%c[LightGrid.js Grid Instance] Constructor for:', 'color: #7f00ff;', container);
       this.canvas = document.createElement('canvas');
       this.canvas.className = 'light-grid-canvas';
-      this.canvas.style.backgroundColor = 'transparent';
-      this.ctx = this.canvas.getContext('2d');
+      
+      this.dotColor = '#00ff00'; // Default fallback color, will be updated in setup
+
+      // Ensure container can hold an absolutely positioned canvas
+      if (getComputedStyle(this.container).position === 'static') {
+        this.container.style.position = 'relative';
+      }
       this.container.appendChild(this.canvas);
+      this.ctx = this.canvas.getContext('2d');
+      console.log('%c[LightGrid.js Grid Instance] Canvas created and appended to:', 'color: #7f00ff;', container);
 
       this.cols = parseInt(container.dataset.cols, 10) || 5;
       this.rows = parseInt(container.dataset.rows, 10) || 5;
       this.dots = [];
       this.resizeObserver = null;
+      this.lastTimestamp = 0; // For deltaTime calculation
 
-      // Initial setup attempt
-      this.setup();
+      this.setup(); // Initial setup
 
-      // Use ResizeObserver to re-run setup if container size changes
       if (window.ResizeObserver) {
-        this.resizeObserver = new ResizeObserver(entries => {
-          if (entries && entries.length > 0) {
-            const entry = entries[0];
-            // Only run setup if the container has actual dimensions
-            if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-              console.log(`LightGrid: ResizeObserver detected size change for container, re-running setup.`, this.container);
-              this.setup();
-            }
-          }
+        this.resizeObserver = new ResizeObserver(() => {
+          console.log('%c[LightGrid.js Grid Instance] ResizeObserver triggered for:', 'color: #7f00ff;', container);
+          this.setup();
         });
         this.resizeObserver.observe(this.container);
       } else {
-        console.warn('LightGrid: ResizeObserver not supported. Grid might not update correctly if container size changes dynamically after initial load.');
+        window.addEventListener('resize', () => this.setup());
       }
     }
 
     setup() {
-      const rect = this.container.getBoundingClientRect();
-      console.log(`LightGrid: Running setup for container. ID: ${this.container.id || '(no ID)'}, Rect: W=${rect.width}, H=${rect.height}`);
+      // const rect = this.container.getBoundingClientRect(); // Old method
+      const width = this.container.offsetWidth;
+      const height = this.container.offsetHeight;
+      
+      console.log(`%c[LightGrid.js Grid Instance] setup() for ${this.container.id || '(no ID)'}. OffsetDims: W=${width} H=${height}`, 'color: #7f00ff;');
 
-      if (!this.ctx) {
-        this.dots = [];
-        console.warn(`LightGrid: No canvas context for container ID: ${this.container.id || '(no ID)'}`);
-        return;
+      // Get --color-1 from CSS custom properties
+      const computedStyle = getComputedStyle(this.container);
+      this.dotColor = computedStyle.getPropertyValue('--color-1').trim() || '#00ff00'; // Use fetched color or fallback to green
+      if (!computedStyle.getPropertyValue('--color-1').trim()) {
+        console.warn(`%c[LightGrid.js Grid Instance] --color-1 not found for ${this.container.id || '(no ID)'}. Defaulting to green.`, 'color: #ff9900;');
       }
 
-      if (rect.width === 0 || rect.height === 0) {
-        console.warn(`LightGrid: Container ID: ${this.container.id || '(no ID)'} has zero dimensions (W:${rect.width}, H:${rect.height}). Clearing dots and waiting for size change.`);
+      if (width === 0 || height === 0) {
+        console.warn(`%c[LightGrid.js Grid Instance] ${this.container.id || '(no ID)'} has zero dimensions (offsetWidth/offsetHeight). Canvas will be hidden.`, 'color: #ff9900;');
+        this.canvas.style.display = 'none';
         this.dots = [];
-        // Clear the canvas
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr; // will be 0
-        this.canvas.height = rect.height * dpr; // will be 0
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         return;
       }
+      this.canvas.style.display = 'block';
 
       const dpr = window.devicePixelRatio || 1;
-      // Ensure this.canvas.width and this.canvas.height are set based on rect and dpr
-      this.canvas.width = rect.width * dpr;
-      this.canvas.height = rect.height * dpr;
-      this.canvas.style.width = rect.width + 'px';
-      this.canvas.style.height = rect.height + 'px';
-
-      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.canvas.width = width * dpr;
+      this.canvas.height = height * dpr;
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
       this.ctx.scale(dpr, dpr);
 
-      const containerStyle = getComputedStyle(this.container);
-      const fontSizePx = parseFloat(containerStyle.fontSize);
-      const dotSizePx = dotSizeEm * fontSizePx;
-
-      let currentCols = this.cols;
-      let currentRows = this.rows;
-
-      const minSpacing = dotSizePx * 1.5;
-      if ((rect.width / currentCols) < minSpacing || (rect.height / currentRows) < minSpacing) {
-        const adjustedCols = Math.max(1, Math.floor(rect.width / minSpacing));
-        const adjustedRows = Math.max(1, Math.floor(rect.height / minSpacing));
-        
-        if (adjustedCols > 0 && adjustedRows > 0) {
-          console.log(`LightGrid: Adjusting cols/rows for container ID: ${this.container.id || '(no ID)'}. Original: ${currentCols}x${currentRows}, Adjusted: ${adjustedCols}x${adjustedRows}`);
-          currentCols = adjustedCols;
-          currentRows = adjustedRows;
-        }
-      }
-      
       this.dots = [];
-      for (let row = 0; row < currentRows; row++) {
-        for (let col = 0; col < currentCols; col++) {
-          const x = (rect.width / currentCols) * col + ((rect.width / currentCols) - dotSizePx) / 2;
-          const y = (rect.height / currentRows) * row + ((rect.height / currentRows) - dotSizePx) / 2;
-          
-          if (x + dotSizePx <= rect.width && y + dotSizePx <= rect.height && x >= 0 && y >=0) { // Ensure dot is within bounds
-            this.dots.push({
-              x,
-              y,
-              size: dotSizePx,
-              delay: Math.random() * totalPeriod,
-            });
-          }
+      const colWidth = width / this.cols;
+      const rowHeight = height / this.rows;
+
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          const initialOffDuration = MIN_OFF_DURATION_MS + Math.random() * (MAX_OFF_DURATION_MS - MIN_OFF_DURATION_MS);
+          this.dots.push({
+            x: colWidth * c + (colWidth - dotSizePx) / 2,
+            y: rowHeight * r + (rowHeight - dotSizePx) / 2,
+            size: dotSizePx,
+            
+            isCurrentlyOn: false, // Start off
+            onDuration: MIN_ON_DURATION_MS + Math.random() * (MAX_ON_DURATION_MS - MIN_ON_DURATION_MS),
+            offDuration: initialOffDuration,
+            timeInCurrentState: Math.random() * initialOffDuration, // Start at a random point in its first off-cycle
+
+            isFlickering: false,
+            flickerEndTime: 0,
+            flickerNextToggleTime: 0,
+            flickerIsCurrentlyOn: false
+          });
         }
       }
-      console.log(`LightGrid: Setup complete for container ID: ${this.container.id || '(no ID)'}. Dots created: ${this.dots.length}`);
+      this.lastTimestamp = performance.now(); // Initialize for first deltaTime calculation
+      console.log(`%c[LightGrid.js Grid Instance] Setup complete for ${this.container.id || '(no ID)'}. Dots: ${this.dots.length}`, 'color: #7f00ff;');
     }
 
     draw(timestamp) {
-      if (!this.ctx) return;
-
-      if (this.dots.length === 0) {
-        // If no dots (e.g. container was 0x0), ensure canvas is clear
-        const dpr = window.devicePixelRatio || 1;
-        const w = this.canvas.width / dpr;
-        const h = this.canvas.height / dpr;
-        if (w > 0 && h > 0) {
-             this.ctx.clearRect(0, 0, w, h);
-        }
+      if (!this.ctx || this.canvas.style.display === 'none') {
         return;
       }
+      
+      const deltaTime = timestamp - this.lastTimestamp;
+      this.lastTimestamp = timestamp;
 
-      const ctx = this.ctx;
-      const dpr = window.devicePixelRatio || 1;
-      const w = this.canvas.width / dpr;
-      const h = this.canvas.height / dpr;
-
-      ctx.clearRect(0, 0, w, h);
-
-      const singleCycle = frameDuration * 2 * speed;
-      const onDuration = frameDuration * speed;
+      if (this.dots.length === 0 && (this.canvas.width === 0 || this.canvas.height === 0)) {
+          // If setup resulted in no dots (e.g. zero dimension container) and canvas is zero, skip drawing.
+          return;
+      }
+      
+      const w = this.canvas.width / (window.devicePixelRatio || 1);
+      const h = this.canvas.height / (window.devicePixelRatio || 1);
+      this.ctx.clearRect(0, 0, w, h);
 
       for (const dot of this.dots) {
-        const time = (timestamp + dot.delay) % totalPeriod;
-        const cycleTime = time % singleCycle;
+        dot.timeInCurrentState += deltaTime;
+        let currentDotOpacity = dot.isCurrentlyOn ? maxOpacity : minOpacity;
 
-        ctx.globalAlpha = cycleTime < onDuration ? maxOpacity : minOpacity;
+        if (dot.isFlickering) {
+          if (timestamp >= dot.flickerEndTime) {
+            dot.isFlickering = false;
+            // Ensure it settles into its intended state post-flicker
+            currentDotOpacity = dot.isCurrentlyOn ? maxOpacity : minOpacity;
+          } else {
+            if (timestamp >= dot.flickerNextToggleTime) {
+              dot.flickerIsCurrentlyOn = !dot.flickerIsCurrentlyOn;
+              dot.flickerNextToggleTime = timestamp + FLICKER_INTERVAL_MS;
+            }
+            currentDotOpacity = dot.flickerIsCurrentlyOn ? maxOpacity : minOpacity * 0.5; // Flicker can be dimmer
+          }
+        } else { // Not flickering
+          if (dot.isCurrentlyOn) {
+            if (dot.timeInCurrentState >= dot.onDuration) {
+              dot.isCurrentlyOn = false;
+              dot.timeInCurrentState = 0;
+              dot.offDuration = MIN_OFF_DURATION_MS + Math.random() * (MAX_OFF_DURATION_MS - MIN_OFF_DURATION_MS);
+              currentDotOpacity = minOpacity;
+            } else {
+              // Chance to start flickering while on
+              if (Math.random() < FLICKER_PER_FRAME_CHANCE) {
+                dot.isFlickering = true;
+                dot.flickerEndTime = timestamp + FLICKER_DURATION_MS;
+                dot.flickerNextToggleTime = timestamp; // Start flicker immediately
+                dot.flickerIsCurrentlyOn = dot.isCurrentlyOn; // Flicker starts from current on/off state
+              }
+            }
+          } else { // Currently off
+            if (dot.timeInCurrentState >= dot.offDuration) {
+              dot.isCurrentlyOn = true;
+              dot.timeInCurrentState = 0;
+              dot.onDuration = MIN_ON_DURATION_MS + Math.random() * (MAX_ON_DURATION_MS - MIN_ON_DURATION_MS);
+              currentDotOpacity = maxOpacity;
+            }
+          }
+        }
         
-        ctx.beginPath();
-        ctx.arc(dot.x + dot.size / 2, dot.y + dot.size / 2, dot.size / 2, 0, Math.PI * 2);
-        ctx.fillStyle = dotColor;
-        ctx.fill();
+        // this.ctx.globalAlpha = currentDotOpacity; // Old
+        
+        this.ctx.globalAlpha = currentDotOpacity;
+        this.ctx.fillStyle = this.dotColor; // Use instance-specific color
+        this.ctx.beginPath();
+        this.ctx.arc(dot.x + dot.size / 2, dot.y + dot.size / 2, dot.size / 2, 0, Math.PI * 2);
+        this.ctx.fill();
       }
-      ctx.globalAlpha = 1;
+      this.ctx.globalAlpha = 1; // Reset global alpha
     }
 
     destroy() {
       if (this.resizeObserver) {
         this.resizeObserver.disconnect();
-        this.resizeObserver = null;
       }
-      // Optional: remove canvas, etc.
       if (this.canvas && this.canvas.parentNode) {
         this.canvas.parentNode.removeChild(this.canvas);
       }
-      this.dots = [];
+      console.log('%c[LightGrid.js Grid Instance] Destroyed:', 'color: #7f00ff;', this.container);
     }
-  } // End of Grid class
-
-  // Encapsulate the main initialization logic
-  const initializeActualGrids = () => {
-    const containers = Array.from(document.querySelectorAll(selector));
-    if (!containers.length) {
-      console.warn(`LightGrid: no elements found for selector "${selector}" when initialization was attempted.`);
-      return []; // Return empty array
-    }
-
-    const grids = containers.map(container => new Grid(container));
-
-    function animate(ts = 0) {
-      grids.forEach(grid => grid.draw(ts));
-      requestAnimationFrame(animate);
-    }
-
-    requestAnimationFrame(animate);
-
-    // Keep window resize for global changes like font-size affecting em units
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        console.log("LightGrid: Window resize event, re-running setup for all grids.");
-        grids.forEach(g => g.setup());
-      }, 200);
-    });
-    return grids; // Return the created grids
-  }; // End of initializeActualGrids
-
-  // Ensure DOM is ready before initializing
-  let initializedGrids = [];
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initializedGrids = initializeActualGrids();
-    });
-  } else {
-    initializedGrids = initializeActualGrids();
   }
-  
-  // Optional: return a way to access grids or re-init, though not used currently
-  // return {
-  //   grids: initializedGrids,
-  //   reinit: initializeActualGrids // if needed
-  // };
+
+  const initializeGrids = () => {
+    console.log('%c[LightGrid.js] initializeGrids CALLED', 'color: #00ccff; font-weight: bold;');
+    const containers = document.querySelectorAll(selector);
+    if (!containers.length) {
+      console.warn(`%c[LightGrid.js] NO ELEMENTS FOUND for selector "${selector}"`, 'color: #ff9900; font-weight: bold;');
+      return;
+    }
+    console.log(`%c[LightGrid.js] Found ${containers.length} elements for "${selector}"`, 'color: #00ccff;', containers);
+
+    // Destroy existing grids before reinitializing if any
+    if (window.lightGridInstances && window.lightGridInstances.length > 0) {
+        console.log(`%c[LightGrid.js] Destroying ${window.lightGridInstances.length} existing grid instances.`, 'color: #ff9900;');
+        window.lightGridInstances.forEach(grid => grid.destroy());
+    }
+    
+    window.lightGridInstances = Array.from(containers).map(container => new Grid(container));
+
+    let animFrameId;
+    function animateLoop(ts) { // ts is timestamp from requestAnimationFrame
+      window.lightGridInstances.forEach(grid => grid.draw(ts));
+      animFrameId = requestAnimationFrame(animateLoop);
+    }
+    
+    if (window.lightGridGlobalAnimationId) {
+        cancelAnimationFrame(window.lightGridGlobalAnimationId);
+    }
+    animFrameId = requestAnimationFrame(animateLoop);
+    window.lightGridGlobalAnimationId = animFrameId;
+    console.log(`%c[LightGrid.js] Animation loop started. Global ID: ${window.lightGridGlobalAnimationId}`, 'color: #00ccff;');
+  };
+
+  if (document.readyState === 'loading') {
+    console.log('%c[LightGrid.js] DOM loading, deferring init.', 'color: #ff9900;');
+    document.addEventListener('DOMContentLoaded', initializeGrids);
+  } else {
+    console.log('%c[LightGrid.js] DOM ready, initializing now.', 'color: #00ff00; font-weight: bold;');
+    initializeGrids();
+  }
 }
