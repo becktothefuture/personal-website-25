@@ -1,0 +1,31 @@
+{
+  "name": "website-2025",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.js",
+    "build:watch": "node build.js --watch",
+    "analyze": "node analyze-bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/becktothefuture/-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/becktothefuture/-/issues"
+  },
+  "homepage": "https://github.com/becktothefuture/-#readme",
+  "devDependencies": {
+    "esbuild": "^0.20.2",
+    "chokidar": "^3.6.0"
+  }
+}
